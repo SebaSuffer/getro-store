@@ -1,0 +1,65 @@
+---
+import { getCartItemCount } from '../utils/cart';
+---
+
+<!-- Top Banner -->
+<div class="bg-black text-white text-center py-2.5 text-[10px] font-light tracking-[0.3em] uppercase">
+  <div class="mx-auto max-w-[1920px] px-6 lg:px-12">
+    ENVÍOS A TODO CHILE
+  </div>
+</div>
+
+<!-- Main Header -->
+<header class="sticky top-0 z-50 w-full bg-black border-b border-white/10">
+  <div class="mx-auto max-w-[1920px] px-6 lg:px-12">
+    <div class="flex h-20 items-center justify-between">
+      <!-- Desktop Nav -->
+      <nav class="hidden lg:flex items-center gap-12 flex-1">
+        <a class="text-xs font-light text-white/90 hover:text-white transition-colors uppercase tracking-[0.2em]" href="/">Inicio</a>
+        <a class="text-xs font-light text-white/90 hover:text-white transition-colors uppercase tracking-[0.2em]" href="/catalogo">Joyas</a>
+        <a class="text-xs font-light text-white/90 hover:text-white transition-colors uppercase tracking-[0.2em]" href="/contacto">Info</a>
+      </nav>
+      
+      <!-- Brand Logo - Centered -->
+      <div class="absolute left-1/2 transform -translate-x-1/2">
+        <a href="/" class="flex flex-col items-center" tabindex="0" aria-label="GOTRA - Inicio">
+          <h1 class="text-3xl font-light text-white tracking-[0.25em]" style="font-family: 'Playfair Display', serif; letter-spacing: 0.3em;">GOTRA</h1>
+          <div class="w-12 h-px bg-white/60 mt-2"></div>
+        </a>
+      </div>
+      
+      <!-- Actions -->
+      <div class="flex items-center gap-6 flex-1 justify-end">
+        <button class="hidden md:flex size-10 items-center justify-center text-white/80 hover:text-white transition-colors" aria-label="Buscar">
+          <span class="material-symbols-outlined" style="font-size: 20px; font-weight: 300;">search</span>
+        </button>
+        <a href="/carrito" class="relative flex size-10 items-center justify-center text-white/80 hover:text-white transition-colors" aria-label="Carrito de compras" tabindex="0">
+          <span class="material-symbols-outlined" style="font-size: 20px; font-weight: 300;">shopping_bag</span>
+          <span id="cart-badge" class="absolute right-0 top-0 flex size-4 items-center justify-center rounded-full bg-white text-black text-[9px] font-light"></span>
+        </a>
+      </div>
+    </div>
+  </div>
+</header>
+
+<script>
+  const updateCartBadge = () => {
+    if (typeof window === 'undefined') return;
+    
+    import('../utils/cart').then(({ getCartItemCount }) => {
+      const count = getCartItemCount();
+      const badge = document.getElementById('cart-badge');
+      if (badge) {
+        if (count > 0) {
+          badge.textContent = count > 9 ? '9+' : count.toString();
+          badge.style.display = 'flex';
+        } else {
+          badge.style.display = 'none';
+        }
+      }
+    });
+  };
+
+  updateCartBadge();
+  window.addEventListener('cartUpdated', updateCartBadge);
+</script>

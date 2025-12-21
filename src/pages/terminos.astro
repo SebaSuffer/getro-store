@@ -1,0 +1,64 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+---
+
+<BaseLayout>
+  <title>Términos del Servicio - GOTRA</title>
+  
+  <div class="relative flex h-auto min-h-screen w-full flex-col">
+    <Header />
+    
+    <main class="flex-grow bg-white">
+      <section class="py-20">
+        <div class="mx-auto max-w-4xl px-6 lg:px-12">
+          <h1 class="text-4xl sm:text-5xl font-light text-black tracking-[0.05em] uppercase mb-8 font-display">
+            Términos del Servicio
+          </h1>
+          
+          <div class="prose prose-lg max-w-none text-black/70 font-light leading-relaxed space-y-6">
+            <p class="text-sm text-black/60">
+              Última actualización: {new Date().toLocaleDateString('es-CL', { year: 'numeric', month: 'long', day: 'numeric' })}
+            </p>
+            
+            <h2 class="text-2xl font-light text-black mt-12 mb-6 uppercase tracking-[0.1em]">Aceptación de los Términos</h2>
+            <p>
+              Al acceder y utilizar este sitio web, aceptas cumplir con estos términos y condiciones. 
+              Si no estás de acuerdo con alguna parte de estos términos, no debes utilizar nuestro servicio.
+            </p>
+            
+            <h2 class="text-2xl font-light text-black mt-12 mb-6 uppercase tracking-[0.1em]">Uso del Sitio</h2>
+            <p>
+              Este sitio web está destinado únicamente para uso personal y no comercial. No puedes 
+              reproducir, duplicar, copiar, vender o explotar cualquier parte del sitio sin nuestro 
+              permiso expreso por escrito.
+            </p>
+            
+            <h2 class="text-2xl font-light text-black mt-12 mb-6 uppercase tracking-[0.1em]">Productos y Precios</h2>
+            <p>
+              Nos reservamos el derecho de modificar los precios de nuestros productos en cualquier 
+              momento. Todos los precios están expresados en pesos chilenos (CLP) e incluyen IVA 
+              cuando corresponda.
+            </p>
+            
+            <h2 class="text-2xl font-light text-black mt-12 mb-6 uppercase tracking-[0.1em]">Propiedad Intelectual</h2>
+            <p>
+              Todo el contenido de este sitio web, incluyendo textos, gráficos, logotipos, imágenes 
+              y software, es propiedad de GOTRA y está protegido por las leyes de propiedad intelectual.
+            </p>
+            
+            <h2 class="text-2xl font-light text-black mt-12 mb-6 uppercase tracking-[0.1em]">Limitación de Responsabilidad</h2>
+            <p>
+              GOTRA no será responsable de ningún daño directo, indirecto, incidental o consecuente 
+              que resulte del uso o la imposibilidad de usar este sitio web.
+            </p>
+          </div>
+        </div>
+      </section>
+    </main>
+    
+    <Footer />
+  </div>
+</BaseLayout>
+

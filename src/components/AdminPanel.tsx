@@ -1,0 +1,394 @@
+import { useState, useEffect } from 'react';
+import { isAuthenticated, logout, getCurrentUser } from '../utils/auth';
+import { getAllProducts } from '../data/products';
+import { getSubscribers, exportSubscribers } from '../utils/newsletter';
+import type { Product } from '../data/products';
+
+const AdminPanel = () => {
+  const [authenticated, setAuthenticated] = useState(false);
+  const [user, setUser] = useState<any>(null);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [subscribers, setSubscribers] = useState<any[]>([]);
+  const [activeTab, setActiveTab] = useState<'products' | 'newsletter'>('products');
+
+  useEffect(() => {
+    const checkAuth = () => {
+      const auth = isAuthenticated();
+      setAuthenticated(auth);
+      if (auth) {
+        setUser(getCurrentUser());
+        loadProducts();
+        loadSubscribers();
+      } else {
+        window.location.href = '/login';
+      }
+    };
+
+    checkAuth();
+  }, []);
+
+  const loadProducts = () => {
+    const allProducts = getAllProducts();
+    setProducts(allProducts);
+    setFilteredProducts(allProducts);
+  };
+
+  // Filtrar productos por búsqueda
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setFilteredProducts(products);
+      return;
+    }
+
+    const query = searchQuery.toLowerCase().trim();
+    const filtered = products.filter((product) => {
+      return (
+        product.name.toLowerCase().includes(query) ||
+        product.category.toLowerCase().includes(query) ||
+        (product.description && product.description.toLowerCase().includes(query)) ||
+        product.id.toLowerCase().includes(query)
+      );
+    });
+    setFilteredProducts(filtered);
+  }, [searchQuery, products]);
+
+  const loadSubscribers = () => {
+    const subs = getSubscribers();
+    setSubscribers(subs);
+  };
+
+  const handleLogout = () => {
+    logout();
+    window.location.href = '/login';
+  };
+
+  const handleEditProduct = (product: Product) => {
+    setSelectedProduct(product);
+    setEditingProduct({ ...product });
+  };
+
+  const handleSaveProduct = () => {
+    if (!editingProduct) return;
+
+    // Guardar cambios en localStorage
+    const editedProducts = JSON.parse(localStorage.getItem('gotra_edited_products') || '{}');
+    editedProducts[editingProduct.id] = editingProduct;
+    localStorage.setItem('gotra_edited_products', JSON.stringify(editedProducts));
+
+    // Actualizar stock en el sistema de stock
+    if (typeof window !== 'undefined') {
+      const stockData = JSON.parse(localStorage.getItem('gotra_stock') || '{}');
+      stockData[editingProduct.id] = editingProduct.stock;
+      localStorage.setItem('gotra_stock', JSON.stringify(stockData));
+    }
+
+    // Actualizar lista
+    loadProducts();
+    setSelectedProduct(null);
+    setEditingProduct(null);
+    alert('Producto actualizado correctamente');
+  };
+
+  if (!authenticated) {
+    return (
+      <div className="py-20 text-center">
+        <p className="text-black/60">Verificando autenticación...</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="py-20">
+      <div className="mx-auto max-w-7xl px-6 lg:px-12">
+        <div className="mb-12 flex items-center justify-between">
+          <div>
+            <h1 className="text-4xl sm:text-5xl font-light text-black tracking-[0.05em] uppercase mb-2 font-display">
+              Panel de Administración
+            </h1>
+            <p className="text-black/60 font-light text-sm">
+              Bienvenido, {user?.username}
+            </p>
+          </div>
+          <button
+            onClick={handleLogout}
+            className="px-6 py-2 border border-black/20 text-black text-xs font-light uppercase tracking-[0.2em] hover:border-black/40 transition-colors"
+          >
+            Cerrar Sesión
+          </button>
+        </div>
+
+        {/* Tabs */}
+        <div className="mb-8 flex gap-4 border-b border-black/10">
+          <button
+            onClick={() => setActiveTab('products')}
+            className={`px-6 py-3 text-xs font-light uppercase tracking-[0.2em] transition-colors border-b-2 ${
+              activeTab === 'products'
+                ? 'border-black text-black'
+                : 'border-transparent text-black/40 hover:text-black/60'
+            }`}
+          >
+            Productos
+          </button>
+          <button
+            onClick={() => setActiveTab('newsletter')}
+            className={`px-6 py-3 text-xs font-light uppercase tracking-[0.2em] transition-colors border-b-2 ${
+              activeTab === 'newsletter'
+                ? 'border-black text-black'
+                : 'border-transparent text-black/40 hover:text-black/60'
+            }`}
+          >
+            Newsletter ({subscribers.length})
+          </button>
+        </div>
+
+        {activeTab === 'products' && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Lista de Productos */}
+          <div className="lg:col-span-2">
+            <div className="mb-6">
+              <h2 className="text-xl font-light text-black uppercase tracking-[0.1em] mb-4 font-display">
+                Productos
+              </h2>
+              {/* Buscador */}
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="Buscar productos por nombre, categoría o descripción..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full bg-white border border-black/20 px-4 py-3 pl-10 text-black text-sm font-light focus:outline-none focus:border-black/40 transition-colors"
+                />
+                <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-black/40" style={{ fontSize: '20px', fontWeight: 300 }}>
+                  search
+                </span>
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-black/40 hover:text-black/60"
+                  >
+                    <span className="material-symbols-outlined" style={{ fontSize: '20px', fontWeight: 300 }}>
+                      close
+                    </span>
+                  </button>
+                )}
+              </div>
+              {searchQuery && (
+                <p className="mt-2 text-xs text-black/60 font-light">
+                  {filteredProducts.length} producto{filteredProducts.length !== 1 ? 's' : ''} encontrado{filteredProducts.length !== 1 ? 's' : ''}
+                </p>
+              )}
+            </div>
+            <div className="space-y-4 max-h-[600px] overflow-y-auto">
+              {filteredProducts.length === 0 ? (
+                <div className="text-center py-12 border border-black/10">
+                  <p className="text-black/60 font-light text-sm">
+                    {searchQuery ? 'No se encontraron productos' : 'No hay productos disponibles'}
+                  </p>
+                </div>
+              ) : (
+                filteredProducts.map((product) => (
+                  <div
+                    key={product.id}
+                    className="border border-black/10 p-4 flex items-center gap-4 hover:border-black/20 transition-colors"
+                  >
+                    {/* Imagen del producto */}
+                    <div className="flex-shrink-0 w-20 h-20 overflow-hidden bg-gray-50 border border-black/5">
+                      <img
+                        src={product.image_url}
+                        alt={product.image_alt || product.name}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    {/* Información del producto */}
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-sm font-light text-black uppercase tracking-wide mb-1 truncate">
+                        {product.name}
+                      </h3>
+                      <p className="text-xs text-black/60 font-light mb-1">
+                        {product.category} • ${product.price.toLocaleString('es-CL')} CLP
+                      </p>
+                      <p className="text-xs text-black/50 font-light">
+                        Stock: {product.stock} unidades
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => handleEditProduct(product)}
+                      className="px-4 py-2 bg-black text-white text-xs font-light uppercase tracking-[0.2em] hover:bg-black/90 transition-colors flex-shrink-0"
+                    >
+                      Editar
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+
+          {/* Editor de Producto */}
+          <div className="lg:col-span-1">
+            {editingProduct ? (
+              <div className="border border-black/10 p-6">
+                <h2 className="text-xl font-light text-black uppercase tracking-[0.1em] mb-6 font-display">
+                  Editar Producto
+                </h2>
+                {/* Imagen del producto */}
+                <div className="mb-6">
+                  <div className="w-full aspect-square overflow-hidden bg-gray-50 border border-black/5 mb-3">
+                    <img
+                      src={editingProduct.image_url}
+                      alt={editingProduct.image_alt || editingProduct.name}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <p className="text-xs text-black/60 font-light text-center">
+                    {editingProduct.name}
+                  </p>
+                </div>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-light uppercase tracking-[0.2em] text-black mb-2">
+                      Nombre
+                    </label>
+                    <input
+                      type="text"
+                      value={editingProduct.name}
+                      onChange={(e) => setEditingProduct({ ...editingProduct, name: e.target.value })}
+                      className="w-full bg-white border border-black/20 px-4 py-2 text-black text-sm font-light focus:outline-none focus:border-black/40"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-light uppercase tracking-[0.2em] text-black mb-2">
+                      Descripción
+                    </label>
+                    <textarea
+                      value={editingProduct.description || ''}
+                      onChange={(e) => setEditingProduct({ ...editingProduct, description: e.target.value })}
+                      rows={4}
+                      className="w-full bg-white border border-black/20 px-4 py-2 text-black text-sm font-light focus:outline-none focus:border-black/40 resize-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-light uppercase tracking-[0.2em] text-black mb-2">
+                      Precio (CLP)
+                    </label>
+                    <input
+                      type="number"
+                      value={editingProduct.price}
+                      onChange={(e) => setEditingProduct({ ...editingProduct, price: parseInt(e.target.value) || 0 })}
+                      className="w-full bg-white border border-black/20 px-4 py-2 text-black text-sm font-light focus:outline-none focus:border-black/40"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-light uppercase tracking-[0.2em] text-black mb-2">
+                      Stock
+                    </label>
+                    <input
+                      type="number"
+                      value={editingProduct.stock}
+                      onChange={(e) => setEditingProduct({ ...editingProduct, stock: parseInt(e.target.value) || 0 })}
+                      className="w-full bg-white border border-black/20 px-4 py-2 text-black text-sm font-light focus:outline-none focus:border-black/40"
+                    />
+                  </div>
+                  <div className="flex gap-3">
+                    <button
+                      onClick={handleSaveProduct}
+                      className="flex-1 px-4 py-2 bg-black text-white text-xs font-light uppercase tracking-[0.2em] hover:bg-black/90 transition-colors"
+                    >
+                      Guardar
+                    </button>
+                    <button
+                      onClick={() => {
+                        setEditingProduct(null);
+                        setSelectedProduct(null);
+                      }}
+                      className="flex-1 px-4 py-2 border border-black/20 text-black text-xs font-light uppercase tracking-[0.2em] hover:border-black/40 transition-colors"
+                    >
+                      Cancelar
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="border border-black/10 p-6 text-center">
+                <p className="text-black/60 font-light text-sm">
+                  Selecciona un producto para editar
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+        )}
+
+        {activeTab === 'newsletter' && (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-light text-black uppercase tracking-[0.1em] font-display">
+                Suscriptores ({subscribers.length})
+              </h2>
+              <button
+                onClick={() => {
+                  const data = exportSubscribers();
+                  const blob = new Blob([data], { type: 'application/json' });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = 'suscriptores.json';
+                  a.click();
+                  URL.revokeObjectURL(url);
+                }}
+                className="px-4 py-2 bg-black text-white text-xs font-light uppercase tracking-[0.2em] hover:bg-black/90 transition-colors"
+              >
+                Exportar JSON
+              </button>
+            </div>
+            <div className="border border-black/10">
+              <div className="max-h-96 overflow-y-auto">
+                <table className="w-full text-sm">
+                  <thead className="bg-black/5 sticky top-0">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-xs font-light uppercase tracking-[0.2em] text-black">Email</th>
+                      <th className="px-4 py-3 text-left text-xs font-light uppercase tracking-[0.2em] text-black">Fecha de Suscripción</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {subscribers.length === 0 ? (
+                      <tr>
+                        <td colSpan={2} className="px-4 py-8 text-center text-black/40 font-light">
+                          No hay suscriptores aún
+                        </td>
+                      </tr>
+                    ) : (
+                      subscribers.map((sub, index) => (
+                        <tr key={index} className="border-t border-black/5">
+                          <td className="px-4 py-3 text-black/80 font-light">{sub.email}</td>
+                          <td className="px-4 py-3 text-black/60 font-light text-xs">
+                            {new Date(sub.subscribedAt).toLocaleDateString('es-CL')}
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div className="bg-yellow-50 border border-yellow-200 p-4 text-sm text-yellow-800 font-light">
+              <p className="mb-2"><strong>Nota:</strong> Los correos se guardan localmente en el navegador.</p>
+              <p>Para enviar correos masivos, necesitarás:</p>
+              <ul className="list-disc list-inside mt-2 space-y-1">
+                <li>Un servicio de email marketing (Mailchimp, SendGrid, etc.)</li>
+                <li>O un backend que procese los suscriptores y envíe los correos</li>
+                <li>Exporta los suscriptores usando el botón "Exportar JSON" para importarlos a tu servicio</li>
+              </ul>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default AdminPanel;
+

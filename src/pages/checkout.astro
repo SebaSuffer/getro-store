@@ -1,0 +1,32 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import CheckoutForm from '../components/CheckoutForm';
+import PaymentMethods from '../components/PaymentMethods.astro';
+---
+
+<BaseLayout>
+  <title>Checkout - GOTRA</title>
+  
+  <div class="relative flex h-auto min-h-screen w-full flex-col">
+    <Header />
+    
+    <main class="flex-grow bg-white">
+      <section class="py-20">
+        <div class="mx-auto max-w-[1920px] px-6 lg:px-12">
+          <div class="mb-16">
+            <span class="text-xs font-light uppercase tracking-[0.4em] text-black/60 mb-4 block">Compra</span>
+            <h1 class="text-4xl sm:text-5xl font-light text-black tracking-[0.05em] uppercase font-display">
+              Finalizar Compra
+            </h1>
+          </div>
+          <CheckoutForm client:load />
+        </div>
+      </section>
+      <PaymentMethods />
+    </main>
+    
+    <Footer />
+  </div>
+</BaseLayout>

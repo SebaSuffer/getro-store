@@ -1,0 +1,26 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import Hero from '../components/Hero.astro';
+import FeaturedProducts from '../components/FeaturedProducts.astro';
+import CategoriesSection from '../components/CategoriesSection.astro';
+import PaymentMethods from '../components/PaymentMethods.astro';
+---
+
+<BaseLayout>
+  <title>GOTRA - Joyería Fina y Exclusiva</title>
+  
+  <div class="relative flex h-auto min-h-screen w-full flex-col">
+    <Header />
+    
+    <main class="flex-grow">
+      <Hero />
+      <FeaturedProducts />
+      <CategoriesSection />
+      <PaymentMethods />
+    </main>
+    
+    <Footer />
+  </div>
+</BaseLayout>

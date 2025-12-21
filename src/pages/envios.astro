@@ -1,0 +1,58 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+---
+
+<BaseLayout>
+  <title>Política de Envíos - GOTRA</title>
+  
+  <div class="relative flex h-auto min-h-screen w-full flex-col">
+    <Header />
+    
+    <main class="flex-grow bg-white">
+      <section class="py-20">
+        <div class="mx-auto max-w-4xl px-6 lg:px-12">
+          <h1 class="text-4xl sm:text-5xl font-light text-black tracking-[0.05em] uppercase mb-8 font-display">
+            Política de Envíos
+          </h1>
+          
+          <div class="prose prose-lg max-w-none text-black/70 font-light leading-relaxed space-y-6">
+            <h2 class="text-2xl font-light text-black mt-12 mb-6 uppercase tracking-[0.1em]">Envíos a Todo Chile</h2>
+            <p>
+              Realizamos envíos a todo el territorio nacional. El tiempo de entrega estimado es de 
+              3 a 7 días hábiles, dependiendo de la ubicación del destinatario.
+            </p>
+            
+            <h2 class="text-2xl font-light text-black mt-12 mb-6 uppercase tracking-[0.1em]">Envío Gratis</h2>
+            <p>
+              Ofrecemos envío gratis en compras superiores a $50.000 CLP. Para compras menores, 
+              el costo de envío se calculará al momento de finalizar la compra.
+            </p>
+            
+            <h2 class="text-2xl font-light text-black mt-12 mb-6 uppercase tracking-[0.1em]">Seguimiento de Pedidos</h2>
+            <p>
+              Una vez procesado tu pedido, recibirás un correo electrónico con el número de 
+              seguimiento para que puedas monitorear el estado de tu envío en tiempo real.
+            </p>
+            
+            <h2 class="text-2xl font-light text-black mt-12 mb-6 uppercase tracking-[0.1em]">Packaging</h2>
+            <p>
+              Todas nuestras joyas se envían en elegantes estuches de regalo, protegidas con 
+              materiales de alta calidad para garantizar que lleguen en perfectas condiciones.
+            </p>
+            
+            <h2 class="text-2xl font-light text-black mt-12 mb-6 uppercase tracking-[0.1em]">Contacto</h2>
+            <p>
+              Si tienes alguna consulta sobre tu envío, puedes contactarnos a través de nuestro 
+              WhatsApp o correo electrónico. Estaremos encantados de ayudarte.
+            </p>
+          </div>
+        </div>
+      </section>
+    </main>
+    
+    <Footer />
+  </div>
+</BaseLayout>
+

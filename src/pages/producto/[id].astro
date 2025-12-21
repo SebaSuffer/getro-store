@@ -1,0 +1,40 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Header from '../../components/Header.astro';
+import Footer from '../../components/Footer.astro';
+import ProductDetail from '../../components/ProductDetail';
+import PaymentMethods from '../../components/PaymentMethods.astro';
+import { getProductById, getAllProducts } from '../../data/products';
+
+// Generar todas las rutas estáticas para los productos
+export async function getStaticPaths() {
+  const products = getAllProducts();
+  return products.map((product) => ({
+    params: { id: product.id },
+    props: { product },
+  }));
+}
+
+const { id } = Astro.params;
+const { product } = Astro.props;
+
+if (!product) {
+  return Astro.redirect('/catalogo');
+}
+---
+
+<BaseLayout>
+  <title>{product.name} - GOTRA</title>
+  
+  <div class="relative flex h-auto min-h-screen w-full flex-col">
+    <Header />
+    
+    <main class="flex-grow bg-white">
+      <ProductDetail client:load product={product} />
+      <PaymentMethods />
+    </main>
+    
+    <Footer />
+  </div>
+</BaseLayout>
+

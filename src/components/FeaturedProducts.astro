@@ -1,0 +1,30 @@
+---
+import { getFeaturedProducts } from '../data/products';
+import { getProductsWithStock } from '../utils/stock';
+import ProductCard from './ProductCard';
+
+const featuredProducts = getFeaturedProducts();
+const productsWithStock = getProductsWithStock(featuredProducts);
+---
+
+<section class="bg-white py-24">
+  <div class="mx-auto max-w-[1920px] px-6 lg:px-12">
+    <div class="mb-16 text-center">
+      <span class="text-xs font-light uppercase tracking-[0.4em] text-black/60 mb-4 block">LO MEJOR DEL MES</span>
+      <h2 class="text-4xl sm:text-5xl font-light text-black tracking-[0.05em] font-display">DESTACADOS</h2>
+    </div>
+    
+    <!-- Product Grid -->
+    <div class="grid grid-cols-1 gap-12 sm:grid-cols-2 lg:grid-cols-4">
+      {productsWithStock.map((product) => (
+        <ProductCard client:load product={product} />
+      ))}
+    </div>
+    
+    <div class="mt-20 text-center">
+      <a href="/catalogo" class="inline-flex h-12 items-center justify-center bg-black text-white px-10 text-xs font-light uppercase tracking-[0.2em] transition-all hover:bg-black/90">
+        Ver Todo
+      </a>
+    </div>
+  </div>
+</section>

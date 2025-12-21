@@ -1,0 +1,64 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+---
+
+<BaseLayout>
+  <title>Política de Privacidad - GOTRA</title>
+  
+  <div class="relative flex h-auto min-h-screen w-full flex-col">
+    <Header />
+    
+    <main class="flex-grow bg-white">
+      <section class="py-20">
+        <div class="mx-auto max-w-4xl px-6 lg:px-12">
+          <h1 class="text-4xl sm:text-5xl font-light text-black tracking-[0.05em] uppercase mb-8 font-display">
+            Política de Privacidad
+          </h1>
+          
+          <div class="prose prose-lg max-w-none text-black/70 font-light leading-relaxed space-y-6">
+            <p class="text-sm text-black/60">
+              Última actualización: {new Date().toLocaleDateString('es-CL', { year: 'numeric', month: 'long', day: 'numeric' })}
+            </p>
+            
+            <h2 class="text-2xl font-light text-black mt-12 mb-6 uppercase tracking-[0.1em]">Información que Recopilamos</h2>
+            <p>
+              Recopilamos información que nos proporcionas directamente, como nombre, dirección 
+              de correo electrónico, dirección postal, número de teléfono e información de pago 
+              cuando realizas una compra.
+            </p>
+            
+            <h2 class="text-2xl font-light text-black mt-12 mb-6 uppercase tracking-[0.1em]">Uso de la Información</h2>
+            <p>
+              Utilizamos la información recopilada para procesar tus pedidos, comunicarnos contigo, 
+              mejorar nuestros servicios y enviarte información sobre productos y promociones, 
+              siempre con tu consentimiento.
+            </p>
+            
+            <h2 class="text-2xl font-light text-black mt-12 mb-6 uppercase tracking-[0.1em]">Protección de Datos</h2>
+            <p>
+              Implementamos medidas de seguridad técnicas y organizativas para proteger tu información 
+              personal contra acceso no autorizado, alteración, divulgación o destrucción.
+            </p>
+            
+            <h2 class="text-2xl font-light text-black mt-12 mb-6 uppercase tracking-[0.1em]">Cookies</h2>
+            <p>
+              Utilizamos cookies para mejorar tu experiencia en nuestro sitio web. Puedes configurar 
+              tu navegador para rechazar cookies, aunque esto puede afectar algunas funcionalidades del sitio.
+            </p>
+            
+            <h2 class="text-2xl font-light text-black mt-12 mb-6 uppercase tracking-[0.1em]">Tus Derechos</h2>
+            <p>
+              Tienes derecho a acceder, rectificar, eliminar o oponerte al tratamiento de tus datos 
+              personales. Para ejercer estos derechos, contacta a nuestro equipo de atención al cliente.
+            </p>
+          </div>
+        </div>
+      </section>
+    </main>
+    
+    <Footer />
+  </div>
+</BaseLayout>
+

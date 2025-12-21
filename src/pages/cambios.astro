@@ -1,0 +1,62 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+---
+
+<BaseLayout>
+  <title>Política de Cambios - GOTRA</title>
+  
+  <div class="relative flex h-auto min-h-screen w-full flex-col">
+    <Header />
+    
+    <main class="flex-grow bg-white">
+      <section class="py-20">
+        <div class="mx-auto max-w-4xl px-6 lg:px-12">
+          <h1 class="text-4xl sm:text-5xl font-light text-black tracking-[0.05em] uppercase mb-8 font-display">
+            Política de Cambios
+          </h1>
+          
+          <div class="prose prose-lg max-w-none text-black/70 font-light leading-relaxed space-y-6">
+            <h2 class="text-2xl font-light text-black mt-12 mb-6 uppercase tracking-[0.1em]">Plazo para Cambios</h2>
+            <p>
+              Aceptamos cambios y devoluciones dentro de los 30 días posteriores a la fecha de 
+              compra. El producto debe estar en su estado original, sin uso y con todos sus 
+              accesorios y packaging original.
+            </p>
+            
+            <h2 class="text-2xl font-light text-black mt-12 mb-6 uppercase tracking-[0.1em]">Condiciones</h2>
+            <p>
+              Para realizar un cambio o devolución, el producto debe estar en perfectas condiciones, 
+              sin señales de uso, con todas las etiquetas y en su packaging original. No aceptamos 
+              cambios de productos personalizados o con grabados.
+            </p>
+            
+            <h2 class="text-2xl font-light text-black mt-12 mb-6 uppercase tracking-[0.1em]">Proceso de Cambio</h2>
+            <p>
+              Para iniciar un cambio o devolución, contacta a nuestro equipo de atención al cliente 
+              a través de WhatsApp o correo electrónico. Te proporcionaremos las instrucciones 
+              necesarias y un número de autorización.
+            </p>
+            
+            <h2 class="text-2xl font-light text-black mt-12 mb-6 uppercase tracking-[0.1em]">Reembolsos</h2>
+            <p>
+              Los reembolsos se procesarán en el mismo método de pago utilizado para la compra 
+              original. El tiempo de procesamiento puede tardar entre 5 a 10 días hábiles una vez 
+              recibido el producto.
+            </p>
+            
+            <h2 class="text-2xl font-light text-black mt-12 mb-6 uppercase tracking-[0.1em]">Costos de Envío</h2>
+            <p>
+              Los costos de envío para cambios o devoluciones corren por cuenta del cliente, a menos 
+              que el producto presente algún defecto de fabricación o no corresponda con lo solicitado.
+            </p>
+          </div>
+        </div>
+      </section>
+    </main>
+    
+    <Footer />
+  </div>
+</BaseLayout>
+

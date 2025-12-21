@@ -1,0 +1,37 @@
+---
+import { getCategories } from '../data/products';
+
+const categories = getCategories();
+const categoryImages: Record<string, string> = {
+  'Cadenas': '/images/DSC05016.jpg',
+  'Pulseras': '/images/DSC05015.jpg',
+  'Anillos': '/images/DSC05014.jpg',
+  'Colgantes': '/images/DSC05010.jpg',
+  'Aros': '/images/DSC05008.jpg',
+  'Esclavas': '/images/DSC05012.jpg',
+};
+---
+
+<section class="bg-white py-24">
+  <div class="mx-auto max-w-[1920px] px-6 lg:px-12">
+    <div class="mb-16 text-center">
+      <h2 class="text-4xl sm:text-5xl font-light text-black tracking-[0.05em] uppercase font-display">Categorías</h2>
+    </div>
+    
+    <div class="grid grid-cols-2 gap-6 sm:grid-cols-3 lg:grid-cols-6">
+      {categories.map((category) => (
+        <a href={`/catalogo?categoria=${encodeURIComponent(category)}`} class="group relative aspect-square overflow-hidden bg-black">
+          <img
+            src={categoryImages[category] || '/images/DSC05016.jpg'}
+            alt={category}
+            class="h-full w-full object-cover opacity-60 group-hover:opacity-80 transition-opacity duration-500"
+            loading="lazy"
+          />
+          <div class="absolute inset-0 flex items-end p-6">
+            <span class="text-white font-light uppercase tracking-[0.2em] text-xs font-display">{category}</span>
+          </div>
+        </a>
+      ))}
+    </div>
+  </div>
+</section>

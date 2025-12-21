@@ -1,0 +1,88 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+---
+
+<BaseLayout>
+  <title>Preguntas Frecuentes - GOTRA</title>
+  
+  <div class="relative flex h-auto min-h-screen w-full flex-col">
+    <Header />
+    
+    <main class="flex-grow bg-white">
+      <section class="py-20">
+        <div class="mx-auto max-w-4xl px-6 lg:px-12">
+          <h1 class="text-4xl sm:text-5xl font-light text-black tracking-[0.05em] uppercase mb-12 font-display">
+            Preguntas Frecuentes
+          </h1>
+          
+          <div class="space-y-8">
+            <div class="border-b border-black/10 pb-6">
+              <h2 class="text-xl font-light text-black mb-4 uppercase tracking-[0.1em]">
+                ¿Cuáles son los métodos de pago aceptados?
+              </h2>
+              <p class="text-black/70 font-light leading-relaxed">
+                Aceptamos tarjetas de crédito y débito (Visa, Mastercard, American Express), 
+                WebPay, Mercado Pago y transferencias bancarias.
+              </p>
+            </div>
+            
+            <div class="border-b border-black/10 pb-6">
+              <h2 class="text-xl font-light text-black mb-4 uppercase tracking-[0.1em]">
+                ¿Cuánto tiempo tarda el envío?
+              </h2>
+              <p class="text-black/70 font-light leading-relaxed">
+                El tiempo de entrega es de 3 a 7 días hábiles a todo Chile. Recibirás un 
+                correo con el número de seguimiento una vez que tu pedido sea despachado.
+              </p>
+            </div>
+            
+            <div class="border-b border-black/10 pb-6">
+              <h2 class="text-xl font-light text-black mb-4 uppercase tracking-[0.1em]">
+                ¿Ofrecen garantía en sus productos?
+              </h2>
+              <p class="text-black/70 font-light leading-relaxed">
+                Sí, todos nuestros productos cuentan con garantía de 2 años contra defectos 
+                de fabricación. Además, proporcionamos certificado de autenticidad con cada pieza.
+              </p>
+            </div>
+            
+            <div class="border-b border-black/10 pb-6">
+              <h2 class="text-xl font-light text-black mb-4 uppercase tracking-[0.1em]">
+                ¿Puedo personalizar mis joyas?
+              </h2>
+              <p class="text-black/70 font-light leading-relaxed">
+                Algunos productos pueden ser personalizados con grabados. Para más información, 
+                contacta a nuestro equipo de atención al cliente.
+              </p>
+            </div>
+            
+            <div class="border-b border-black/10 pb-6">
+              <h2 class="text-xl font-light text-black mb-4 uppercase tracking-[0.1em]">
+                ¿Cómo puedo contactarlos?
+              </h2>
+              <p class="text-black/70 font-light leading-relaxed">
+                Puedes contactarnos a través de WhatsApp al +56 9 3059 3754, por correo 
+                electrónico a contacto.gotrachile@gmail.com, o a través de nuestras redes sociales.
+              </p>
+            </div>
+            
+            <div class="border-b border-black/10 pb-6">
+              <h2 class="text-xl font-light text-black mb-4 uppercase tracking-[0.1em]">
+                ¿Hacen envíos internacionales?
+              </h2>
+              <p class="text-black/70 font-light leading-relaxed">
+                Actualmente realizamos envíos únicamente dentro de Chile. Estamos trabajando 
+                para expandir nuestros servicios internacionalmente.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+    
+    <Footer />
+  </div>
+</BaseLayout>
+

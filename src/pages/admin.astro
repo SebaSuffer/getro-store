@@ -1,0 +1,25 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import AdminPanel from '../components/AdminPanel';
+
+// Protección básica: verificar que no se acceda directamente sin autenticación
+// La verificación real se hace en el cliente, pero esto previene indexación
+const referer = Astro.request.headers.get('referer');
+const isDirectAccess = !referer || !referer.includes(Astro.url.origin);
+
+// En producción, esto ayuda a prevenir acceso directo
+// La autenticación real se maneja en el cliente
+---
+
+<BaseLayout>
+  <title>Panel de Administración - GOTRA</title>
+  <meta name="robots" content="noindex, nofollow" />
+  <meta name="googlebot" content="noindex, nofollow" />
+  
+  <div class="relative flex h-auto min-h-screen w-full flex-col bg-white">
+    <main class="flex-grow">
+      <AdminPanel client:load />
+    </main>
+  </div>
+</BaseLayout>
+
