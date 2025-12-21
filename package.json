@@ -9,10 +9,13 @@
     "preview": "astro preview",
     "astro": "astro"
   },
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "dependencies": {
     "@astrojs/react": "^3.3.1",
     "@astrojs/tailwind": "^5.1.0",
-    "@astrojs/vercel": "^8.0.0",
+    "@astrojs/vercel": "^5.2.0",
     "astro": "^4.16.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
