@@ -42,4 +42,6 @@ Desktop.ini
 
 # Imágenes duplicadas (ya están en public/images)
 images/
+# Pero SÍ incluir public/images
+!public/images/
 

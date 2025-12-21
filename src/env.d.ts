@@ -2,9 +2,11 @@
 /// <reference types="astro/client" />
 
 interface ImportMetaEnv {
-  readonly WEBPAY_API_KEY?: string;
   readonly MERCADOPAGO_ACCESS_TOKEN?: string;
-  readonly FLOW_API_KEY?: string;
+  readonly PUBLIC_MERCADOPAGO_PUBLIC_KEY?: string;
+  readonly TRANSBANK_API_KEY?: string;
+  readonly TRANSBANK_COMMERCE_CODE?: string;
+  readonly TRANSBANK_ENVIRONMENT?: 'integration' | 'production';
 }
 
 interface ImportMeta {

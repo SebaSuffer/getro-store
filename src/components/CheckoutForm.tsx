@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { getCart, getCartTotal, clearCart, processPurchase } from '../utils/cart';
+import { createMercadoPagoPreference, createTransbankTransaction, PAYMENT_METHODS } from '../utils/payment';
 import type { CartItem } from '../data/products';
 
 interface FormData {
@@ -7,7 +8,7 @@ interface FormData {
   customer_email: string;
   customer_phone: string;
   customer_address: string;
-  payment_method: 'webpay' | 'mercadopago' | 'flow';
+  payment_method: 'mercadopago' | 'transbank' | 'transfer';
 }
 
 const generateOrderId = (): string => {
@@ -23,7 +24,7 @@ const CheckoutForm = () => {
     customer_email: '',
     customer_phone: '',
     customer_address: '',
-    payment_method: 'webpay',
+    payment_method: 'mercadopago',
   });
   const [errors, setErrors] = useState<Partial<Record<keyof FormData, string>>>({});
 
@@ -85,21 +86,44 @@ const CheckoutForm = () => {
         payment_method: formData.payment_method,
         items: cartItems,
         created_at: new Date().toISOString(),
+        status: 'pending',
       };
       
+      // Guardar orden antes de procesar pago
       const orders = JSON.parse(localStorage.getItem('gotra_orders') || '[]');
       orders.push(orderData);
       localStorage.setItem('gotra_orders', JSON.stringify(orders));
       
-      processPurchase();
+      // Procesar según método de pago
+      if (formData.payment_method === 'mercadopago') {
+        const preferenceUrl = await createMercadoPagoPreference(cartItems, orderId);
+        if (preferenceUrl) {
+          window.location.href = preferenceUrl;
+          return;
+        } else {
+          throw new Error('No se pudo crear la preferencia de pago');
+        }
+      } else if (formData.payment_method === 'transbank') {
+        const sessionId = `session_${Date.now()}`;
+        const transaction = await createTransbankTransaction(total, orderId, sessionId);
+        if (transaction && transaction.url) {
+          // Guardar token en localStorage para verificación posterior
+          localStorage.setItem(`transbank_token_${orderId}`, transaction.token);
+          window.location.href = transaction.url;
+          return;
+        } else {
+          throw new Error('No se pudo crear la transacción de pago');
+        }
+      } else if (formData.payment_method === 'transfer') {
+        // Transferencia bancaria - solo guardar orden
+        processPurchase();
+        window.location.href = `/orden-confirmada?id=${orderId}&method=transfer`;
+        return;
+      }
       
-      console.log('Orden creada:', orderData);
-      
-      window.location.href = `/orden-confirmada?id=${orderId}`;
-      
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error al procesar la orden:', error);
-      alert('Hubo un error al procesar tu orden. Por favor, intenta nuevamente.');
+      alert(error.message || 'Hubo un error al procesar tu orden. Por favor, intenta nuevamente.');
     } finally {
       setIsSubmitting(false);
     }
@@ -214,41 +238,27 @@ const CheckoutForm = () => {
             <h2 className="text-sm font-light uppercase tracking-[0.2em] text-black mb-8 font-display">Método de Pago</h2>
             
             <div className="space-y-4">
-              <label className="flex items-center gap-4 p-4 border border-black/10 cursor-pointer hover:border-black/20 transition-colors">
-                <input
-                  type="radio"
-                  name="payment_method"
-                  value="webpay"
-                  checked={formData.payment_method === 'webpay'}
-                  onChange={(e) => handleInputChange('payment_method', e.target.value)}
-                  className="text-black"
-                />
-                <span className="text-sm font-light text-black">WebPay</span>
-              </label>
-              
-              <label className="flex items-center gap-4 p-4 border border-black/10 cursor-pointer hover:border-black/20 transition-colors">
-                <input
-                  type="radio"
-                  name="payment_method"
-                  value="mercadopago"
-                  checked={formData.payment_method === 'mercadopago'}
-                  onChange={(e) => handleInputChange('payment_method', e.target.value)}
-                  className="text-black"
-                />
-                <span className="text-sm font-light text-black">MercadoPago</span>
-              </label>
-              
-              <label className="flex items-center gap-4 p-4 border border-black/10 cursor-pointer hover:border-black/20 transition-colors">
-                <input
-                  type="radio"
-                  name="payment_method"
-                  value="flow"
-                  checked={formData.payment_method === 'flow'}
-                  onChange={(e) => handleInputChange('payment_method', e.target.value)}
-                  className="text-black"
-                />
-                <span className="text-sm font-light text-black">Flow</span>
-              </label>
+              {PAYMENT_METHODS.map((method) => (
+                <label
+                  key={method.id}
+                  className="flex items-center gap-4 p-4 border border-black/10 cursor-pointer hover:border-black/20 transition-colors"
+                >
+                  <input
+                    type="radio"
+                    name="payment_method"
+                    value={method.id}
+                    checked={formData.payment_method === method.id}
+                    onChange={(e) => handleInputChange('payment_method', e.target.value as any)}
+                    className="text-black"
+                  />
+                  <div className="flex items-center gap-3">
+                    {method.icon && (
+                      <img src={method.icon} alt={method.name} className="h-8 w-auto object-contain" />
+                    )}
+                    <span className="text-sm font-light text-black">{method.name}</span>
+                  </div>
+                </label>
+              ))}
             </div>
           </div>
           
