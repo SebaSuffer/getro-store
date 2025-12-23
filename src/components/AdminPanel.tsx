@@ -48,11 +48,16 @@ const AdminPanel = () => {
     };
   }, []);
 
-  const loadProducts = () => {
-    // getAllProducts() ya maneja productos editados y eliminados desde localStorage
-    const allProducts = getAllProducts();
-    setProducts(allProducts);
-    setFilteredProducts(allProducts);
+  const loadProducts = async () => {
+    try {
+      const allProducts = await getAllProducts();
+      setProducts(allProducts);
+      setFilteredProducts(allProducts);
+    } catch (error) {
+      console.error('Error loading products:', error);
+      setProducts([]);
+      setFilteredProducts([]);
+    }
   };
 
   // Filtrar productos por búsqueda
@@ -74,9 +79,14 @@ const AdminPanel = () => {
     setFilteredProducts(filtered);
   }, [searchQuery, products]);
 
-  const loadSubscribers = () => {
-    const subs = getSubscribers();
-    setSubscribers(subs);
+  const loadSubscribers = async () => {
+    try {
+      const subs = await getSubscribers();
+      setSubscribers(subs);
+    } catch (error) {
+      console.error('Error loading subscribers:', error);
+      setSubscribers([]);
+    }
   };
 
   const handleLogout = () => {
@@ -89,36 +99,38 @@ const AdminPanel = () => {
     setEditingProduct({ ...product });
   };
 
-  const handleDeleteProduct = (productId: string) => {
+  const handleDeleteProduct = async (productId: string) => {
     if (!confirm('¿Estás seguro de que deseas eliminar este producto?')) {
       return;
     }
 
-    // Marcar producto como eliminado en localStorage
-    const deletedProducts = JSON.parse(localStorage.getItem('gotra_deleted_products') || '[]');
-    if (!deletedProducts.includes(productId)) {
-      deletedProducts.push(productId);
-      localStorage.setItem('gotra_deleted_products', JSON.stringify(deletedProducts));
+    try {
+      const response = await fetch(`/api/products/${productId}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        throw new Error('Error al eliminar el producto');
+      }
+
+      // Disparar evento para que otras páginas sepan que deben recargar
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('productDeleted', { detail: { productId } }));
+      }
+
+      // Actualizar lista
+      await loadProducts();
+      setSelectedProducts(new Set());
+      setToastMessage('Producto eliminado correctamente');
+      setShowToast(true);
+    } catch (error: any) {
+      console.error('Error deleting product:', error);
+      setToastMessage('Error al eliminar el producto. Por favor, intenta nuevamente.');
+      setShowToast(true);
     }
-
-    // Eliminar de productos editados si existe
-    const editedProducts = JSON.parse(localStorage.getItem('gotra_edited_products') || '{}');
-    delete editedProducts[productId];
-    localStorage.setItem('gotra_edited_products', JSON.stringify(editedProducts));
-
-    // Disparar evento para que otras páginas sepan que deben recargar
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('productDeleted', { detail: { productId } }));
-    }
-
-    // Actualizar lista
-    loadProducts();
-    setSelectedProducts(new Set());
-    setToastMessage('Producto eliminado correctamente');
-    setShowToast(true);
   };
 
-  const handleDeleteSelected = () => {
+  const handleDeleteSelected = async () => {
     if (selectedProducts.size === 0) {
       setToastMessage('Selecciona al menos un producto para eliminar');
       setShowToast(true);
@@ -129,32 +141,36 @@ const AdminPanel = () => {
       return;
     }
 
-    // Marcar productos como eliminados
-    const deletedProducts = JSON.parse(localStorage.getItem('gotra_deleted_products') || '[]');
-    const editedProducts = JSON.parse(localStorage.getItem('gotra_edited_products') || '{}');
+    try {
+      const deletePromises = Array.from(selectedProducts).map(productId =>
+        fetch(`/api/products/${productId}`, { method: 'DELETE' })
+      );
 
-    selectedProducts.forEach((productId) => {
-      if (!deletedProducts.includes(productId)) {
-        deletedProducts.push(productId);
+      const results = await Promise.all(deletePromises);
+      const failed = results.filter(r => !r.ok);
+
+      if (failed.length > 0) {
+        throw new Error('Algunos productos no se pudieron eliminar');
       }
-      delete editedProducts[productId];
-    });
 
-    localStorage.setItem('gotra_deleted_products', JSON.stringify(deletedProducts));
-    localStorage.setItem('gotra_edited_products', JSON.stringify(editedProducts));
+      // Disparar eventos
+      if (typeof window !== 'undefined') {
+        selectedProducts.forEach((productId) => {
+          window.dispatchEvent(new CustomEvent('productDeleted', { detail: { productId } }));
+        });
+      }
 
-    // Disparar eventos
-    if (typeof window !== 'undefined') {
-      selectedProducts.forEach((productId) => {
-        window.dispatchEvent(new CustomEvent('productDeleted', { detail: { productId } }));
-      });
+      // Actualizar lista
+      await loadProducts();
+      const count = selectedProducts.size;
+      setSelectedProducts(new Set());
+      setToastMessage(`${count} producto(s) eliminado(s) correctamente`);
+      setShowToast(true);
+    } catch (error: any) {
+      console.error('Error deleting products:', error);
+      setToastMessage('Error al eliminar los productos. Por favor, intenta nuevamente.');
+      setShowToast(true);
     }
-
-    // Actualizar lista
-    loadProducts();
-    setSelectedProducts(new Set());
-    setToastMessage(`${selectedProducts.size} producto(s) eliminado(s) correctamente`);
-    setShowToast(true);
   };
 
   const handleToggleSelect = (productId: string) => {
@@ -175,7 +191,7 @@ const AdminPanel = () => {
     }
   };
 
-  const handleSaveProduct = () => {
+  const handleSaveProduct = async () => {
     if (!editingProduct) return;
 
     // Validar que la URL de la imagen sea válida
@@ -185,66 +201,57 @@ const AdminPanel = () => {
       return;
     }
 
-    // Guardar cambios en localStorage
-    // Permitir cambiar la URL de la imagen con un link
-    const editedProducts = JSON.parse(localStorage.getItem('gotra_edited_products') || '{}');
-    const productToSave = {
-      name: editingProduct.name,
-      description: editingProduct.description,
-      price: editingProduct.price,
-      stock: editingProduct.stock,
-      category: editingProduct.category,
-      image_url: editingProduct.image_url,
-      image_alt: editingProduct.image_alt || editingProduct.name,
-      is_new: editingProduct.is_new,
-      is_featured: editingProduct.is_featured,
-    };
-    editedProducts[editingProduct.id] = productToSave;
-    localStorage.setItem('gotra_edited_products', JSON.stringify(editedProducts));
-    
-    console.log('Producto guardado en localStorage:', editingProduct.id, productToSave);
+    try {
+      // Actualizar producto en Turso
+      const response = await fetch(`/api/products/${editingProduct.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: editingProduct.name,
+          description: editingProduct.description,
+          price: editingProduct.price,
+          stock: editingProduct.stock,
+          category: editingProduct.category,
+          image_url: editingProduct.image_url,
+          image_alt: editingProduct.image_alt || editingProduct.name,
+          is_new: editingProduct.is_new,
+          is_featured: editingProduct.is_featured,
+        }),
+      });
 
-    // Actualizar stock en el sistema de stock
-    if (typeof window !== 'undefined') {
-      const stockData = JSON.parse(localStorage.getItem('gotra_stock') || '{}');
-      stockData[editingProduct.id] = editingProduct.stock;
-      localStorage.setItem('gotra_stock', JSON.stringify(stockData));
-    }
+      if (!response.ok) {
+        throw new Error('Error al actualizar el producto');
+      }
 
-    // Actualizar lista PRIMERO para que los cambios se reflejen
-    loadProducts();
-    
-    // Disparar evento para que otras páginas sepan que deben recargar
-    // Usar un pequeño delay para asegurar que localStorage se haya guardado
-    setTimeout(() => {
+      // Actualizar lista
+      await loadProducts();
+      
+      // Disparar evento para que otras páginas sepan que deben recargar
       if (typeof window !== 'undefined') {
-        // Disparar evento global para que todos los ProductCards se actualicen
         const event = new CustomEvent('productUpdated', { 
           detail: { productId: editingProduct.id },
           bubbles: true 
         });
         window.dispatchEvent(event);
-        console.log('Evento productUpdated disparado para:', editingProduct.id);
-        
-        // También disparar un evento de storage para forzar actualización
-        window.dispatchEvent(new StorageEvent('storage', {
-          key: 'gotra_edited_products',
-          newValue: JSON.stringify(editedProducts)
-        }));
       }
-    }, 100);
-    
-    // Actualizar el producto seleccionado si es el mismo
-    if (selectedProduct && selectedProduct.id === editingProduct.id) {
-      const updatedProduct = getAllProducts().find(p => p.id === editingProduct.id);
-      if (updatedProduct) {
-        setSelectedProduct(updatedProduct);
+      
+      // Actualizar el producto seleccionado si es el mismo
+      if (selectedProduct && selectedProduct.id === editingProduct.id) {
+        const updatedProducts = await getAllProducts();
+        const updatedProduct = updatedProducts.find(p => p.id === editingProduct.id);
+        if (updatedProduct) {
+          setSelectedProduct(updatedProduct);
+        }
       }
+      
+      setEditingProduct(null);
+      setToastMessage('Producto actualizado correctamente');
+      setShowToast(true);
+    } catch (error: any) {
+      console.error('Error saving product:', error);
+      setToastMessage('Error al actualizar el producto. Por favor, intenta nuevamente.');
+      setShowToast(true);
     }
-    
-    setEditingProduct(null);
-    setToastMessage('Producto actualizado correctamente');
-    setShowToast(true);
   };
 
   if (!authenticated) {
@@ -553,15 +560,20 @@ const AdminPanel = () => {
                 Suscriptores ({subscribers.length})
               </h2>
               <button
-                onClick={() => {
-                  const data = exportSubscribers();
-                  const blob = new Blob([data], { type: 'application/json' });
-                  const url = URL.createObjectURL(blob);
-                  const a = document.createElement('a');
-                  a.href = url;
-                  a.download = 'suscriptores.json';
-                  a.click();
-                  URL.revokeObjectURL(url);
+                onClick={async () => {
+                  try {
+                    const data = await exportSubscribers();
+                    const blob = new Blob([data], { type: 'application/json' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'suscriptores.json';
+                    a.click();
+                    URL.revokeObjectURL(url);
+                  } catch (error) {
+                    console.error('Error exporting subscribers:', error);
+                    alert('Error al exportar suscriptores');
+                  }
                 }}
                 className="px-4 py-2 bg-black text-white text-xs font-light uppercase tracking-[0.2em] hover:bg-black/90 transition-colors"
               >
@@ -585,11 +597,11 @@ const AdminPanel = () => {
                         </td>
                       </tr>
                     ) : (
-                      subscribers.map((sub, index) => (
-                        <tr key={index} className="border-t border-black/5">
+                      subscribers.map((sub) => (
+                        <tr key={sub.id || sub.email} className="border-t border-black/5">
                           <td className="px-4 py-3 text-black/80 font-light">{sub.email}</td>
                           <td className="px-4 py-3 text-black/60 font-light text-xs">
-                            {new Date(sub.subscribedAt).toLocaleDateString('es-CL')}
+                            {sub.subscribedAt ? new Date(sub.subscribedAt).toLocaleDateString('es-CL') : '-'}
                           </td>
                         </tr>
                       ))
@@ -599,7 +611,7 @@ const AdminPanel = () => {
               </div>
             </div>
             <div className="bg-yellow-50 border border-yellow-200 p-4 text-sm text-yellow-800 font-light">
-              <p className="mb-2"><strong>Nota:</strong> Los correos se guardan localmente en el navegador.</p>
+              <p className="mb-2"><strong>Nota:</strong> Los correos se guardan en la base de datos Turso.</p>
               <p>Para enviar correos masivos, necesitarás:</p>
               <ul className="list-disc list-inside mt-2 space-y-1">
                 <li>Un servicio de email marketing (Mailchimp, SendGrid, etc.)</li>

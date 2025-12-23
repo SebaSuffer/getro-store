@@ -11,13 +11,13 @@ const url = Astro.url;
 const categoriaParam = url.searchParams.get('categoria');
 const categoria = categoriaParam ? decodeURIComponent(categoriaParam).trim() : null;
 
-// Obtener categorías y productos
-const categories = getCategories();
-const allProducts = getAllProducts();
+// Obtener categorías y productos desde Turso
+const categories = await getCategories();
+const allProducts = await getAllProducts();
 
 // Filtrar productos por categoría si se especifica
 let products = categoria 
-  ? getProductsByCategory(categoria)
+  ? await getProductsByCategory(categoria)
   : allProducts;
 
 // En el servidor, usar stock inicial. En el cliente se actualizará

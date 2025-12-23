@@ -3,8 +3,8 @@ import { getFeaturedProducts } from '../data/products';
 import { getProductsWithStock } from '../utils/stock';
 import ProductCard from './ProductCard';
 
-const featuredProducts = getFeaturedProducts();
-const productsWithStock = getProductsWithStock(featuredProducts);
+const featuredProducts = await getFeaturedProducts();
+const productsWithStock = await getProductsWithStock(featuredProducts);
 ---
 
 <section class="bg-white py-24">

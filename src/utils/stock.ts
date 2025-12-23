@@ -1,64 +1,60 @@
-import type { Product } from '../data/products';
-import { initialProducts } from '../data/products';
-
-const STOCK_STORAGE_KEY = 'gotra_stock';
-
-// Inicializar stock desde productos iniciales
-const initializeStock = (): Record<string, number> => {
-  if (typeof window === 'undefined') return {};
-  
-  const stored = localStorage.getItem(STOCK_STORAGE_KEY);
-  if (stored) {
-    try {
-      return JSON.parse(stored);
-    } catch {
-      // Si hay error, reinicializar
-    }
-  }
-  
-  // Si no hay stock guardado, inicializar con valores por defecto de todos los productos
-  const defaultStock: Record<string, number> = {};
-  initialProducts.forEach(product => {
-    defaultStock[product.id] = product.stock;
-  });
-  
-  localStorage.setItem(STOCK_STORAGE_KEY, JSON.stringify(defaultStock));
-  return defaultStock;
-};
+// Funciones para manejar stock usando Turso
 
 // Obtener stock de un producto
-export const getProductStock = (productId: string): number => {
-  if (typeof window === 'undefined') return 0;
-  
-  const stock = initializeStock();
-  return stock[productId] || 0;
+export const getProductStock = async (productId: string): Promise<number> => {
+  try {
+    const response = await fetch(`/api/stock/${productId}`);
+    if (!response.ok) {
+      return 0;
+    }
+    const data = await response.json();
+    return data.stock || 0;
+  } catch (error) {
+    console.error('Error fetching stock:', error);
+    return 0;
+  }
+};
+
+// Versión síncrona (devuelve 0 si no hay cache)
+export const getProductStockSync = (productId: string): number => {
+  // Esta función se mantiene para compatibilidad pero devuelve 0
+  // Los componentes deberían usar la versión async
+  return 0;
 };
 
 // Actualizar stock de un producto
-export const updateProductStock = (productId: string, quantity: number): void => {
-  if (typeof window === 'undefined') return;
-  
-  const stock = initializeStock();
-  stock[productId] = Math.max(0, (stock[productId] || 0) - quantity);
-  localStorage.setItem(STOCK_STORAGE_KEY, JSON.stringify(stock));
+export const updateProductStock = async (
+  productId: string, 
+  quantity: number, 
+  changeType: 'sale' | 'restock' | 'adjustment' = 'adjustment'
+): Promise<boolean> => {
+  try {
+    const response = await fetch(`/api/stock/${productId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ quantity, change_type: changeType }),
+    });
+    return response.ok;
+  } catch (error) {
+    console.error('Error updating stock:', error);
+    return false;
+  }
 };
 
 // Validar si hay stock suficiente
-export const hasStock = (productId: string, quantity: number): boolean => {
-  return getProductStock(productId) >= quantity;
+export const hasStock = async (productId: string, quantity: number): Promise<boolean> => {
+  const stock = await getProductStock(productId);
+  return stock >= quantity;
 };
 
 // Obtener productos con stock actualizado
-export const getProductsWithStock = (products: Product[]): Product[] => {
-  return products.map(product => ({
-    ...product,
-    stock: getProductStock(product.id) || product.stock,
-  }));
+export const getProductsWithStock = async (products: any[]): Promise<any[]> => {
+  // Los productos ya vienen con stock desde la API
+  return products;
 };
 
-// Resetear stock a valores iniciales
-export const resetStock = (): void => {
-  if (typeof window === 'undefined') return;
-  localStorage.removeItem(STOCK_STORAGE_KEY);
-  initializeStock();
+// Resetear stock (no aplica con BD, pero mantenemos la función para compatibilidad)
+export const resetStock = async (): Promise<void> => {
+  // No hacer nada, el stock se maneja en la BD
+  console.warn('resetStock() no aplica con base de datos');
 };

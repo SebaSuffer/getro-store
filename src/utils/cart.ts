@@ -1,5 +1,5 @@
 import type { Product, CartItem } from '../data/products';
-import { hasStock, updateProductStock } from './stock';
+import { hasStock, updateProductStock, getProductStock } from './stock';
 
 const CART_STORAGE_KEY = 'gotra_cart';
 
@@ -16,11 +16,12 @@ export const getCart = (): CartItem[] => {
   }
 };
 
-export const addToCart = (product: Product, quantity: number = 1): boolean => {
+export const addToCart = async (product: Product, quantity: number = 1): Promise<boolean> => {
   if (typeof window === 'undefined') return false;
   
   // Validar stock antes de agregar
-  if (!hasStock(product.id, quantity)) {
+  const stockAvailable = await hasStock(product.id, quantity);
+  if (!stockAvailable) {
     return false;
   }
   
@@ -29,7 +30,8 @@ export const addToCart = (product: Product, quantity: number = 1): boolean => {
   
   if (existingItemIndex >= 0) {
     const newQuantity = cart[existingItemIndex].quantity + quantity;
-    if (!hasStock(product.id, newQuantity)) {
+    const newStockAvailable = await hasStock(product.id, newQuantity);
+    if (!newStockAvailable) {
       return false;
     }
     cart[existingItemIndex].quantity = newQuantity;
@@ -50,7 +52,7 @@ export const removeFromCart = (productId: string): void => {
   window.dispatchEvent(new Event('cartUpdated'));
 };
 
-export const updateCartItemQuantity = (productId: string, quantity: number): boolean => {
+export const updateCartItemQuantity = async (productId: string, quantity: number): Promise<boolean> => {
   if (typeof window === 'undefined') return false;
   
   if (quantity <= 0) {
@@ -59,7 +61,8 @@ export const updateCartItemQuantity = (productId: string, quantity: number): boo
   }
   
   // Validar stock
-  if (!hasStock(productId, quantity)) {
+  const stockAvailable = await hasStock(productId, quantity);
+  if (!stockAvailable) {
     return false;
   }
   
@@ -94,15 +97,17 @@ export const getCartTotal = (): number => {
 };
 
 // Procesar compra: descontar stock y limpiar carrito
-export const processPurchase = (): void => {
+export const processPurchase = async (): Promise<void> => {
   if (typeof window === 'undefined') return;
   
   const cart = getCart();
   
   // Descontar stock de cada producto
-  cart.forEach(item => {
-    updateProductStock(item.product.id, item.quantity);
-  });
+  for (const item of cart) {
+    const currentStock = await getProductStock(item.product.id);
+    const newStock = Math.max(0, currentStock - item.quantity);
+    await updateProductStock(item.product.id, newStock, 'sale');
+  }
   
   // Limpiar carrito
   clearCart();

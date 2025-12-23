@@ -1,53 +1,53 @@
-const NEWSLETTER_STORAGE_KEY = 'gotra_newsletter_subscribers';
-
 export interface Subscriber {
+  id?: number;
   email: string;
-  subscribedAt: string;
+  name?: string;
+  subscribedAt?: string;
+  isActive?: boolean;
 }
 
-export const subscribe = (email: string): boolean => {
-  if (typeof window === 'undefined') return false;
-  
+// Suscribir email al newsletter
+export const subscribe = async (email: string, name?: string): Promise<boolean> => {
   if (!email || !email.includes('@')) {
     return false;
   }
 
-  const subscribers = getSubscribers();
-  
-  // Verificar si ya está suscrito
-  if (subscribers.some(s => s.email.toLowerCase() === email.toLowerCase())) {
-    return false; // Ya está suscrito
+  try {
+    const response = await fetch('/api/newsletter/subscribe', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, name }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      console.error('Error subscribing:', error);
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Error subscribing:', error);
+    return false;
   }
-
-  // Agregar nuevo suscriptor
-  subscribers.push({
-    email: email.toLowerCase().trim(),
-    subscribedAt: new Date().toISOString(),
-  });
-
-  localStorage.setItem(NEWSLETTER_STORAGE_KEY, JSON.stringify(subscribers));
-  return true;
 };
 
-export const getSubscribers = (): Subscriber[] => {
-  if (typeof window === 'undefined') return [];
-  
-  const data = localStorage.getItem(NEWSLETTER_STORAGE_KEY);
-  if (!data) return [];
-  
+// Obtener todos los suscriptores
+export const getSubscribers = async (): Promise<Subscriber[]> => {
   try {
-    return JSON.parse(data);
-  } catch {
+    const response = await fetch('/api/newsletter/subscribers');
+    if (!response.ok) {
+      return [];
+    }
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching subscribers:', error);
     return [];
   }
 };
 
-export const exportSubscribers = (): string => {
-  const subscribers = getSubscribers();
+// Exportar suscriptores como JSON
+export const exportSubscribers = async (): Promise<string> => {
+  const subscribers = await getSubscribers();
   return JSON.stringify(subscribers, null, 2);
 };
-
-
-
-
-

@@ -1,7 +1,7 @@
 ---
 import { getCategories } from '../data/products';
 
-const categories = getCategories();
+const categories = await getCategories();
 const categoryImages: Record<string, string> = {
   'Cadenas': 'https://res.cloudinary.com/ddzoh72zv/image/upload/f_auto,q_auto/v1766458847/DSC05016_dwuz7c.jpg',
   'Pulseras': 'https://res.cloudinary.com/ddzoh72zv/image/upload/f_auto,q_auto/v1766458847/DSC05015_kiamyb.jpg',

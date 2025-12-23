@@ -1,7 +1,5 @@
 import { useState, useEffect } from 'react';
 import { addToCart, getCart } from '../utils/cart';
-import { getProductStock } from '../utils/stock';
-import { getRelatedProducts, getProductById } from '../data/products';
 import ProductCard from './ProductCard';
 import type { Product } from '../data/products';
 
@@ -17,16 +15,8 @@ const ProductDetail = ({ product: initialProduct }: ProductDetailProps) => {
   const [currentStock, setCurrentStock] = useState(initialProduct.stock);
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
   const [product, setProduct] = useState(initialProduct);
-  
-  // Cargar descripción editada desde localStorage si existe
-  const loadEditedDescription = () => {
-    if (typeof window === 'undefined') return product.description || '';
-    const editedProducts = JSON.parse(localStorage.getItem('gotra_edited_products') || '{}');
-    return editedProducts[product.id]?.description || product.description || '';
-  };
-  
-  const [editedDescription, setEditedDescription] = useState(loadEditedDescription());
-  const [hasDescription, setHasDescription] = useState(!!loadEditedDescription());
+  const [editedDescription, setEditedDescription] = useState(initialProduct.description || '');
+  const [hasDescription, setHasDescription] = useState(!!initialProduct.description);
 
   useEffect(() => {
     const checkCart = () => {
@@ -34,51 +24,56 @@ const ProductDetail = ({ product: initialProduct }: ProductDetailProps) => {
       setIsInCart(cart.some(item => item.product.id === product.id));
     };
     
-    const handleProductUpdate = (event?: CustomEvent) => {
-      // Recargar producto desde localStorage cuando se actualiza
-      const updatedProduct = getProductById(product.id);
-      if (updatedProduct) {
-        console.log('ProductDetail: Actualizando producto', product.id, updatedProduct.name);
-        setProduct(updatedProduct);
-        const stock = getProductStock(updatedProduct.id);
-        setCurrentStock(stock || updatedProduct.stock);
-        const savedDescription = loadEditedDescription();
-        setEditedDescription(savedDescription);
-        setHasDescription(!!savedDescription);
-      }
-    };
-    
-    const handleStorageChange = (e: StorageEvent) => {
-      // Escuchar cambios en localStorage
-      if (e.key === 'gotra_edited_products') {
-        handleProductUpdate();
+    const handleProductUpdate = async (event?: CustomEvent) => {
+      // Recargar producto desde la API cuando se actualiza
+      try {
+        const { getProductById } = await import('../data/products');
+        const { getProductStock } = await import('../utils/stock');
+        const updatedProduct = await getProductById(product.id);
+        if (updatedProduct) {
+          console.log('ProductDetail: Actualizando producto', product.id, updatedProduct.name);
+          setProduct(updatedProduct);
+          const stock = await getProductStock(updatedProduct.id);
+          setCurrentStock(stock || updatedProduct.stock);
+          setEditedDescription(updatedProduct.description || '');
+          setHasDescription(!!updatedProduct.description);
+        }
+      } catch (error) {
+        console.error('Error updating product:', error);
       }
     };
     
     checkCart();
     window.addEventListener('cartUpdated', checkCart);
     window.addEventListener('productUpdated', handleProductUpdate as EventListener);
-    window.addEventListener('storage', handleStorageChange);
     
-    // Cargar producto actualizado desde localStorage al montar
-    const currentProduct = getProductById(product.id);
-    if (currentProduct && currentProduct.name !== product.name) {
-      console.log('ProductDetail: Cargando producto actualizado al montar', product.id);
-      setProduct(currentProduct);
-    }
+    // Cargar datos actualizados al montar
+    const loadData = async () => {
+      try {
+        const { getProductById, getRelatedProducts } = await import('../data/products');
+        const { getProductStock } = await import('../utils/stock');
+        
+        // Cargar producto actualizado
+        const currentProduct = await getProductById(product.id);
+        if (currentProduct) {
+          setProduct(currentProduct);
+          setEditedDescription(currentProduct.description || '');
+          setHasDescription(!!currentProduct.description);
+        }
+        
+        // Cargar stock actualizado
+        const stock = await getProductStock(product.id);
+        setCurrentStock(stock || product.stock);
+        
+        // Cargar productos relacionados
+        const related = await getRelatedProducts(product.id, 4);
+        setRelatedProducts(related);
+      } catch (error) {
+        console.error('Error loading data:', error);
+      }
+    };
     
-    // Cargar stock actualizado
-    const stock = getProductStock(product.id);
-    setCurrentStock(stock || product.stock);
-    
-    // Cargar descripción editada al montar
-    const savedDescription = loadEditedDescription();
-    setEditedDescription(savedDescription);
-    setHasDescription(!!savedDescription);
-    
-    // Cargar productos relacionados
-    const related = getRelatedProducts(product.id, 4);
-    setRelatedProducts(related);
+    loadData();
     
     return () => {
       window.removeEventListener('cartUpdated', checkCart);
@@ -87,18 +82,24 @@ const ProductDetail = ({ product: initialProduct }: ProductDetailProps) => {
     };
   }, [product.id, product.stock]);
 
-  const handleAddToCart = () => {
+  const handleAddToCart = async () => {
     if (currentStock <= 0) return;
     
     setIsAdding(true);
-    const success = addToCart(product, quantity);
-    
-    if (!success) {
-      alert('No hay suficiente stock disponible');
-    } else {
-      // Actualizar stock local
-      const newStock = getProductStock(product.id);
-      setCurrentStock(newStock || 0);
+    try {
+      const success = await addToCart(product, quantity);
+      
+      if (!success) {
+        alert('No hay suficiente stock disponible');
+      } else {
+        // Actualizar stock local
+        const { getProductStock } = await import('../utils/stock');
+        const newStock = await getProductStock(product.id);
+        setCurrentStock(newStock || 0);
+      }
+    } catch (error) {
+      console.error('Error adding to cart:', error);
+      alert('Error al agregar al carrito');
     }
     
     setTimeout(() => {
@@ -106,19 +107,35 @@ const ProductDetail = ({ product: initialProduct }: ProductDetailProps) => {
     }, 300);
   };
 
-  const handleSaveDescription = () => {
-    // Guardar en localStorage para persistencia
-    // IMPORTANTE: Solo guardar descripción, no image_url (siempre usar la del producto original)
-    const editedProducts = JSON.parse(localStorage.getItem('gotra_edited_products') || '{}');
-    editedProducts[product.id] = {
-      ...product,
-      description: editedDescription,
-      // Asegurar que siempre use la URL de Cloudinary del producto original
-      image_url: product.image_url,
-    };
-    localStorage.setItem('gotra_edited_products', JSON.stringify(editedProducts));
-    setHasDescription(true);
-    setIsEditing(false);
+  const handleSaveDescription = async () => {
+    try {
+      // Actualizar descripción en Turso
+      const response = await fetch(`/api/products/${product.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...product,
+          description: editedDescription,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Error al guardar la descripción');
+      }
+
+      setHasDescription(true);
+      setIsEditing(false);
+      
+      // Recargar producto
+      const { getProductById } = await import('../data/products');
+      const updatedProduct = await getProductById(product.id);
+      if (updatedProduct) {
+        setProduct(updatedProduct);
+      }
+    } catch (error) {
+      console.error('Error saving description:', error);
+      alert('Error al guardar la descripción');
+    }
   };
 
   const isOutOfStock = currentStock <= 0;

@@ -1,7 +1,5 @@
 import { useState, useEffect } from 'react';
 import { addToCart, getCart } from '../utils/cart';
-import { getProductStock } from '../utils/stock';
-import { getProductById } from '../data/products';
 import type { Product } from '../data/products';
 
 interface ProductCardProps {
@@ -20,44 +18,52 @@ const ProductCard = ({ product: initialProduct }: ProductCardProps) => {
       setIsInCart(cart.some(item => item.product.id === product.id));
     };
     
-    const handleProductUpdate = (event?: CustomEvent) => {
-      // Recargar producto desde localStorage cuando se actualiza cualquier producto
-      // Esto asegura que todos los productos se actualicen cuando hay cambios
-      const updatedProduct = getProductById(product.id);
-      if (updatedProduct) {
-        console.log('ProductCard: Actualizando producto', product.id, updatedProduct.name);
-        setProduct(updatedProduct);
-        const stock = getProductStock(updatedProduct.id);
-        setCurrentStock(stock || updatedProduct.stock);
+    const handleProductUpdate = async (event?: CustomEvent) => {
+      // Recargar producto desde la API cuando se actualiza
+      try {
+        const { getProductById } = await import('../data/products');
+        const { getProductStock } = await import('../utils/stock');
+        const updatedProduct = await getProductById(product.id);
+        if (updatedProduct) {
+          console.log('ProductCard: Actualizando producto', product.id, updatedProduct.name);
+          setProduct(updatedProduct);
+          const stock = await getProductStock(updatedProduct.id);
+          setCurrentStock(stock || updatedProduct.stock);
+        }
+      } catch (error) {
+        console.error('Error updating product:', error);
       }
     };
     
-    const handleProductDelete = (event: CustomEvent) => {
+    const handleProductDelete = async (event: CustomEvent) => {
       if (event.detail.productId === product.id) {
-        // Si el producto fue eliminado, ocultarlo o redirigir
-        const updatedProduct = getProductById(product.id);
-        if (!updatedProduct) {
-          // Producto eliminado, redirigir al catálogo
+        // Si el producto fue eliminado, redirigir al catálogo
+        try {
+          const { getProductById } = await import('../data/products');
+          const updatedProduct = await getProductById(product.id);
+          if (!updatedProduct) {
+            // Producto eliminado, redirigir al catálogo
+            window.location.href = '/catalogo';
+          }
+        } catch (error) {
+          // Si hay error, asumir que fue eliminado
           window.location.href = '/catalogo';
         }
       }
     };
     
-    const handleStorageChange = (e: StorageEvent) => {
-      // Escuchar cambios en localStorage
-      if (e.key === 'gotra_edited_products') {
-        handleProductUpdate();
+    // Cargar stock actualizado al montar
+    const loadStock = async () => {
+      try {
+        const { getProductStock } = await import('../utils/stock');
+        const stock = await getProductStock(product.id);
+        setCurrentStock(stock || product.stock);
+      } catch (error) {
+        console.error('Error loading stock:', error);
       }
     };
     
-    // Cargar producto actualizado desde localStorage al montar
-    const currentProduct = getProductById(product.id);
-    if (currentProduct && currentProduct.name !== product.name) {
-      console.log('ProductCard: Cargando producto actualizado al montar', product.id);
-      setProduct(currentProduct);
-      const stock = getProductStock(currentProduct.id);
-      setCurrentStock(stock || currentProduct.stock);
-    }
+    loadStock();
     
     checkCart();
     window.addEventListener('cartUpdated', checkCart);
@@ -73,18 +79,24 @@ const ProductCard = ({ product: initialProduct }: ProductCardProps) => {
     };
   }, [product.id]);
 
-  const handleAddToCart = () => {
+  const handleAddToCart = async () => {
     if (currentStock <= 0) return;
     
     setIsAdding(true);
-    const success = addToCart(product, 1);
-    
-    if (!success) {
-      alert('No hay suficiente stock disponible');
-    } else {
-      // Actualizar stock local
-      const newStock = getProductStock(product.id);
-      setCurrentStock(newStock || 0);
+    try {
+      const success = await addToCart(product, 1);
+      
+      if (!success) {
+        alert('No hay suficiente stock disponible');
+      } else {
+        // Actualizar stock local
+        const { getProductStock } = await import('../utils/stock');
+        const newStock = await getProductStock(product.id);
+        setCurrentStock(newStock || 0);
+      }
+    } catch (error) {
+      console.error('Error adding to cart:', error);
+      alert('Error al agregar al carrito');
     }
     
     setTimeout(() => {

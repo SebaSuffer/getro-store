@@ -6,22 +6,26 @@ const NewsletterForm = () => {
   const [message, setMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
     setMessage('');
 
-    const success = subscribe(email);
-    
-    if (success) {
-      setMessage('¡Gracias por suscribirte!');
-      setEmail('');
-    } else {
-      if (email && !email.includes('@')) {
-        setMessage('Por favor ingresa un correo válido');
+    try {
+      const success = await subscribe(email);
+      
+      if (success) {
+        setMessage('¡Gracias por suscribirte!');
+        setEmail('');
       } else {
-        setMessage('Este correo ya está suscrito o hubo un error');
+        if (email && !email.includes('@')) {
+          setMessage('Por favor ingresa un correo válido');
+        } else {
+          setMessage('Este correo ya está suscrito o hubo un error');
+        }
       }
+    } catch (error) {
+      setMessage('Error al suscribirse. Por favor, intenta nuevamente.');
     }
     
     setIsSubmitting(false);

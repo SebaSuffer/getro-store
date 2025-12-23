@@ -10,7 +10,7 @@ import { getProductById, getAllProducts } from '../../data/products';
 export const prerender = true;
 
 export async function getStaticPaths() {
-  const products = getAllProducts();
+  const products = await getAllProducts();
   return products.map((product) => ({
     params: { id: product.id },
     props: { product },

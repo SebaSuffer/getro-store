@@ -89,10 +89,16 @@ const CheckoutForm = () => {
         status: 'pending',
       };
       
-      // Guardar orden antes de procesar pago
-      const orders = JSON.parse(localStorage.getItem('gotra_orders') || '[]');
-      orders.push(orderData);
-      localStorage.setItem('gotra_orders', JSON.stringify(orders));
+      // Guardar orden en Turso antes de procesar pago
+      const orderResponse = await fetch('/api/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(orderData),
+      });
+
+      if (!orderResponse.ok) {
+        throw new Error('Error al guardar la orden');
+      }
       
       // Procesar según método de pago
       if (formData.payment_method === 'mercadopago') {
@@ -106,8 +112,8 @@ const CheckoutForm = () => {
         setIsSubmitting(false);
         return;
       } else if (formData.payment_method === 'transfer') {
-        // Transferencia bancaria - solo guardar orden
-        processPurchase();
+        // Transferencia bancaria - procesar compra y redirigir
+        await processPurchase();
         window.location.href = `/orden-confirmada?id=${orderId}&method=transfer`;
         return;
       }
