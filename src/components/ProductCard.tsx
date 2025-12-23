@@ -32,9 +32,21 @@ const ProductCard = ({ product: initialProduct }: ProductCardProps) => {
       }
     };
     
+    const handleProductDelete = (event: CustomEvent) => {
+      if (event.detail.productId === product.id) {
+        // Si el producto fue eliminado, ocultarlo o redirigir
+        const updatedProduct = getProductById(product.id);
+        if (!updatedProduct) {
+          // Producto eliminado, redirigir al catálogo
+          window.location.href = '/catalogo';
+        }
+      }
+    };
+    
     checkCart();
     window.addEventListener('cartUpdated', checkCart);
     window.addEventListener('productUpdated', handleProductUpdate as EventListener);
+    window.addEventListener('productDeleted', handleProductDelete as EventListener);
     
     // Cargar stock actualizado
     const stock = getProductStock(product.id);
@@ -43,6 +55,7 @@ const ProductCard = ({ product: initialProduct }: ProductCardProps) => {
     return () => {
       window.removeEventListener('cartUpdated', checkCart);
       window.removeEventListener('productUpdated', handleProductUpdate as EventListener);
+      window.removeEventListener('productDeleted', handleProductDelete as EventListener);
     };
   }, [product.id, product.stock]);
 

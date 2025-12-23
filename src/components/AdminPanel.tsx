@@ -17,6 +17,7 @@ const AdminPanel = () => {
   const [activeTab, setActiveTab] = useState<'products' | 'newsletter'>('products');
   const [toastMessage, setToastMessage] = useState('');
   const [showToast, setShowToast] = useState(false);
+  const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     const checkAuth = () => {
@@ -37,25 +38,28 @@ const AdminPanel = () => {
   const loadProducts = () => {
     const allProducts = getAllProducts();
     
-    // Cargar productos editados desde localStorage
+    // Cargar productos editados y eliminados desde localStorage
     if (typeof window !== 'undefined') {
       const editedProducts = JSON.parse(localStorage.getItem('gotra_edited_products') || '{}');
+      const deletedProducts = JSON.parse(localStorage.getItem('gotra_deleted_products') || '[]');
       
-      // Combinar productos originales con productos editados
-      const mergedProducts = allProducts.map(product => {
-        const edited = editedProducts[product.id];
-        if (edited) {
-          // Usar datos editados, pero mantener estructura del producto original
-          return {
-            ...product,
-            ...edited,
-            // Asegurar que image_url editada se use si existe
-            image_url: edited.image_url || product.image_url,
-            image_alt: edited.image_alt || edited.name || product.image_alt,
-          };
-        }
-        return product;
-      });
+      // Filtrar productos eliminados y combinar con productos editados
+      const mergedProducts = allProducts
+        .filter(product => !deletedProducts.includes(product.id))
+        .map(product => {
+          const edited = editedProducts[product.id];
+          if (edited) {
+            // Usar datos editados, pero mantener estructura del producto original
+            return {
+              ...product,
+              ...edited,
+              // Asegurar que image_url editada se use si existe
+              image_url: edited.image_url || product.image_url,
+              image_alt: edited.image_alt || edited.name || product.image_alt,
+            };
+          }
+          return product;
+        });
       
       setProducts(mergedProducts);
       setFilteredProducts(mergedProducts);
@@ -97,6 +101,92 @@ const AdminPanel = () => {
   const handleEditProduct = (product: Product) => {
     setSelectedProduct(product);
     setEditingProduct({ ...product });
+  };
+
+  const handleDeleteProduct = (productId: string) => {
+    if (!confirm('¿Estás seguro de que deseas eliminar este producto?')) {
+      return;
+    }
+
+    // Marcar producto como eliminado en localStorage
+    const deletedProducts = JSON.parse(localStorage.getItem('gotra_deleted_products') || '[]');
+    if (!deletedProducts.includes(productId)) {
+      deletedProducts.push(productId);
+      localStorage.setItem('gotra_deleted_products', JSON.stringify(deletedProducts));
+    }
+
+    // Eliminar de productos editados si existe
+    const editedProducts = JSON.parse(localStorage.getItem('gotra_edited_products') || '{}');
+    delete editedProducts[productId];
+    localStorage.setItem('gotra_edited_products', JSON.stringify(editedProducts));
+
+    // Disparar evento para que otras páginas sepan que deben recargar
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('productDeleted', { detail: { productId } }));
+    }
+
+    // Actualizar lista
+    loadProducts();
+    setSelectedProducts(new Set());
+    setToastMessage('Producto eliminado correctamente');
+    setShowToast(true);
+  };
+
+  const handleDeleteSelected = () => {
+    if (selectedProducts.size === 0) {
+      setToastMessage('Selecciona al menos un producto para eliminar');
+      setShowToast(true);
+      return;
+    }
+
+    if (!confirm(`¿Estás seguro de que deseas eliminar ${selectedProducts.size} producto(s)?`)) {
+      return;
+    }
+
+    // Marcar productos como eliminados
+    const deletedProducts = JSON.parse(localStorage.getItem('gotra_deleted_products') || '[]');
+    const editedProducts = JSON.parse(localStorage.getItem('gotra_edited_products') || '{}');
+
+    selectedProducts.forEach((productId) => {
+      if (!deletedProducts.includes(productId)) {
+        deletedProducts.push(productId);
+      }
+      delete editedProducts[productId];
+    });
+
+    localStorage.setItem('gotra_deleted_products', JSON.stringify(deletedProducts));
+    localStorage.setItem('gotra_edited_products', JSON.stringify(editedProducts));
+
+    // Disparar eventos
+    if (typeof window !== 'undefined') {
+      selectedProducts.forEach((productId) => {
+        window.dispatchEvent(new CustomEvent('productDeleted', { detail: { productId } }));
+      });
+    }
+
+    // Actualizar lista
+    loadProducts();
+    setSelectedProducts(new Set());
+    setToastMessage(`${selectedProducts.size} producto(s) eliminado(s) correctamente`);
+    setShowToast(true);
+  };
+
+  const handleToggleSelect = (productId: string) => {
+    const newSelected = new Set(selectedProducts);
+    if (newSelected.has(productId)) {
+      newSelected.delete(productId);
+    } else {
+      newSelected.add(productId);
+    }
+    setSelectedProducts(newSelected);
+  };
+
+  const handleSelectAll = () => {
+    if (selectedProducts.size === filteredProducts.length) {
+      setSelectedProducts(new Set());
+    } else {
+      setSelectedProducts(new Set(filteredProducts.map(p => p.id)));
+    }
   };
 
   const handleSaveProduct = () => {
@@ -209,9 +299,22 @@ const AdminPanel = () => {
           {/* Lista de Productos */}
           <div className="lg:col-span-2">
             <div className="mb-6">
-              <h2 className="text-xl font-light text-black uppercase tracking-[0.1em] mb-4 font-display">
-                Productos
-              </h2>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-light text-black uppercase tracking-[0.1em] font-display">
+                  Productos
+                </h2>
+                {selectedProducts.size > 0 && (
+                  <button
+                    onClick={handleDeleteSelected}
+                    className="px-4 py-2 bg-red-600 text-white text-xs font-light uppercase tracking-[0.2em] hover:bg-red-700 transition-colors flex items-center gap-2"
+                  >
+                    <span className="material-symbols-outlined" style={{ fontSize: '16px', fontWeight: 300 }}>
+                      delete
+                    </span>
+                    Eliminar Seleccionados ({selectedProducts.size})
+                  </button>
+                )}
+              </div>
               {/* Buscador */}
               <div className="relative">
                 <input
@@ -249,39 +352,71 @@ const AdminPanel = () => {
                   </p>
                 </div>
               ) : (
-                filteredProducts.map((product) => (
-                  <div
-                    key={product.id}
-                    className="border border-black/10 p-4 flex items-center gap-4 hover:border-black/20 transition-colors"
-                  >
-                    {/* Imagen del producto */}
-                    <div className="flex-shrink-0 w-20 h-20 overflow-hidden bg-gray-50 border border-black/5">
-                      <img
-                        src={product.image_url}
-                        alt={product.image_alt || product.name}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                    {/* Información del producto */}
-                    <div className="flex-1 min-w-0">
-                      <h3 className="text-sm font-light text-black uppercase tracking-wide mb-1 truncate">
-                        {product.name}
-                      </h3>
-                      <p className="text-xs text-black/60 font-light mb-1">
-                        {product.category} • ${product.price.toLocaleString('es-CL')} CLP
-                      </p>
-                      <p className="text-xs text-black/50 font-light">
-                        Stock: {product.stock} unidades
-                      </p>
-                    </div>
-                    <button
-                      onClick={() => handleEditProduct(product)}
-                      className="px-4 py-2 bg-black text-white text-xs font-light uppercase tracking-[0.2em] hover:bg-black/90 transition-colors flex-shrink-0"
-                    >
-                      Editar
-                    </button>
+                <>
+                  {/* Checkbox para seleccionar todos */}
+                  <div className="flex items-center gap-3 pb-2 border-b border-black/10">
+                    <input
+                      type="checkbox"
+                      checked={selectedProducts.size === filteredProducts.length && filteredProducts.length > 0}
+                      onChange={handleSelectAll}
+                      className="size-4 text-black focus:ring-black cursor-pointer"
+                    />
+                    <label className="text-xs font-light uppercase tracking-[0.2em] text-black/60 cursor-pointer">
+                      Seleccionar todos ({filteredProducts.length})
+                    </label>
                   </div>
-                ))
+                  {filteredProducts.map((product) => (
+                    <div
+                      key={product.id}
+                      className="border border-black/10 p-4 flex items-center gap-4 hover:border-black/20 transition-colors"
+                    >
+                      {/* Checkbox para selección múltiple */}
+                      <input
+                        type="checkbox"
+                        checked={selectedProducts.has(product.id)}
+                        onChange={() => handleToggleSelect(product.id)}
+                        className="size-4 text-black focus:ring-black cursor-pointer flex-shrink-0"
+                      />
+                      {/* Imagen del producto */}
+                      <div className="flex-shrink-0 w-20 h-20 overflow-hidden bg-gray-50 border border-black/5">
+                        <img
+                          src={product.image_url}
+                          alt={product.image_alt || product.name}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      {/* Información del producto */}
+                      <div className="flex-1 min-w-0">
+                        <h3 className="text-sm font-light text-black uppercase tracking-wide mb-1 truncate">
+                          {product.name}
+                        </h3>
+                        <p className="text-xs text-black/60 font-light mb-1">
+                          {product.category} • ${product.price.toLocaleString('es-CL')} CLP
+                        </p>
+                        <p className="text-xs text-black/50 font-light">
+                          Stock: {product.stock} unidades
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <button
+                          onClick={() => handleEditProduct(product)}
+                          className="px-4 py-2 bg-black text-white text-xs font-light uppercase tracking-[0.2em] hover:bg-black/90 transition-colors"
+                        >
+                          Editar
+                        </button>
+                        <button
+                          onClick={() => handleDeleteProduct(product.id)}
+                          className="px-3 py-2 bg-red-600 text-white hover:bg-red-700 transition-colors flex items-center justify-center"
+                          aria-label="Eliminar producto"
+                        >
+                          <span className="material-symbols-outlined" style={{ fontSize: '18px', fontWeight: 300 }}>
+                            delete
+                          </span>
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </>
               )}
             </div>
           </div>
