@@ -96,24 +96,15 @@ const CheckoutForm = () => {
       
       // Procesar según método de pago
       if (formData.payment_method === 'mercadopago') {
-        const preferenceUrl = await createMercadoPagoPreference(cartItems, orderId);
-        if (preferenceUrl) {
-          window.location.href = preferenceUrl;
-          return;
-        } else {
-          throw new Error('No se pudo crear la preferencia de pago');
-        }
+        // Por ahora solo mostrar mensaje - funcionalidad pendiente
+        alert('Mercado Pago estará disponible próximamente. Por favor, selecciona otro método de pago.');
+        setIsSubmitting(false);
+        return;
       } else if (formData.payment_method === 'transbank') {
-        const sessionId = `session_${Date.now()}`;
-        const transaction = await createTransbankTransaction(total, orderId, sessionId);
-        if (transaction && transaction.url) {
-          // Guardar token en localStorage para verificación posterior
-          localStorage.setItem(`transbank_token_${orderId}`, transaction.token);
-          window.location.href = transaction.url;
-          return;
-        } else {
-          throw new Error('No se pudo crear la transacción de pago');
-        }
+        // Por ahora solo mostrar mensaje - funcionalidad pendiente
+        alert('Transbank estará disponible próximamente. Por favor, selecciona otro método de pago.');
+        setIsSubmitting(false);
+        return;
       } else if (formData.payment_method === 'transfer') {
         // Transferencia bancaria - solo guardar orden
         processPurchase();
