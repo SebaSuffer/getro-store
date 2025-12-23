@@ -1,5 +1,6 @@
 ---
 import { getCartItemCount } from '../utils/cart';
+import SearchButton from './SearchButton';
 ---
 
 <!-- Top Banner -->
@@ -30,9 +31,7 @@ import { getCartItemCount } from '../utils/cart';
       
       <!-- Actions -->
       <div class="flex items-center gap-6 flex-1 justify-end">
-        <button class="hidden md:flex size-10 items-center justify-center text-white/80 hover:text-white transition-colors" aria-label="Buscar">
-          <span class="material-symbols-outlined" style="font-size: 20px; font-weight: 300;">search</span>
-        </button>
+        <SearchButton client:load />
         <a href="/carrito" class="relative flex size-10 items-center justify-center text-white/80 hover:text-white transition-colors" aria-label="Carrito de compras" tabindex="0">
           <span class="material-symbols-outlined" style="font-size: 20px; font-weight: 300;">shopping_bag</span>
           <span id="cart-badge" class="absolute right-0 top-0 flex size-4 items-center justify-center rounded-full bg-white text-black text-[9px] font-light"></span>
