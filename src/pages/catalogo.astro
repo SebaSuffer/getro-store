@@ -2,9 +2,9 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
-import ProductCard from '../components/ProductCard';
 import CategoryFilters from '../components/CategoryFilters';
 import PaymentMethods from '../components/PaymentMethods.astro';
+import ProductLoader from '../components/ProductLoader';
 import { getAllProducts, getProductsByCategory, getCategories } from '../data/products';
 
 const url = Astro.url;
@@ -65,21 +65,8 @@ const productsWithStock = products;
           <!-- Filtros de Categoría -->
           <CategoryFilters client:load currentCategory={categoria} />
           
-          <!-- Product Grid -->
-          <div class="grid grid-cols-1 gap-12 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {productsWithStock.map((product) => (
-              <ProductCard key={product.id} client:load product={product} />
-            ))}
-          </div>
-          
-          {productsWithStock.length === 0 && (
-            <div class="text-center py-20">
-              <p class="text-lg text-black/60 font-light">No hay productos disponibles en esta categoría.</p>
-              <a href="/catalogo" class="mt-4 inline-block text-sm text-black/80 hover:text-black underline">
-                Ver todos los productos
-              </a>
-            </div>
-          )}
+          <!-- Product Grid con fallback a carga en cliente -->
+          <ProductLoader client:load initialProducts={productsWithStock} category={categoria} />
         </div>
       </section>
       <PaymentMethods />

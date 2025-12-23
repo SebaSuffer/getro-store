@@ -28,16 +28,23 @@ Esta es la opción más simple y recomendada.
 
 #### Después de cambiar a "Connect to an environment":
 
-1. Vercel debería mostrar los nameservers automáticamente
-2. Si no los ves, busca una sección que diga **"Nameservers"** o **"DNS Configuration"**
-3. Los nameservers deberían ser algo como:
+1. **Haz clic en "Save"** para guardar los cambios
+2. Vercel debería mostrar los nameservers automáticamente
+3. **Si aún no los ves después de guardar:**
+   - Haz clic en el botón **"Edit"** del dominio nuevamente
+   - O busca una sección que diga **"Nameservers"** o **"DNS Configuration"** en la página del dominio
+   - A veces aparecen en una pestaña o sección expandible
+4. Los nameservers deberían ser algo como:
    ```
    ns1.vercel-dns.com
    ns2.vercel-dns.com
    ```
-4. **Copia estos nameservers** - los necesitarás en el siguiente paso
+5. **Copia estos nameservers** - los necesitarás en el siguiente paso
 
-**Nota:** Si después de cambiar a "Connect to an environment" aún no ves los nameservers, espera 1-2 minutos y recarga la página. A veces Vercel tarda un momento en generarlos.
+**Si Vercel NO muestra los nameservers:**
+- Puede ser que Vercel esté usando registros DNS en lugar de nameservers
+- En ese caso, busca una sección que diga **"DNS Records"** o **"DNS Configuration"**
+- Vercel te mostrará los registros CNAME o A que necesitas configurar en tu proveedor de dominio
 
 ### Paso 3: Configurar Nameservers en HostingPlus
 
