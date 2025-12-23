@@ -164,9 +164,29 @@ export const initialProducts: Product[] = [
   },
 ];
 
-// Obtener todos los productos
+// Obtener todos los productos (incluyendo productos editados desde localStorage)
 export const getAllProducts = (): Product[] => {
-  return initialProducts;
+  if (typeof window === 'undefined') {
+    return initialProducts;
+  }
+  
+  // Cargar productos editados desde localStorage
+  const editedProducts = JSON.parse(localStorage.getItem('gotra_edited_products') || '{}');
+  
+  // Combinar productos originales con productos editados
+  return initialProducts.map(product => {
+    const edited = editedProducts[product.id];
+    if (edited) {
+      return {
+        ...product,
+        ...edited,
+        // Asegurar que image_url editada se use si existe
+        image_url: edited.image_url || product.image_url,
+        image_alt: edited.image_alt || edited.name || product.image_alt,
+      };
+    }
+    return product;
+  });
 };
 
 // Obtener productos destacados
@@ -184,9 +204,30 @@ export const getCategories = (): string[] => {
   return Array.from(new Set(initialProducts.map(p => p.category)));
 };
 
-// Obtener producto por ID
+// Obtener producto por ID (incluyendo productos editados desde localStorage)
 export const getProductById = (id: string): Product | null => {
-  return initialProducts.find(p => p.id === id) || null;
+  const product = initialProducts.find(p => p.id === id);
+  if (!product) return null;
+  
+  if (typeof window === 'undefined') {
+    return product;
+  }
+  
+  // Cargar producto editado desde localStorage si existe
+  const editedProducts = JSON.parse(localStorage.getItem('gotra_edited_products') || '{}');
+  const edited = editedProducts[id];
+  
+  if (edited) {
+    return {
+      ...product,
+      ...edited,
+      // Asegurar que image_url editada se use si existe
+      image_url: edited.image_url || product.image_url,
+      image_alt: edited.image_alt || edited.name || product.image_alt,
+    };
+  }
+  
+  return product;
 };
 
 // Obtener productos relacionados
