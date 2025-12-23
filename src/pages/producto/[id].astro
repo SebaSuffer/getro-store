@@ -7,6 +7,8 @@ import PaymentMethods from '../../components/PaymentMethods.astro';
 import { getProductById, getAllProducts } from '../../data/products';
 
 // Generar todas las rutas estáticas para los productos
+export const prerender = true;
+
 export async function getStaticPaths() {
   const products = getAllProducts();
   return products.map((product) => ({

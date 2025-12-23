@@ -1,13 +1,13 @@
 import { defineConfig } from 'astro/config';
 import react from '@astrojs/react';
 import tailwind from '@astrojs/tailwind';
-import vercel from '@astrojs/vercel/serverless';
+import vercel from '@astrojs/vercel';
 
 export default defineConfig({
   integrations: [react(), tailwind()],
-  output: 'hybrid', // Hybrid permite archivos estáticos + rutas API dinámicas
+  output: 'server', // Server mode para rutas API dinámicas
   adapter: vercel({
-    runtime: 'nodejs20.x', // Forzar Node.js 20.x explícitamente
+    // Usar Node.js 24.x del panel de Vercel
   }),
 });
 
