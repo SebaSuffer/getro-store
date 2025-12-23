@@ -83,7 +83,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
       <div className="flex flex-1 flex-col p-6 bg-white">
         <div className="mb-4">
           <p className="text-[10px] uppercase tracking-[0.3em] text-black/50 mb-2 font-light">{product.category}</p>
-          <h3 className="text-sm font-normal text-black uppercase tracking-[0.1em] leading-tight font-display">{product.name}</h3>
+          <h3 className="text-base font-medium text-black uppercase tracking-[0.05em] leading-tight font-display">{product.name}</h3>
         </div>
         
         <div className="mt-auto">

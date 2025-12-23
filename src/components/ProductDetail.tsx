@@ -168,7 +168,7 @@ const ProductDetail = ({ product }: ProductDetailProps) => {
           <div className="flex flex-col">
             <div className="mb-6">
               <p className="text-[10px] uppercase tracking-[0.3em] text-black/50 mb-3 font-light">{product.category}</p>
-              <h1 className="text-3xl sm:text-4xl font-light text-black tracking-[0.05em] uppercase mb-6 font-display">
+              <h1 className="text-3xl sm:text-4xl font-medium text-black tracking-[0.05em] uppercase mb-6 font-display">
                 {product.name}
               </h1>
               
