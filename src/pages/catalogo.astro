@@ -65,7 +65,7 @@ const productsWithStock = products;
           <!-- Filtros de Categoría -->
           <CategoryFilters client:load currentCategory={categoria} />
           
-          <!-- Product Grid con fallback a carga en cliente -->
+          <!-- Product Grid con paginación y navegación sin recargar -->
           <ProductLoader client:load initialProducts={productsWithStock} category={categoria} />
         </div>
       </section>

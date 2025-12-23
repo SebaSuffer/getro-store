@@ -68,15 +68,37 @@ const CategoryFilters = ({ currentCategory: initialCategory }: CategoryFiltersPr
         if (products.length === 0) {
           return; // No hacer nada si no hay productos
         }
+        
         // Actualizar estado inmediatamente para feedback visual
         setActiveCategory(category);
-        window.location.href = `/catalogo?categoria=${encodeURIComponent(category)}`;
+        
+        // Actualizar URL sin recargar la página
+        const newUrl = `/catalogo?categoria=${encodeURIComponent(category)}`;
+        window.history.pushState({ category }, '', newUrl);
+        
+        // Disparar evento personalizado para que ProductLoader se actualice
+        window.dispatchEvent(new CustomEvent('categoryChanged', {
+          detail: { category },
+          bubbles: true
+        }));
+        
+        console.log('[CATEGORY-FILTERS] ✅ Category changed to:', category);
       } catch (error) {
         console.error('[CATEGORY-FILTERS] Error checking products:', error);
       }
     } else {
       setActiveCategory(null);
-      window.location.href = '/catalogo';
+      
+      // Actualizar URL sin recargar
+      window.history.pushState({ category: null }, '', '/catalogo');
+      
+      // Disparar evento para limpiar filtro
+      window.dispatchEvent(new CustomEvent('categoryChanged', {
+        detail: { category: null },
+        bubbles: true
+      }));
+      
+      console.log('[CATEGORY-FILTERS] ✅ Category cleared');
     }
   };
 
