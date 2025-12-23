@@ -56,3 +56,5 @@ Agrega estas variables en **Vercel Dashboard > Settings > Environment Variables*
 - El proyecto está configurado como `output: 'server'` para que funcionen las API routes
 - Asegúrate de que las variables de entorno estén configuradas antes de hacer deploy
 
+
+
