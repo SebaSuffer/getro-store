@@ -192,14 +192,16 @@ export const getAllProducts = (): Product[] => {
     });
 };
 
-// Obtener productos destacados
+// Obtener productos destacados (excluyendo eliminados)
 export const getFeaturedProducts = (): Product[] => {
-  return initialProducts.filter(p => p.is_featured).slice(0, 4);
+  const allProducts = getAllProducts();
+  return allProducts.filter(p => p.is_featured).slice(0, 4);
 };
 
-// Obtener productos por categoría
+// Obtener productos por categoría (excluyendo eliminados)
 export const getProductsByCategory = (category: string): Product[] => {
-  return initialProducts.filter(p => p.category === category);
+  const allProducts = getAllProducts();
+  return allProducts.filter(p => p.category === category);
 };
 
 // Obtener categorías únicas
