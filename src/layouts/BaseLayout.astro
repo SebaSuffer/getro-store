@@ -9,6 +9,33 @@ import '../styles/globals.css';
     
     try {
       const editedProducts = JSON.parse(localStorage.getItem('gotra_edited_products') || '{}');
+      
+      // Mapeo de IDs a nuevos nombres (actualización de nombres)
+      const newNames = {
+        '550e8400-e29b-41d4-a716-446655440001': 'Colgante Ala de Plata',
+        '550e8400-e29b-41d4-a716-446655440002': 'Colgante Corona de Plata',
+        '550e8400-e29b-41d4-a716-446655440003': 'Colgante Corona de Plata - Estilo Clásico',
+        '550e8400-e29b-41d4-a716-446655440004': 'Colgante Cuadrado con Círculo de Plata',
+        '550e8400-e29b-41d4-a716-446655440005': 'Colgante Cuadrado con Círculo de Plata - Grande',
+        '550e8400-e29b-41d4-a716-446655440006': 'Colgante Cruz Estilizada de Plata',
+        '550e8400-e29b-41d4-a716-446655440007': 'Colgante Cruz de Plata - Clásico',
+        '550e8400-e29b-41d4-a716-446655440008': 'Colgante Diamante de Plata',
+        '550e8400-e29b-41d4-a716-446655440009': 'Colgante Cruz de Plata',
+        '550e8400-e29b-41d4-a716-446655440010': 'Colgante Cruz de Plata - Minimalista',
+        '550e8400-e29b-41d4-a716-446655440011': 'Colgante Símbolo de Plata',
+        '550e8400-e29b-41d4-a716-446655440012': 'Colgante Cruz de Plata - Tradicional',
+      };
+      
+      // Actualizar nombres en productos editados
+      let namesUpdated = false;
+      for (const productId in editedProducts) {
+        if (newNames[productId] && editedProducts[productId].name !== newNames[productId]) {
+          editedProducts[productId].name = newNames[productId];
+          editedProducts[productId].image_alt = newNames[productId];
+          namesUpdated = true;
+        }
+      }
+      
       const CLOUDINARY_BASE = 'https://res.cloudinary.com/ddzoh72zv/image/upload/f_auto,q_auto';
       const migrationMap = {
         '/images/dsc05016.jpg': CLOUDINARY_BASE + '/v1766458847/DSC05016_dwuz7c.jpg',
@@ -43,9 +70,14 @@ import '../styles/globals.css';
         }
       }
       
-      if (hasChanges) {
+      if (hasChanges || namesUpdated) {
         localStorage.setItem('gotra_edited_products', JSON.stringify(editedProducts));
-        console.log('✅ Productos editados migrados a Cloudinary');
+        if (namesUpdated) {
+          console.log('✅ Nombres de productos actualizados en localStorage');
+        }
+        if (hasChanges) {
+          console.log('✅ URLs de imágenes migradas a Cloudinary');
+        }
       }
     } catch (error) {
       console.error('Error migrando productos:', error);
