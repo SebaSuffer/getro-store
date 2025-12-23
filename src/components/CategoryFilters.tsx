@@ -5,8 +5,8 @@ interface CategoryFiltersProps {
   currentCategory: string | null;
 }
 
-// Todas las categorías posibles
-const ALL_CATEGORIES = ['Cadenas', 'Pulseras', 'Anillos', 'Esclavas', 'Colgantes', 'Aros'];
+// Todas las categorías posibles - Colgantes primero porque es la que tiene productos
+const ALL_CATEGORIES = ['Colgantes', 'Cadenas', 'Pulseras', 'Anillos', 'Esclavas', 'Aros'];
 
 const CategoryFilters = ({ currentCategory: initialCategory }: CategoryFiltersProps) => {
   const [availableCategories, setAvailableCategories] = useState<string[]>([]);
@@ -21,9 +21,18 @@ const CategoryFilters = ({ currentCategory: initialCategory }: CategoryFiltersPr
   };
 
   useEffect(() => {
-    // Cargar categorías disponibles inmediatamente
-    const cats = getCategories();
-    setAvailableCategories(cats);
+    // Cargar categorías disponibles de forma async
+    const loadCategories = async () => {
+      try {
+        const cats = await getCategories();
+        setAvailableCategories(cats);
+        console.log('[CATEGORY-FILTERS] Available categories:', cats);
+      } catch (error) {
+        console.error('[CATEGORY-FILTERS] Error loading categories:', error);
+      }
+    };
+    
+    loadCategories();
     
     // Leer categoría de la URL al montar
     const urlCategory = getCategoryFromURL();
@@ -46,30 +55,52 @@ const CategoryFilters = ({ currentCategory: initialCategory }: CategoryFiltersPr
     return () => clearInterval(interval);
   }, []);
 
-  const handleFilterClick = (category: string | null, e?: React.MouseEvent) => {
+  const handleFilterClick = async (category: string | null, e?: React.MouseEvent) => {
     if (e) {
       e.preventDefault();
     }
     
     if (category) {
-      // Verificar si la categoría tiene productos
-      const products = getProductsByCategory(category);
-      if (products.length === 0) {
-        return; // No hacer nada si no hay productos
+      // Verificar si la categoría tiene productos (async)
+      try {
+        const products = await getProductsByCategory(category);
+        if (products.length === 0) {
+          return; // No hacer nada si no hay productos
+        }
+        // Actualizar estado inmediatamente para feedback visual
+        setActiveCategory(category);
+        window.location.href = `/catalogo?categoria=${encodeURIComponent(category)}`;
+      } catch (error) {
+        console.error('[CATEGORY-FILTERS] Error checking products:', error);
       }
-      // Actualizar estado inmediatamente para feedback visual
-      setActiveCategory(category);
-      window.location.href = `/catalogo?categoria=${encodeURIComponent(category)}`;
     } else {
       setActiveCategory(null);
       window.location.href = '/catalogo';
     }
   };
 
+  // Cargar conteo de productos por categoría
+  useEffect(() => {
+    const loadProductCounts = async () => {
+      const counts: Record<string, number> = {};
+      for (const cat of ALL_CATEGORIES) {
+        try {
+          const products = await getProductsByCategory(cat);
+          counts[cat] = products.length;
+        } catch (error) {
+          counts[cat] = 0;
+        }
+      }
+      setCategoryProductCounts(counts);
+      console.log('[CATEGORY-FILTERS] Product counts:', counts);
+    };
+    
+    loadProductCounts();
+  }, []);
+
   const hasProducts = (category: string): boolean => {
-    // Verificar directamente si hay productos en esta categoría
-    const products = getProductsByCategory(category);
-    return products.length > 0;
+    // Usar el conteo cacheado si está disponible
+    return (categoryProductCounts[category] || 0) > 0;
   };
 
   const isActive = (category: string | null): boolean => {
