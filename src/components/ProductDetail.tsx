@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { addToCart, getCart } from '../utils/cart';
 import { getProductStock } from '../utils/stock';
-import { getRelatedProducts } from '../data/products';
+import { getRelatedProducts, getProductById } from '../data/products';
 import ProductCard from './ProductCard';
 import type { Product } from '../data/products';
 
@@ -9,13 +9,14 @@ interface ProductDetailProps {
   product: Product;
 }
 
-const ProductDetail = ({ product }: ProductDetailProps) => {
+const ProductDetail = ({ product: initialProduct }: ProductDetailProps) => {
   const [isInCart, setIsInCart] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
   const [quantity, setQuantity] = useState(1);
   const [isEditing, setIsEditing] = useState(false);
-  const [currentStock, setCurrentStock] = useState(product.stock);
+  const [currentStock, setCurrentStock] = useState(initialProduct.stock);
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
+  const [product, setProduct] = useState(initialProduct);
   
   // Cargar descripción editada desde localStorage si existe
   const loadEditedDescription = () => {
@@ -33,8 +34,24 @@ const ProductDetail = ({ product }: ProductDetailProps) => {
       setIsInCart(cart.some(item => item.product.id === product.id));
     };
     
+    const handleProductUpdate = (event: CustomEvent) => {
+      if (event.detail.productId === product.id) {
+        // Recargar producto desde localStorage
+        const updatedProduct = getProductById(product.id);
+        if (updatedProduct) {
+          setProduct(updatedProduct);
+          const stock = getProductStock(updatedProduct.id);
+          setCurrentStock(stock || updatedProduct.stock);
+          const savedDescription = loadEditedDescription();
+          setEditedDescription(savedDescription);
+          setHasDescription(!!savedDescription);
+        }
+      }
+    };
+    
     checkCart();
     window.addEventListener('cartUpdated', checkCart);
+    window.addEventListener('productUpdated', handleProductUpdate as EventListener);
     
     // Cargar stock actualizado
     const stock = getProductStock(product.id);
@@ -51,6 +68,7 @@ const ProductDetail = ({ product }: ProductDetailProps) => {
     
     return () => {
       window.removeEventListener('cartUpdated', checkCart);
+      window.removeEventListener('productUpdated', handleProductUpdate as EventListener);
     };
   }, [product.id, product.stock]);
 

@@ -3,6 +3,7 @@ import { isAuthenticated, logout, getCurrentUser } from '../utils/auth';
 import { getAllProducts } from '../data/products';
 import { getSubscribers, exportSubscribers } from '../utils/newsletter';
 import type { Product } from '../data/products';
+import Toast from './Toast';
 
 const AdminPanel = () => {
   const [authenticated, setAuthenticated] = useState(false);
@@ -14,6 +15,8 @@ const AdminPanel = () => {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [subscribers, setSubscribers] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState<'products' | 'newsletter'>('products');
+  const [toastMessage, setToastMessage] = useState('');
+  const [showToast, setShowToast] = useState(false);
 
   useEffect(() => {
     const checkAuth = () => {
@@ -101,7 +104,8 @@ const AdminPanel = () => {
 
     // Validar que la URL de la imagen sea válida
     if (editingProduct.image_url && !editingProduct.image_url.startsWith('http://') && !editingProduct.image_url.startsWith('https://')) {
-      alert('Por favor, ingresa una URL válida que comience con http:// o https://');
+      setToastMessage('Por favor, ingresa una URL válida que comience con http:// o https://');
+      setShowToast(true);
       return;
     }
 
@@ -124,23 +128,40 @@ const AdminPanel = () => {
       localStorage.setItem('gotra_stock', JSON.stringify(stockData));
     }
 
+    // Disparar evento para que otras páginas sepan que deben recargar
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('productUpdated', { detail: { productId: editingProduct.id } }));
+    }
+
     // Actualizar lista
     loadProducts();
-    setSelectedProduct(null);
+    
+    // Actualizar el producto seleccionado si es el mismo
+    if (selectedProduct && selectedProduct.id === editingProduct.id) {
+      setSelectedProduct({ ...editingProduct });
+    }
+    
     setEditingProduct(null);
-    alert('Producto actualizado correctamente');
+    setToastMessage('Producto actualizado correctamente');
+    setShowToast(true);
   };
 
   if (!authenticated) {
-    return (
-      <div className="py-20 text-center">
-        <p className="text-black/60">Verificando autenticación...</p>
-      </div>
-    );
-  }
+      return (
+        <div className="py-20 text-center">
+          <p className="text-black/60">Verificando autenticación...</p>
+        </div>
+      );
+    }
 
-  return (
-    <div className="py-20">
+    return (
+      <>
+        <Toast 
+          message={toastMessage} 
+          isVisible={showToast} 
+          onClose={() => setShowToast(false)} 
+        />
+        <div className="py-20">
       <div className="mx-auto max-w-7xl px-6 lg:px-12">
         <div className="mb-12 flex items-center justify-between">
           <div>
@@ -444,6 +465,7 @@ const AdminPanel = () => {
         )}
       </div>
     </div>
+      </>
   );
 };
 
