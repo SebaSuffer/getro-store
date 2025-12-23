@@ -74,6 +74,10 @@ En Turso Dashboard:
    - `TURSO_AUTH_TOKEN` = tu token
 3. Aplica a: **Production**, **Preview**, **Development**
 
+## Paso 7: Configurar Dominio (Opcional)
+
+Si tienes un dominio personalizado, sigue las instrucciones en `CONFIGURAR_DOMINIO.md`.
+
 ## Listo para Código
 
 Una vez completados estos pasos, avísame y te daré el código para conectar.
