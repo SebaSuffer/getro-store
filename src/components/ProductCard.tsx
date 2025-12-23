@@ -20,8 +20,9 @@ const ProductCard = ({ product: initialProduct }: ProductCardProps) => {
       setIsInCart(cart.some(item => item.product.id === product.id));
     };
     
-    const handleProductUpdate = (event: CustomEvent) => {
-      // Recargar producto desde localStorage cuando se actualiza
+    const handleProductUpdate = () => {
+      // Recargar producto desde localStorage cuando se actualiza cualquier producto
+      // Esto asegura que todos los productos se actualicen cuando hay cambios
       const updatedProduct = getProductById(product.id);
       if (updatedProduct) {
         setProduct(updatedProduct);

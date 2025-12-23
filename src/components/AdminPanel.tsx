@@ -33,6 +33,19 @@ const AdminPanel = () => {
     };
 
     checkAuth();
+
+    // Escuchar eventos de actualización de productos para recargar la lista
+    const handleProductUpdate = () => {
+      loadProducts();
+    };
+
+    window.addEventListener('productUpdated', handleProductUpdate as EventListener);
+    window.addEventListener('productDeleted', handleProductUpdate as EventListener);
+
+    return () => {
+      window.removeEventListener('productUpdated', handleProductUpdate as EventListener);
+      window.removeEventListener('productDeleted', handleProductUpdate as EventListener);
+    };
   }, []);
 
   const loadProducts = () => {
@@ -191,17 +204,24 @@ const AdminPanel = () => {
       localStorage.setItem('gotra_stock', JSON.stringify(stockData));
     }
 
+    // Actualizar lista PRIMERO para que los cambios se reflejen
+    loadProducts();
+    
     // Disparar evento para que otras páginas sepan que deben recargar
+    // Disparar sin productId específico para que todos los componentes se actualicen
     if (typeof window !== 'undefined') {
+      // Disparar evento global para que todos los ProductCards se actualicen
+      window.dispatchEvent(new CustomEvent('productUpdated'));
+      // También disparar con el ID específico por compatibilidad
       window.dispatchEvent(new CustomEvent('productUpdated', { detail: { productId: editingProduct.id } }));
     }
-
-    // Actualizar lista
-    loadProducts();
     
     // Actualizar el producto seleccionado si es el mismo
     if (selectedProduct && selectedProduct.id === editingProduct.id) {
-      setSelectedProduct({ ...editingProduct });
+      const updatedProduct = getAllProducts().find(p => p.id === editingProduct.id);
+      if (updatedProduct) {
+        setSelectedProduct(updatedProduct);
+      }
     }
     
     setEditingProduct(null);
