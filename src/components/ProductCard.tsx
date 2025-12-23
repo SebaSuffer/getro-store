@@ -60,10 +60,11 @@ const ProductCard = ({ product }: ProductCardProps) => {
           src={product.image_url}
           loading="lazy"
           onError={(e) => {
-            // Fallback si la imagen no carga
+            // Fallback si la imagen no carga - usar imagen de Cloudinary
             const target = e.target as HTMLImageElement;
-            if (target.src !== '/images/DSC05016.jpg') {
-              target.src = '/images/DSC05016.jpg';
+            const fallbackUrl = 'https://res.cloudinary.com/ddzoh72zv/image/upload/f_auto,q_auto/v1766458847/DSC05016_dwuz7c.jpg';
+            if (!target.src.includes('cloudinary.com')) {
+              target.src = fallbackUrl;
             }
           }}
         />

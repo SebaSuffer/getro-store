@@ -10,17 +10,17 @@ export const PAYMENT_METHODS: PaymentMethod[] = [
   {
     id: 'mercadopago',
     name: 'Mercado Pago',
-    icon: '/images/Mercado-Pago-Logo.png',
+    icon: 'https://res.cloudinary.com/ddzoh72zv/image/upload/f_auto,q_auto/v1766458849/Mercado-Pago-Logo_kvhgin.png',
   },
   {
     id: 'transbank',
     name: 'Transbank (Webpay)',
-    icon: '/images/Transbank-1200px-logo.png',
+    icon: 'https://res.cloudinary.com/ddzoh72zv/image/upload/f_auto,q_auto/v1766458837/Transbank-1200px-logo_ljg48x.png',
   },
   {
     id: 'transfer',
     name: 'Transferencia Bancaria',
-    icon: '/images/transferencia-logo.png',
+    icon: 'https://res.cloudinary.com/ddzoh72zv/image/upload/f_auto,q_auto/v1766458838/transferencia-logo_fzj0gc.png',
   },
 ];
 
