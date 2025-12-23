@@ -5,6 +5,7 @@ import Footer from '../components/Footer.astro';
 import CategoryFilters from '../components/CategoryFilters';
 import PaymentMethods from '../components/PaymentMethods.astro';
 import ProductLoader from '../components/ProductLoader';
+import CatalogTitle from '../components/CatalogTitle';
 import { getAllProducts, getProductsByCategory, getCategories } from '../data/products';
 
 const url = Astro.url;
@@ -52,15 +53,8 @@ const productsWithStock = products;
     <main class="flex-grow bg-white">
       <section class="py-20">
         <div class="mx-auto max-w-[1920px] px-6 lg:px-12">
-          <div class="mb-16">
-            <span class="text-xs font-normal uppercase tracking-[0.4em] text-black/60 mb-4 block">Tienda</span>
-            <h1 class="text-4xl sm:text-5xl font-medium text-black tracking-[0.05em] uppercase mb-6 font-display">
-              {categoria ? categoria : 'Catálogo Completo'}
-            </h1>
-            <p class="text-black/70 font-normal text-sm tracking-wide max-w-2xl">
-              Explora nuestra colección completa de joyería fina
-            </p>
-          </div>
+          <!-- Título dinámico que se actualiza sin recargar -->
+          <CatalogTitle client:load initialCategory={categoria} />
           
           <!-- Filtros de Categoría -->
           <CategoryFilters client:load currentCategory={categoria} />
