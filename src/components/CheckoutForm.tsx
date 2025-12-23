@@ -142,97 +142,97 @@ const CheckoutForm = () => {
       <div className="flex-1">
         <form onSubmit={handleSubmit} className="space-y-8">
           <div className="border border-black/10 bg-white p-8">
-            <h2 className="text-sm font-light uppercase tracking-[0.2em] text-black mb-8 font-display">Información de Contacto</h2>
+            <h2 className="text-base font-semibold text-black mb-8 font-sans">Información de Contacto</h2>
             
             <div className="space-y-6">
               <div>
-                <label htmlFor="customer_name" className="block text-xs font-light uppercase tracking-[0.2em] text-black mb-3">
-                  Nombre Completo *
+                <label htmlFor="customer_name" className="block text-sm font-medium text-black mb-2">
+                  Nombre Completo <span className="text-red-600">*</span>
                 </label>
                 <input
                   type="text"
                   id="customer_name"
                   value={formData.customer_name}
                   onChange={(e) => handleInputChange('customer_name', e.target.value)}
-                  className={`w-full border px-4 py-3 text-sm font-light ${
+                  className={`w-full border px-4 py-3 text-base font-normal ${
                     errors.customer_name
                       ? 'border-red-500'
                       : 'border-black/20'
-                  } bg-white text-black focus:outline-none focus:border-black/40 transition-colors`}
+                  } bg-white text-black focus:outline-none focus:border-black/40 transition-colors font-sans`}
                   required
                 />
                 {errors.customer_name && (
-                  <p className="mt-2 text-xs text-red-600 font-light">{errors.customer_name}</p>
+                  <p className="mt-2 text-sm text-red-600 font-normal">{errors.customer_name}</p>
                 )}
               </div>
               
               <div>
-                <label htmlFor="customer_email" className="block text-xs font-light uppercase tracking-[0.2em] text-black mb-3">
-                  Email *
+                <label htmlFor="customer_email" className="block text-sm font-medium text-black mb-2">
+                  Email <span className="text-red-600">*</span>
                 </label>
                 <input
                   type="email"
                   id="customer_email"
                   value={formData.customer_email}
                   onChange={(e) => handleInputChange('customer_email', e.target.value)}
-                  className={`w-full border px-4 py-3 text-sm font-light ${
+                  className={`w-full border px-4 py-3 text-base font-normal ${
                     errors.customer_email
                       ? 'border-red-500'
                       : 'border-black/20'
-                  } bg-white text-black focus:outline-none focus:border-black/40 transition-colors`}
+                  } bg-white text-black focus:outline-none focus:border-black/40 transition-colors font-sans`}
                   required
                 />
                 {errors.customer_email && (
-                  <p className="mt-2 text-xs text-red-600 font-light">{errors.customer_email}</p>
+                  <p className="mt-2 text-sm text-red-600 font-normal">{errors.customer_email}</p>
                 )}
               </div>
               
               <div>
-                <label htmlFor="customer_phone" className="block text-xs font-light uppercase tracking-[0.2em] text-black mb-3">
-                  Teléfono *
+                <label htmlFor="customer_phone" className="block text-sm font-medium text-black mb-2">
+                  Teléfono <span className="text-red-600">*</span>
                 </label>
                 <input
                   type="tel"
                   id="customer_phone"
                   value={formData.customer_phone}
                   onChange={(e) => handleInputChange('customer_phone', e.target.value)}
-                  className={`w-full border px-4 py-3 text-sm font-light ${
+                  className={`w-full border px-4 py-3 text-base font-normal ${
                     errors.customer_phone
                       ? 'border-red-500'
                       : 'border-black/20'
-                  } bg-white text-black focus:outline-none focus:border-black/40 transition-colors`}
+                  } bg-white text-black focus:outline-none focus:border-black/40 transition-colors font-sans`}
                   required
                 />
                 {errors.customer_phone && (
-                  <p className="mt-2 text-xs text-red-600 font-light">{errors.customer_phone}</p>
+                  <p className="mt-2 text-sm text-red-600 font-normal">{errors.customer_phone}</p>
                 )}
               </div>
               
               <div>
-                <label htmlFor="customer_address" className="block text-xs font-light uppercase tracking-[0.2em] text-black mb-3">
-                  Dirección de Envío *
+                <label htmlFor="customer_address" className="block text-sm font-medium text-black mb-2">
+                  Dirección de Envío <span className="text-red-600">*</span>
                 </label>
                 <textarea
                   id="customer_address"
                   value={formData.customer_address}
                   onChange={(e) => handleInputChange('customer_address', e.target.value)}
                   rows={3}
-                  className={`w-full border px-4 py-3 text-sm font-light ${
+                  className={`w-full border px-4 py-3 text-base font-normal ${
                     errors.customer_address
                       ? 'border-red-500'
                       : 'border-black/20'
-                  } bg-white text-black focus:outline-none focus:border-black/40 transition-colors resize-none`}
+                  } bg-white text-black focus:outline-none focus:border-black/40 transition-colors resize-none font-sans`}
                   required
                 />
                 {errors.customer_address && (
-                  <p className="mt-2 text-xs text-red-600 font-light">{errors.customer_address}</p>
+                  <p className="mt-2 text-sm text-red-600 font-normal">{errors.customer_address}</p>
                 )}
               </div>
             </div>
           </div>
           
           <div className="border border-black/10 bg-white p-8">
-            <h2 className="text-sm font-light uppercase tracking-[0.2em] text-black mb-8 font-display">Método de Pago</h2>
+            <h2 className="text-base font-semibold text-black mb-8 font-sans">Método de Pago</h2>
             
             <div className="space-y-4">
               {PAYMENT_METHODS.map((method) => (
@@ -252,7 +252,7 @@ const CheckoutForm = () => {
                     {method.icon && (
                       <img src={method.icon} alt={method.name} className="h-8 w-auto object-contain" />
                     )}
-                    <span className="text-sm font-light text-black">{method.name}</span>
+                    <span className="text-base font-normal text-black font-sans">{method.name}</span>
                   </div>
                 </label>
               ))}
@@ -262,7 +262,7 @@ const CheckoutForm = () => {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full inline-flex h-12 items-center justify-center bg-black text-white px-6 text-xs font-light uppercase tracking-[0.2em] transition-all hover:bg-black/90 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full inline-flex h-12 items-center justify-center bg-black text-white px-6 text-base font-medium transition-all hover:bg-black/90 disabled:opacity-50 disabled:cursor-not-allowed font-sans"
           >
             {isSubmitting ? 'Procesando...' : 'Confirmar y Pagar'}
           </button>
@@ -271,23 +271,23 @@ const CheckoutForm = () => {
       
       <div className="lg:w-96">
         <div className="sticky top-24 border border-black/10 bg-white p-8">
-          <h2 className="text-sm font-light uppercase tracking-[0.2em] text-black mb-8 font-display">Resumen de Compra</h2>
+          <h2 className="text-base font-semibold text-black mb-8 font-sans">Resumen de Compra</h2>
           
           <div className="space-y-4 mb-8">
             {cartItems.map((item) => (
-              <div key={item.product.id} className="flex justify-between text-sm">
-                <span className="text-black/70 font-light">
+              <div key={item.product.id} className="flex justify-between text-sm font-normal">
+                <span className="text-black/80 font-sans">
                   {item.product.name} x{item.quantity}
                 </span>
-                <span className="text-black font-light">
+                <span className="text-black font-sans">
                   ${(item.product.price * item.quantity).toLocaleString('es-CL')} CLP
                 </span>
               </div>
             ))}
             
             <div className="border-t border-black/10 pt-4 flex justify-between">
-              <span className="text-lg font-light text-black">Total</span>
-              <span className="text-lg font-light text-black">${total.toLocaleString('es-CL')} CLP</span>
+              <span className="text-lg font-semibold text-black font-sans">Total</span>
+              <span className="text-lg font-semibold text-black font-sans">${total.toLocaleString('es-CL')} CLP</span>
             </div>
           </div>
         </div>

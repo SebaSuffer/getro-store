@@ -61,11 +61,11 @@ const CartView = () => {
         <span className="material-symbols-outlined text-6xl text-black/30 mb-6" style={{ fontSize: '64px', fontWeight: 300 }}>
           shopping_bag
         </span>
-        <h2 className="text-3xl font-light text-black mb-4 font-display tracking-[0.05em] uppercase">Tu carrito está vacío</h2>
-        <p className="text-black/60 font-light mb-8 text-sm">Agrega productos para comenzar a comprar</p>
+        <h2 className="text-2xl font-semibold text-black mb-4 font-sans">Tu carrito está vacío</h2>
+        <p className="text-black/60 font-normal mb-8 text-base font-sans">Agrega productos para comenzar a comprar</p>
         <a
           href="/catalogo"
-          className="inline-flex h-12 items-center justify-center bg-black text-white px-10 text-xs font-light uppercase tracking-[0.2em] transition-all hover:bg-black/90"
+          className="inline-flex h-12 items-center justify-center bg-black text-white px-10 text-base font-medium transition-all hover:bg-black/90 font-sans"
         >
           Ver Catálogo
         </a>
@@ -89,12 +89,12 @@ const CartView = () => {
               />
               
               <div className="flex-1">
-                <p className="text-[10px] uppercase tracking-[0.3em] text-black/50 mb-2 font-light">{item.product.category}</p>
-                <h3 className="text-sm font-normal text-black uppercase tracking-[0.1em] mb-2 font-display">{item.product.name}</h3>
-                <p className="text-sm text-black/70 font-light mb-2">
+                <p className="text-xs uppercase tracking-wide text-black/50 mb-2 font-normal font-sans">{item.product.category}</p>
+                <h3 className="text-base font-semibold text-black mb-2 font-sans">{item.product.name}</h3>
+                <p className="text-base text-black/80 font-normal mb-2 font-sans">
                   ${item.product.price.toLocaleString('es-CL')} CLP
                 </p>
-                <p className="text-xs text-black/50 font-light">
+                <p className="text-sm text-black/50 font-normal font-sans">
                   Stock disponible: {item.product.stock}
                 </p>
               </div>
@@ -121,7 +121,7 @@ const CartView = () => {
                   </button>
                 </div>
                 
-                <p className="text-lg font-light text-black w-32 text-right">
+                <p className="text-lg font-semibold text-black w-32 text-right font-sans">
                   ${(item.product.price * item.quantity).toLocaleString('es-CL')} CLP
                 </p>
                 
@@ -140,33 +140,33 @@ const CartView = () => {
       
       <div className="lg:w-96">
         <div className="sticky top-24 border border-black/10 bg-white p-8">
-          <h2 className="text-sm font-light uppercase tracking-[0.2em] text-black mb-8 font-display">Resumen de Compra</h2>
+          <h2 className="text-base font-semibold text-black mb-8 font-sans">Resumen de Compra</h2>
           
           <div className="space-y-4 mb-8">
-            <div className="flex justify-between text-sm text-black/70 font-light">
+            <div className="flex justify-between text-sm text-black/80 font-normal font-sans">
               <span>Subtotal</span>
               <span>${total.toLocaleString('es-CL')} CLP</span>
             </div>
-            <div className="flex justify-between text-sm text-black/70 font-light">
+            <div className="flex justify-between text-sm text-black/80 font-normal font-sans">
               <span>Envío</span>
               <span className="text-black/50">Calculado en checkout</span>
             </div>
             <div className="border-t border-black/10 pt-4 flex justify-between">
-              <span className="text-lg font-light text-black">Total</span>
-              <span className="text-lg font-light text-black">${total.toLocaleString('es-CL')} CLP</span>
+              <span className="text-lg font-semibold text-black font-sans">Total</span>
+              <span className="text-lg font-semibold text-black font-sans">${total.toLocaleString('es-CL')} CLP</span>
             </div>
           </div>
           
           <button
             onClick={handleCheckout}
-            className="w-full inline-flex h-12 items-center justify-center bg-black text-white px-6 text-xs font-light uppercase tracking-[0.2em] transition-all hover:bg-black/90"
+            className="w-full inline-flex h-12 items-center justify-center bg-black text-white px-6 text-base font-medium transition-all hover:bg-black/90 font-sans"
           >
             Proceder al Pago
           </button>
           
           <a
             href="/catalogo"
-            className="mt-6 block w-full text-center text-xs text-black/60 hover:text-black transition-colors font-light uppercase tracking-[0.2em]"
+            className="mt-6 block w-full text-center text-sm text-black/60 hover:text-black transition-colors font-normal font-sans"
           >
             Continuar comprando
           </a>
