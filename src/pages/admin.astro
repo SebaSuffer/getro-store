@@ -12,9 +12,11 @@ const isDirectAccess = !referer || !referer.includes(Astro.url.origin);
 ---
 
 <BaseLayout>
-  <title>Panel de Administración - GOTRA</title>
-  <meta name="robots" content="noindex, nofollow" />
-  <meta name="googlebot" content="noindex, nofollow" />
+  <Fragment slot="title">Panel de Administración - GOTRA</Fragment>
+  <Fragment slot="head">
+    <meta name="robots" content="noindex, nofollow" />
+    <meta name="googlebot" content="noindex, nofollow" />
+  </Fragment>
   
   <div class="relative flex h-auto min-h-screen w-full flex-col bg-white">
     <main class="flex-grow">

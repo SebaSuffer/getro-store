@@ -12,7 +12,7 @@ const paymentMethod = Astro.url.searchParams.get('method') || 'mercadopago';
 ---
 
 <BaseLayout>
-  <title>Orden Confirmada - GOTRA</title>
+  <Fragment slot="title">Orden Confirmada - GOTRA</Fragment>
   
   <div class="relative flex h-auto min-h-screen w-full flex-col">
     <Header />

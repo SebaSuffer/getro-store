@@ -6,9 +6,11 @@ import LoginForm from '../components/LoginForm';
 ---
 
 <BaseLayout>
-  <title>Login - GOTRA</title>
-  <meta name="robots" content="noindex, nofollow" />
-  <meta name="googlebot" content="noindex, nofollow" />
+  <Fragment slot="title">Login - GOTRA</Fragment>
+  <Fragment slot="head">
+    <meta name="robots" content="noindex, nofollow" />
+    <meta name="googlebot" content="noindex, nofollow" />
+  </Fragment>
   
   <div class="relative flex h-auto min-h-screen w-full flex-col">
     <Header />
