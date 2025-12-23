@@ -5,7 +5,9 @@ import vercel from '@astrojs/vercel/serverless';
 
 export default defineConfig({
   integrations: [react(), tailwind()],
-  output: 'hybrid', // Cambiado a hybrid para que los archivos estáticos se copien correctamente
-  adapter: vercel(),
+  output: 'hybrid', // Hybrid permite archivos estáticos + rutas API dinámicas
+  adapter: vercel({
+    // No necesitamos imageService para archivos estáticos simples
+  }),
 });
 

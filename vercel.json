@@ -31,11 +31,5 @@
         }
       ]
     }
-  ],
-  "rewrites": [
-    {
-      "source": "/images/:path*",
-      "destination": "/images/:path*"
-    }
   ]
 }
