@@ -273,11 +273,11 @@ const AdminPanel = () => {
       <div className="mx-auto max-w-7xl px-6 lg:px-12">
         <div className="mb-12 flex items-center justify-between">
           <div>
-            <h1 className="text-4xl sm:text-5xl font-light text-black tracking-[0.05em] uppercase mb-2 font-display">
-              Panel de Administración
+            <h1 className="text-3xl sm:text-4xl font-bold text-black mb-2">
+              PANEL DE ADMINISTRACIÓN
             </h1>
-            <p className="text-black/60 font-light text-sm">
-              Bienvenido, {user?.username}
+            <p className="text-black/80 font-normal text-base">
+              Bienvenido, {user?.username || 'admin'}
             </p>
           </div>
           <button
