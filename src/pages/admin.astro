@@ -11,8 +11,7 @@ const isDirectAccess = !referer || !referer.includes(Astro.url.origin);
 // La autenticación real se maneja en el cliente
 ---
 
-<BaseLayout>
-  <Fragment slot="title">Panel de Administración - GOTRA</Fragment>
+<BaseLayout title="Panel de Administración - GOTRA">
   <Fragment slot="head">
     <meta name="robots" content="noindex, nofollow" />
     <meta name="googlebot" content="noindex, nofollow" />

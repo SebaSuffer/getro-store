@@ -1,5 +1,12 @@
 ---
 import '../styles/globals.css';
+
+interface Props {
+  title?: string;
+  description?: string;
+}
+
+const { title = 'GOTRA - Joyería Fina y Exclusiva', description = 'GOTRA - Joyería fina y exclusiva. Calidad premium y diseño elegante.' } = Astro.props;
 ---
 
 <script is:inline>
@@ -91,12 +98,12 @@ import '../styles/globals.css';
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="description" content="GOTRA - Joyería fina y exclusiva. Calidad premium y diseño elegante." />
+    <meta name="description" content={description} />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700;900&family=Cormorant+Garamond:wght@300;400;500;600;700&family=Inter:wght@300;400;500&display=swap" rel="stylesheet" />
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
-    <title><slot name="title">GOTRA - Joyería Fina y Exclusiva</slot></title>
+    <title>{title}</title>
     <slot name="head" />
   </head>
   <body class="bg-white text-black font-serif antialiased">

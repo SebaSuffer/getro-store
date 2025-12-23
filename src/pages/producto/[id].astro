@@ -23,12 +23,10 @@ if (!product) {
 }
 ---
 
-<BaseLayout>
-  <Fragment slot="title">{product.name} | GOTRA Joyería</Fragment>
-  <Fragment slot="head">
-    <meta name="description" content={product.description || `Compra ${product.name} - ${product.category} de plata sólida 925. Envío gratis a todo Chile.`} />
-  </Fragment>
-  
+<BaseLayout 
+  title={`${product.name} | GOTRA Joyería`}
+  description={product.description || `Compra ${product.name} - ${product.category} de plata sólida 925. Envío gratis a todo Chile.`}
+>
   <div class="relative flex h-auto min-h-screen w-full flex-col">
     <Header />
     

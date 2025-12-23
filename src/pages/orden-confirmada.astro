@@ -11,9 +11,7 @@ const paymentStatus = Astro.url.searchParams.get('status') || 'approved';
 const paymentMethod = Astro.url.searchParams.get('method') || 'mercadopago';
 ---
 
-<BaseLayout>
-  <Fragment slot="title">Orden Confirmada - GOTRA</Fragment>
-  
+<BaseLayout title="Orden Confirmada - GOTRA">
   <div class="relative flex h-auto min-h-screen w-full flex-col">
     <Header />
     
