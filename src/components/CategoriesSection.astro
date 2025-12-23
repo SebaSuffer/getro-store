@@ -3,12 +3,12 @@ import { getCategories } from '../data/products';
 
 const categories = getCategories();
 const categoryImages: Record<string, string> = {
-  'Cadenas': '/images/dsc05016.jpg',
-  'Pulseras': '/images/dsc05015.jpg',
-  'Anillos': '/images/dsc05014.jpg',
-  'Colgantes': '/images/dsc05010.jpg',
-  'Aros': '/images/dsc05008.jpg',
-  'Esclavas': '/images/dsc05012.jpg',
+  'Cadenas': 'https://res.cloudinary.com/ddzoh72zv/image/upload/f_auto,q_auto/v1766458847/DSC05016_dwuz7c.jpg',
+  'Pulseras': 'https://res.cloudinary.com/ddzoh72zv/image/upload/f_auto,q_auto/v1766458847/DSC05015_kiamyb.jpg',
+  'Anillos': 'https://res.cloudinary.com/ddzoh72zv/image/upload/f_auto,q_auto/v1766458847/DSC05014_tpyofl.jpg',
+  'Colgantes': 'https://res.cloudinary.com/ddzoh72zv/image/upload/f_auto,q_auto/v1766458846/DSC05010_zfxyxv.jpg',
+  'Aros': 'https://res.cloudinary.com/ddzoh72zv/image/upload/f_auto,q_auto/v1766458846/DSC05008_clyhgx.jpg',
+  'Esclavas': 'https://res.cloudinary.com/ddzoh72zv/image/upload/f_auto,q_auto/v1766458846/DSC05012_bbchhj.jpg',
 };
 ---
 
@@ -22,7 +22,7 @@ const categoryImages: Record<string, string> = {
       {categories.map((category) => (
         <a href={`/catalogo?categoria=${encodeURIComponent(category)}`} class="group relative aspect-square overflow-hidden bg-black">
           <img
-            src={categoryImages[category] || '/images/dsc05016.jpg'}
+            src={categoryImages[category] || 'https://res.cloudinary.com/ddzoh72zv/image/upload/f_auto,q_auto/v1766458847/DSC05016_dwuz7c.jpg'}
             alt={category}
             class="h-full w-full object-cover opacity-60 group-hover:opacity-80 transition-opacity duration-500"
             loading="lazy"
