@@ -11,34 +11,34 @@ import SearchButton from './SearchButton';
 </div>
 
 <!-- Main Header -->
-<header class="sticky top-0 z-50 w-full bg-black border-b border-white/10">
+<header class="sticky top-0 z-50 w-full bg-black border-b border-white/5">
   <div class="mx-auto max-w-[1920px] px-6 lg:px-12">
-    <div class="flex h-24 items-center justify-between">
+    <div class="flex h-28 items-center justify-between relative">
       <!-- Desktop Nav -->
-      <nav class="hidden lg:flex items-center gap-12 flex-1">
-        <a class="text-xs font-normal text-white/90 hover:text-white transition-colors uppercase tracking-[0.2em]" href="/">Inicio</a>
-        <a class="text-xs font-normal text-white/90 hover:text-white transition-colors uppercase tracking-[0.2em]" href="/catalogo">Joyas</a>
-        <a class="text-xs font-normal text-white/90 hover:text-white transition-colors uppercase tracking-[0.2em]" href="/contacto">Info</a>
+      <nav class="hidden lg:flex items-center gap-10 flex-1">
+        <a class="text-[11px] font-light text-white/80 hover:text-white transition-colors uppercase tracking-[0.25em]" href="/">Inicio</a>
+        <a class="text-[11px] font-light text-white/80 hover:text-white transition-colors uppercase tracking-[0.25em]" href="/catalogo">Joyas</a>
+        <a class="text-[11px] font-light text-white/80 hover:text-white transition-colors uppercase tracking-[0.25em]" href="/contacto">Info</a>
       </nav>
       
-      <!-- Brand Logo - Centered -->
-      <div class="absolute left-1/2 transform -translate-x-1/2 px-4">
-        <a href="/" class="flex items-center justify-center" tabindex="0" aria-label="GOTRA - Inicio">
+      <!-- Brand Logo - Centered (Patek-style) -->
+      <div class="absolute left-1/2 transform -translate-x-1/2 top-1/2 -translate-y-1/2">
+        <a href="/" class="flex items-center justify-center group" tabindex="0" aria-label="GOTRA - Inicio">
           <img 
             src="https://res.cloudinary.com/ddzoh72zv/image/upload/f_auto,q_auto/v1766476088/Gemini_Generated_Image_kydl0tkydl0tkydl-removebg-preview_njky93.png"
             alt="GOTRA - Joyería Fina"
-            class="h-16 sm:h-20 w-auto object-contain"
+            class="h-14 sm:h-18 lg:h-20 w-auto object-contain transition-opacity group-hover:opacity-90"
             loading="eager"
           />
         </a>
       </div>
       
       <!-- Actions -->
-      <div class="flex items-center gap-6 flex-1 justify-end">
+      <div class="flex items-center gap-5 flex-1 justify-end">
         <SearchButton client:load />
-        <a href="/carrito" class="relative flex size-10 items-center justify-center text-white/80 hover:text-white transition-colors" aria-label="Carrito de compras" tabindex="0">
-          <span class="material-symbols-outlined" style="font-size: 20px; font-weight: 300;">shopping_bag</span>
-          <span id="cart-badge" class="absolute right-0 top-0 flex size-4 items-center justify-center rounded-full bg-white text-black text-[9px] font-light"></span>
+        <a href="/carrito" class="relative flex size-9 items-center justify-center text-white/70 hover:text-white transition-colors" aria-label="Carrito de compras" tabindex="0">
+          <span class="material-symbols-outlined" style="font-size: 18px; font-weight: 300;">shopping_bag</span>
+          <span id="cart-badge" class="absolute -right-1 -top-1 flex size-4 items-center justify-center rounded-full bg-white text-black text-[9px] font-light"></span>
         </a>
       </div>
     </div>
