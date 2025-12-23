@@ -181,7 +181,7 @@ const ProductDetail = ({ product }: ProductDetailProps) => {
               </div>
 
               <div className="mb-8">
-                <p className="text-3xl font-light text-black tracking-wide">
+                <p className="text-3xl font-normal text-black tracking-wide">
                   ${product.price.toLocaleString('es-CL')} CLP
                 </p>
               </div>
