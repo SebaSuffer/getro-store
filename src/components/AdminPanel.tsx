@@ -282,7 +282,7 @@ const AdminPanel = () => {
           </div>
           <button
             onClick={handleLogout}
-            className="px-6 py-2 border border-black/20 text-black text-xs font-light uppercase tracking-[0.2em] hover:border-black/40 transition-colors"
+            className="px-6 py-2 border border-black/20 text-black text-sm font-medium hover:border-black/40 transition-colors"
           >
             Cerrar Sesión
           </button>
@@ -292,7 +292,7 @@ const AdminPanel = () => {
         <div className="mb-8 flex gap-4 border-b border-black/10">
           <button
             onClick={() => setActiveTab('products')}
-            className={`px-6 py-3 text-xs font-light uppercase tracking-[0.2em] transition-colors border-b-2 ${
+            className={`px-6 py-3 text-sm font-medium transition-colors border-b-2 ${
               activeTab === 'products'
                 ? 'border-black text-black'
                 : 'border-transparent text-black/40 hover:text-black/60'
@@ -302,7 +302,7 @@ const AdminPanel = () => {
           </button>
           <button
             onClick={() => setActiveTab('newsletter')}
-            className={`px-6 py-3 text-xs font-light uppercase tracking-[0.2em] transition-colors border-b-2 ${
+            className={`px-6 py-3 text-sm font-medium transition-colors border-b-2 ${
               activeTab === 'newsletter'
                 ? 'border-black text-black'
                 : 'border-transparent text-black/40 hover:text-black/60'
@@ -318,13 +318,13 @@ const AdminPanel = () => {
           <div className="lg:col-span-2">
             <div className="mb-6">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-light text-black uppercase tracking-[0.1em] font-display">
+                <h2 className="text-xl font-bold text-black mb-4">
                   Productos
                 </h2>
                 {selectedProducts.size > 0 && (
                   <button
                     onClick={handleDeleteSelected}
-                    className="px-4 py-2 bg-red-600 text-white text-xs font-light uppercase tracking-[0.2em] hover:bg-red-700 transition-colors flex items-center gap-2"
+                    className="px-4 py-2 bg-red-600 text-white text-sm font-medium hover:bg-red-700 transition-colors flex items-center gap-2"
                   >
                     <span className="material-symbols-outlined" style={{ fontSize: '16px', fontWeight: 300 }}>
                       delete
@@ -340,7 +340,7 @@ const AdminPanel = () => {
                   placeholder="Buscar productos por nombre, categoría o descripción..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full bg-white border border-black/20 px-4 py-3 pl-10 text-black text-sm font-light focus:outline-none focus:border-black/40 transition-colors"
+                  className="w-full bg-white border border-black/20 px-4 py-3 pl-10 text-black text-base font-normal focus:outline-none focus:border-black/40 transition-colors"
                 />
                 <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-black/40" style={{ fontSize: '20px', fontWeight: 300 }}>
                   search
@@ -357,7 +357,7 @@ const AdminPanel = () => {
                 )}
               </div>
               {searchQuery && (
-                <p className="mt-2 text-xs text-black/60 font-light">
+                <p className="mt-2 text-sm text-black/70 font-normal">
                   {filteredProducts.length} producto{filteredProducts.length !== 1 ? 's' : ''} encontrado{filteredProducts.length !== 1 ? 's' : ''}
                 </p>
               )}
@@ -365,7 +365,7 @@ const AdminPanel = () => {
             <div className="space-y-4 max-h-[600px] overflow-y-auto">
               {filteredProducts.length === 0 ? (
                 <div className="text-center py-12 border border-black/10">
-                  <p className="text-black/60 font-light text-sm">
+                  <p className="text-black/70 font-normal text-base">
                     {searchQuery ? 'No se encontraron productos' : 'No hay productos disponibles'}
                   </p>
                 </div>
@@ -379,7 +379,7 @@ const AdminPanel = () => {
                       onChange={handleSelectAll}
                       className="size-4 text-black focus:ring-black cursor-pointer"
                     />
-                    <label className="text-xs font-light uppercase tracking-[0.2em] text-black/60 cursor-pointer">
+                    <label className="text-sm font-medium text-black/80 cursor-pointer">
                       Seleccionar todos ({filteredProducts.length})
                     </label>
                   </div>
@@ -405,20 +405,20 @@ const AdminPanel = () => {
                       </div>
                       {/* Información del producto */}
                       <div className="flex-1 min-w-0">
-                        <h3 className="text-sm font-light text-black uppercase tracking-wide mb-1 truncate">
+                        <h3 className="text-base font-semibold text-black mb-1 truncate">
                           {product.name}
                         </h3>
-                        <p className="text-xs text-black/60 font-light mb-1">
+                        <p className="text-sm text-black/70 font-normal mb-1">
                           {product.category} • ${product.price.toLocaleString('es-CL')} CLP
                         </p>
-                        <p className="text-xs text-black/50 font-light">
+                        <p className="text-sm text-black/60 font-normal">
                           Stock: {product.stock} unidades
                         </p>
                       </div>
                       <div className="flex items-center gap-2 flex-shrink-0">
                         <button
                           onClick={() => handleEditProduct(product)}
-                          className="px-4 py-2 bg-black text-white text-xs font-light uppercase tracking-[0.2em] hover:bg-black/90 transition-colors"
+                          className="px-4 py-2 bg-black text-white text-sm font-medium hover:bg-black/90 transition-colors"
                         >
                           Editar
                         </button>
@@ -459,11 +459,11 @@ const AdminPanel = () => {
                       }}
                     />
                   </div>
-                  <p className="text-xs text-black/60 font-light text-center mb-4">
+                  <p className="text-sm text-black/70 font-normal text-center mb-4">
                     {editingProduct.name}
                   </p>
                   <div>
-                    <label className="block text-xs font-light uppercase tracking-[0.2em] text-black mb-2">
+                    <label className="block text-sm font-semibold text-black mb-2">
                       URL de la Imagen
                     </label>
                     <input
@@ -471,62 +471,62 @@ const AdminPanel = () => {
                       value={editingProduct.image_url}
                       onChange={(e) => setEditingProduct({ ...editingProduct, image_url: e.target.value })}
                       placeholder="https://ejemplo.com/imagen.jpg"
-                      className="w-full bg-white border border-black/20 px-4 py-2 text-black text-sm font-light focus:outline-none focus:border-black/40"
+                      className="w-full bg-white border border-black/20 px-4 py-2 text-black text-base font-normal focus:outline-none focus:border-black/40"
                     />
-                    <p className="text-[10px] text-black/50 font-light mt-1">
+                    <p className="text-xs text-black/60 font-normal mt-1">
                       Ingresa la URL completa de la imagen (ej: Cloudinary, Imgur, etc.)
                     </p>
                   </div>
                 </div>
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-xs font-light uppercase tracking-[0.2em] text-black mb-2">
+                    <label className="block text-sm font-semibold text-black mb-2">
                       Nombre
                     </label>
                     <input
                       type="text"
                       value={editingProduct.name}
                       onChange={(e) => setEditingProduct({ ...editingProduct, name: e.target.value })}
-                      className="w-full bg-white border border-black/20 px-4 py-2 text-black text-sm font-light focus:outline-none focus:border-black/40"
+                      className="w-full bg-white border border-black/20 px-4 py-2 text-black text-base font-normal focus:outline-none focus:border-black/40"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-light uppercase tracking-[0.2em] text-black mb-2">
+                    <label className="block text-sm font-semibold text-black mb-2">
                       Descripción
                     </label>
                     <textarea
                       value={editingProduct.description || ''}
                       onChange={(e) => setEditingProduct({ ...editingProduct, description: e.target.value })}
                       rows={4}
-                      className="w-full bg-white border border-black/20 px-4 py-2 text-black text-sm font-light focus:outline-none focus:border-black/40 resize-none"
+                      className="w-full bg-white border border-black/20 px-4 py-2 text-black text-base font-normal focus:outline-none focus:border-black/40 resize-none"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-light uppercase tracking-[0.2em] text-black mb-2">
+                    <label className="block text-sm font-semibold text-black mb-2">
                       Precio (CLP)
                     </label>
                     <input
                       type="number"
                       value={editingProduct.price}
                       onChange={(e) => setEditingProduct({ ...editingProduct, price: parseInt(e.target.value) || 0 })}
-                      className="w-full bg-white border border-black/20 px-4 py-2 text-black text-sm font-light focus:outline-none focus:border-black/40"
+                      className="w-full bg-white border border-black/20 px-4 py-2 text-black text-base font-normal focus:outline-none focus:border-black/40"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-light uppercase tracking-[0.2em] text-black mb-2">
+                    <label className="block text-sm font-semibold text-black mb-2">
                       Stock
                     </label>
                     <input
                       type="number"
                       value={editingProduct.stock}
                       onChange={(e) => setEditingProduct({ ...editingProduct, stock: parseInt(e.target.value) || 0 })}
-                      className="w-full bg-white border border-black/20 px-4 py-2 text-black text-sm font-light focus:outline-none focus:border-black/40"
+                      className="w-full bg-white border border-black/20 px-4 py-2 text-black text-base font-normal focus:outline-none focus:border-black/40"
                     />
                   </div>
                   <div className="flex gap-3">
                     <button
                       onClick={handleSaveProduct}
-                      className="flex-1 px-4 py-2 bg-black text-white text-xs font-light uppercase tracking-[0.2em] hover:bg-black/90 transition-colors"
+                      className="flex-1 px-4 py-2 bg-black text-white text-sm font-medium hover:bg-black/90 transition-colors"
                     >
                       Guardar
                     </button>
@@ -535,7 +535,7 @@ const AdminPanel = () => {
                         setEditingProduct(null);
                         setSelectedProduct(null);
                       }}
-                      className="flex-1 px-4 py-2 border border-black/20 text-black text-xs font-light uppercase tracking-[0.2em] hover:border-black/40 transition-colors"
+                      className="flex-1 px-4 py-2 border border-black/20 text-black text-sm font-medium hover:border-black/40 transition-colors"
                     >
                       Cancelar
                     </button>
@@ -556,7 +556,7 @@ const AdminPanel = () => {
         {activeTab === 'newsletter' && (
           <div className="space-y-6">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-light text-black uppercase tracking-[0.1em] font-display">
+              <h2 className="text-xl font-bold text-black mb-4">
                 Suscriptores ({subscribers.length})
               </h2>
               <button
@@ -575,7 +575,7 @@ const AdminPanel = () => {
                     alert('Error al exportar suscriptores');
                   }
                 }}
-                className="px-4 py-2 bg-black text-white text-xs font-light uppercase tracking-[0.2em] hover:bg-black/90 transition-colors"
+                className="px-4 py-2 bg-black text-white text-sm font-medium hover:bg-black/90 transition-colors"
               >
                 Exportar JSON
               </button>
@@ -585,22 +585,22 @@ const AdminPanel = () => {
                 <table className="w-full text-sm">
                   <thead className="bg-black/5 sticky top-0">
                     <tr>
-                      <th className="px-4 py-3 text-left text-xs font-light uppercase tracking-[0.2em] text-black">Email</th>
-                      <th className="px-4 py-3 text-left text-xs font-light uppercase tracking-[0.2em] text-black">Fecha de Suscripción</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-black">Email</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-black">Fecha de Suscripción</th>
                     </tr>
                   </thead>
                   <tbody>
                     {subscribers.length === 0 ? (
                       <tr>
-                        <td colSpan={2} className="px-4 py-8 text-center text-black/40 font-light">
+                        <td colSpan={2} className="px-4 py-8 text-center text-black/50 font-normal">
                           No hay suscriptores aún
                         </td>
                       </tr>
                     ) : (
                       subscribers.map((sub) => (
                         <tr key={sub.id || sub.email} className="border-t border-black/5">
-                          <td className="px-4 py-3 text-black/80 font-light">{sub.email}</td>
-                          <td className="px-4 py-3 text-black/60 font-light text-xs">
+                          <td className="px-4 py-3 text-black/90 font-normal">{sub.email}</td>
+                          <td className="px-4 py-3 text-black/70 font-normal text-sm">
                             {sub.subscribedAt ? new Date(sub.subscribedAt).toLocaleDateString('es-CL') : '-'}
                           </td>
                         </tr>
@@ -610,7 +610,7 @@ const AdminPanel = () => {
                 </table>
               </div>
             </div>
-            <div className="bg-yellow-50 border border-yellow-200 p-4 text-sm text-yellow-800 font-light">
+            <div className="bg-yellow-50 border border-yellow-200 p-4 text-base text-yellow-800 font-normal">
               <p className="mb-2"><strong>Nota:</strong> Los correos se guardan en la base de datos Turso.</p>
               <p>Para enviar correos masivos, necesitarás:</p>
               <ul className="list-disc list-inside mt-2 space-y-1">
