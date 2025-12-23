@@ -1,4 +1,12 @@
 {
+  "functions": {
+    "**/*.js": {
+      "runtime": "nodejs24.x"
+    },
+    "**/*.ts": {
+      "runtime": "nodejs24.x"
+    }
+  },
   "headers": [
     {
       "source": "/admin",
