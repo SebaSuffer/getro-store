@@ -13,13 +13,31 @@ Esta es la opción más simple y recomendada.
 
 ### Paso 2: Obtener Nameservers de Vercel
 
-Después de agregar el dominio, Vercel te mostrará los nameservers que debes usar, algo como:
-```
-ns1.vercel-dns.com
-ns2.vercel-dns.com
-```
+**IMPORTANTE:** Si agregaste el dominio y está configurado como **"Redirect"** (redirigir a otro dominio), **NO verás los nameservers**. Debes cambiarlo primero:
 
-**Copia estos nameservers.**
+#### Si el dominio muestra "Invalid Configuration" o "Redirect":
+
+1. Haz clic en el dominio (`gotrachile.com`)
+2. Verás dos opciones:
+   - ⚪ **"Connect to an environment"** (esta es la que necesitas)
+   - ⚫ **"Redirect to Another Domain"** (esta NO muestra nameservers)
+3. Si está seleccionada "Redirect", haz clic en **"Edit"** o **"Configure"**
+4. Selecciona **"Connect to an environment"**
+5. En el dropdown, selecciona **"Production"**
+6. Haz clic en **"Save"**
+
+#### Después de cambiar a "Connect to an environment":
+
+1. Vercel debería mostrar los nameservers automáticamente
+2. Si no los ves, busca una sección que diga **"Nameservers"** o **"DNS Configuration"**
+3. Los nameservers deberían ser algo como:
+   ```
+   ns1.vercel-dns.com
+   ns2.vercel-dns.com
+   ```
+4. **Copia estos nameservers** - los necesitarás en el siguiente paso
+
+**Nota:** Si después de cambiar a "Connect to an environment" aún no ves los nameservers, espera 1-2 minutos y recarga la página. A veces Vercel tarda un momento en generarlos.
 
 ### Paso 3: Configurar Nameservers en HostingPlus
 

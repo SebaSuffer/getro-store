@@ -3,8 +3,23 @@ import { getFeaturedProducts } from '../data/products';
 import { getProductsWithStock } from '../utils/stock';
 import ProductCard from './ProductCard';
 
-const featuredProducts = await getFeaturedProducts();
-const productsWithStock = await getProductsWithStock(featuredProducts);
+let featuredProducts: any[] = [];
+let productsWithStock: any[] = [];
+
+try {
+  console.log('[FEATURED] Loading featured products...');
+  featuredProducts = await getFeaturedProducts();
+  console.log(`[FEATURED] ✅ Loaded ${featuredProducts.length} featured products`);
+  productsWithStock = await getProductsWithStock(featuredProducts);
+} catch (error: any) {
+  console.error('[FEATURED] ❌ Error loading featured products:', error);
+  console.error('[FEATURED] Error details:', {
+    message: error.message,
+    stack: error.stack,
+  });
+  // Continuar con array vacío
+  productsWithStock = [];
+}
 ---
 
 <section class="bg-white py-24">

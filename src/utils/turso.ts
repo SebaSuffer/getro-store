@@ -18,9 +18,15 @@ export const getTursoClient = () => {
   const authToken = import.meta.env.TURSO_AUTH_TOKEN;
 
   if (!databaseUrl || !authToken) {
-    console.warn('Turso credentials not found, using fallback');
+    const prefix = typeof window === 'undefined' ? '[TURSO-SERVER]' : '[TURSO-CLIENT]';
+    console.error(`${prefix} Missing credentials:`);
+    console.error(`${prefix} TURSO_DATABASE_URL:`, databaseUrl ? '✓ Set' : '✗ Missing');
+    console.error(`${prefix} TURSO_AUTH_TOKEN:`, authToken ? '✓ Set' : '✗ Missing');
     return null;
   }
+
+  const prefix = typeof window === 'undefined' ? '[TURSO-SERVER]' : '[TURSO-CLIENT]';
+  console.log(`${prefix} Connecting to database:`, databaseUrl.replace(/\/\/.*@/, '//***@'));
 
   try {
     tursoClient = createClient({

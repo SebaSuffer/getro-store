@@ -23,28 +23,81 @@ const CACHE_DURATION = 60000; // 1 minuto
 
 // Obtener todos los productos desde Turso
 export const getAllProducts = async (): Promise<Product[]> => {
-  // En el servidor, usar cache si está disponible
+  // En el servidor, usar Turso directamente
   if (typeof window === 'undefined') {
     if (productsCache && Date.now() - cacheTimestamp < CACHE_DURATION) {
       return productsCache;
     }
+
+    try {
+      const { getTursoClient } = await import('../utils/turso');
+      const client = getTursoClient();
+      
+      if (!client) {
+        console.error('[SERVER] Turso client not available - check environment variables');
+        return [];
+      }
+
+      const result = await client.execute('SELECT * FROM products ORDER BY created_at DESC');
+      
+      const products = result.rows.map((row: any) => ({
+        id: row.id,
+        name: row.name,
+        description: row.description,
+        price: row.price,
+        stock: row.stock,
+        image_url: row.image_url,
+        image_alt: row.image_alt,
+        category: row.category,
+        is_new: Boolean(row.is_new),
+        is_featured: Boolean(row.is_featured),
+      }));
+
+      // Actualizar cache
+      productsCache = products;
+      cacheTimestamp = Date.now();
+      
+      console.log(`[PRODUCTS-SERVER] ✅ Loaded ${products.length} products from Turso`);
+      if (products.length === 0) {
+        console.warn('[PRODUCTS-SERVER] ⚠️ No products found. Did you run migrate-products.sql?');
+      }
+      return products;
+    } catch (error: any) {
+      console.error('[PRODUCTS-SERVER] ❌ Error fetching products from Turso:', error);
+      console.error('[PRODUCTS-SERVER] Error details:', {
+        message: error.message,
+        stack: error.stack,
+      });
+      return [];
+    }
   }
 
+  // En el cliente, usar API
   try {
     const response = await fetch('/api/products');
     if (!response.ok) {
-      throw new Error('Failed to fetch products');
+      const errorText = await response.text();
+      console.error('[CLIENT] API error:', response.status, errorText);
+      throw new Error(`Failed to fetch products: ${response.status}`);
     }
     const products = await response.json();
+    
+    console.log(`[PRODUCTS-CLIENT] ✅ Loaded ${products.length} products from API`);
+    if (products.length === 0) {
+      console.warn('[PRODUCTS-CLIENT] ⚠️ No products returned. Check API and database.');
+    }
     
     // Actualizar cache
     productsCache = products;
     cacheTimestamp = Date.now();
     
     return products;
-  } catch (error) {
-    console.error('Error fetching products:', error);
-    // Fallback a array vacío si falla
+  } catch (error: any) {
+    console.error('[PRODUCTS-CLIENT] ❌ Error fetching products:', error);
+    console.error('[PRODUCTS-CLIENT] Error details:', {
+      message: error.message,
+      stack: error.stack,
+    });
     return [];
   }
 };
@@ -77,17 +130,62 @@ export const getCategories = async (): Promise<string[]> => {
 
 // Obtener producto por ID
 export const getProductById = async (id: string): Promise<Product | null> => {
+  // En el servidor, usar Turso directamente
+  if (typeof window === 'undefined') {
+    try {
+      const { getTursoClient } = await import('../utils/turso');
+      const client = getTursoClient();
+      
+      if (!client) {
+        console.error('[SERVER] Turso client not available');
+        return null;
+      }
+
+      const result = await client.execute({
+        sql: 'SELECT * FROM products WHERE id = ?',
+        args: [id],
+      });
+
+      if (result.rows.length === 0) {
+        return null;
+      }
+
+      const row = result.rows[0] as any;
+      return {
+        id: row.id,
+        name: row.name,
+        description: row.description,
+        price: row.price,
+        stock: row.stock,
+        image_url: row.image_url,
+        image_alt: row.image_alt,
+        category: row.category,
+        is_new: Boolean(row.is_new),
+        is_featured: Boolean(row.is_featured),
+      };
+    } catch (error: any) {
+      console.error('[SERVER] Error fetching product from Turso:', error);
+      return null;
+    }
+  }
+
+  // En el cliente, usar API
   try {
     const response = await fetch(`/api/products/${id}`);
     if (!response.ok) {
       if (response.status === 404) {
+        console.log(`[CLIENT] Product ${id} not found`);
         return null;
       }
-      throw new Error('Failed to fetch product');
+      const errorText = await response.text();
+      console.error('[CLIENT] API error:', response.status, errorText);
+      throw new Error(`Failed to fetch product: ${response.status}`);
     }
-    return await response.json();
-  } catch (error) {
-    console.error('Error fetching product:', error);
+    const product = await response.json();
+    console.log(`[CLIENT] Loaded product: ${product.name}`);
+    return product;
+  } catch (error: any) {
+    console.error('[CLIENT] Error fetching product:', error);
     return null;
   }
 };

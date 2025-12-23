@@ -12,13 +12,32 @@ const categoriaParam = url.searchParams.get('categoria');
 const categoria = categoriaParam ? decodeURIComponent(categoriaParam).trim() : null;
 
 // Obtener categorías y productos desde Turso
-const categories = await getCategories();
-const allProducts = await getAllProducts();
+let categories: string[] = [];
+let allProducts: any[] = [];
+let products: any[] = [];
 
-// Filtrar productos por categoría si se especifica
-let products = categoria 
-  ? await getProductsByCategory(categoria)
-  : allProducts;
+try {
+  console.log('[CATALOGO] Loading categories and products...');
+  categories = await getCategories();
+  allProducts = await getAllProducts();
+  console.log(`[CATALOGO] ✅ Loaded ${allProducts.length} products, ${categories.length} categories`);
+
+  // Filtrar productos por categoría si se especifica
+  products = categoria 
+    ? await getProductsByCategory(categoria)
+    : allProducts;
+  
+  console.log(`[CATALOGO] ✅ Filtered to ${products.length} products${categoria ? ` for category: ${categoria}` : ''}`);
+} catch (error: any) {
+  console.error('[CATALOGO] ❌ Error loading products:', error);
+  console.error('[CATALOGO] Error details:', {
+    message: error.message,
+    stack: error.stack,
+  });
+  // Continuar con arrays vacíos para que la página se renderice
+  products = [];
+  categories = [];
+}
 
 // En el servidor, usar stock inicial. En el cliente se actualizará
 const productsWithStock = products;
