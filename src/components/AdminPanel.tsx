@@ -36,37 +36,10 @@ const AdminPanel = () => {
   }, []);
 
   const loadProducts = () => {
+    // getAllProducts() ya maneja productos editados y eliminados desde localStorage
     const allProducts = getAllProducts();
-    
-    // Cargar productos editados y eliminados desde localStorage
-    if (typeof window !== 'undefined') {
-      const editedProducts = JSON.parse(localStorage.getItem('gotra_edited_products') || '{}');
-      const deletedProducts = JSON.parse(localStorage.getItem('gotra_deleted_products') || '[]');
-      
-      // Filtrar productos eliminados y combinar con productos editados
-      const mergedProducts = allProducts
-        .filter(product => !deletedProducts.includes(product.id))
-        .map(product => {
-          const edited = editedProducts[product.id];
-          if (edited) {
-            // Usar datos editados, pero mantener estructura del producto original
-            return {
-              ...product,
-              ...edited,
-              // Asegurar que image_url editada se use si existe
-              image_url: edited.image_url || product.image_url,
-              image_alt: edited.image_alt || edited.name || product.image_alt,
-            };
-          }
-          return product;
-        });
-      
-      setProducts(mergedProducts);
-      setFilteredProducts(mergedProducts);
-    } else {
-      setProducts(allProducts);
-      setFilteredProducts(allProducts);
-    }
+    setProducts(allProducts);
+    setFilteredProducts(allProducts);
   };
 
   // Filtrar productos por búsqueda

@@ -21,14 +21,12 @@ const ProductCard = ({ product: initialProduct }: ProductCardProps) => {
     };
     
     const handleProductUpdate = (event: CustomEvent) => {
-      if (event.detail.productId === product.id) {
-        // Recargar producto desde localStorage
-        const updatedProduct = getProductById(product.id);
-        if (updatedProduct) {
-          setProduct(updatedProduct);
-          const stock = getProductStock(updatedProduct.id);
-          setCurrentStock(stock || updatedProduct.stock);
-        }
+      // Recargar producto desde localStorage cuando se actualiza
+      const updatedProduct = getProductById(product.id);
+      if (updatedProduct) {
+        setProduct(updatedProduct);
+        const stock = getProductStock(updatedProduct.id);
+        setCurrentStock(stock || updatedProduct.stock);
       }
     };
     
@@ -43,21 +41,25 @@ const ProductCard = ({ product: initialProduct }: ProductCardProps) => {
       }
     };
     
+    // Cargar producto actualizado desde localStorage al montar
+    const currentProduct = getProductById(product.id);
+    if (currentProduct) {
+      setProduct(currentProduct);
+      const stock = getProductStock(currentProduct.id);
+      setCurrentStock(stock || currentProduct.stock);
+    }
+    
     checkCart();
     window.addEventListener('cartUpdated', checkCart);
     window.addEventListener('productUpdated', handleProductUpdate as EventListener);
     window.addEventListener('productDeleted', handleProductDelete as EventListener);
-    
-    // Cargar stock actualizado
-    const stock = getProductStock(product.id);
-    setCurrentStock(stock || product.stock);
     
     return () => {
       window.removeEventListener('cartUpdated', checkCart);
       window.removeEventListener('productUpdated', handleProductUpdate as EventListener);
       window.removeEventListener('productDeleted', handleProductDelete as EventListener);
     };
-  }, [product.id, product.stock]);
+  }, [product.id]);
 
   const handleAddToCart = () => {
     if (currentStock <= 0) return;
