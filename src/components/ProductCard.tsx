@@ -59,6 +59,13 @@ const ProductCard = ({ product }: ProductCardProps) => {
           className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
           src={product.image_url}
           loading="lazy"
+          onError={(e) => {
+            // Fallback si la imagen no carga
+            const target = e.target as HTMLImageElement;
+            if (target.src !== '/images/DSC05016.jpg') {
+              target.src = '/images/DSC05016.jpg';
+            }
+          }}
         />
         {product.is_new && (
           <div className="absolute left-4 top-4 bg-black text-white px-3 py-1.5 text-[10px] font-light uppercase tracking-[0.2em]">

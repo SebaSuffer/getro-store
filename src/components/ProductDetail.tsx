@@ -145,6 +145,13 @@ const ProductDetail = ({ product }: ProductDetailProps) => {
               className="h-full w-full object-cover"
               src={product.image_url}
               loading="eager"
+              onError={(e) => {
+                // Fallback si la imagen no carga
+                const target = e.target as HTMLImageElement;
+                if (target.src !== '/images/DSC05016.jpg') {
+                  target.src = '/images/DSC05016.jpg';
+                }
+              }}
             />
             {product.is_new && (
               <div className="absolute left-6 top-6 bg-black text-white px-4 py-2 text-[10px] font-light uppercase tracking-[0.2em]">
