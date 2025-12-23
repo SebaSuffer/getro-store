@@ -409,17 +409,9 @@ const ProductDetail = ({ product: initialProduct }: ProductDetailProps) => {
               Productos Relacionados
             </h2>
             <div className="grid grid-cols-1 gap-12 sm:grid-cols-2 lg:grid-cols-4 mb-12">
-              {relatedProducts.map((relatedProduct) => {
-                // Obtener stock actualizado para productos relacionados
-                const relatedStock = typeof window !== 'undefined' 
-                  ? getProductStock(relatedProduct.id) || relatedProduct.stock
-                  : relatedProduct.stock;
-                const productWithStock = { ...relatedProduct, stock: relatedStock };
-                
-                return (
-                  <ProductCard key={relatedProduct.id} product={productWithStock} />
-                );
-              })}
+              {relatedProducts.map((relatedProduct) => (
+                <ProductCard key={relatedProduct.id} product={relatedProduct} />
+              ))}
             </div>
             <div className="text-center">
               <a
