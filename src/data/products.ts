@@ -74,30 +74,65 @@ export const getAllProducts = async (): Promise<Product[]> => {
 
   // En el cliente, usar API
   try {
+    console.log('[PRODUCTS-CLIENT] 🌐 Starting fetch to /api/products...');
+    const startTime = Date.now();
+    
     const response = await fetch('/api/products');
+    const fetchTime = Date.now() - startTime;
+    
+    console.log(`[PRODUCTS-CLIENT] ⏱️ Fetch completed in ${fetchTime}ms`);
+    console.log(`[PRODUCTS-CLIENT] 📡 Response status: ${response.status} ${response.statusText}`);
+    console.log(`[PRODUCTS-CLIENT] 📡 Response headers:`, {
+      'content-type': response.headers.get('content-type'),
+      'content-length': response.headers.get('content-length')
+    });
+    
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('[CLIENT] API error:', response.status, errorText);
-      throw new Error(`Failed to fetch products: ${response.status}`);
+      console.error('[PRODUCTS-CLIENT] ❌ API error response:', {
+        status: response.status,
+        statusText: response.statusText,
+        body: errorText
+      });
+      throw new Error(`Failed to fetch products: ${response.status} - ${errorText}`);
     }
-    const products = await response.json();
     
+    const parseStartTime = Date.now();
+    const products = await response.json();
+    const parseTime = Date.now() - parseStartTime;
+    
+    console.log(`[PRODUCTS-CLIENT] ⏱️ JSON parse completed in ${parseTime}ms`);
     console.log(`[PRODUCTS-CLIENT] ✅ Loaded ${products.length} products from API`);
+    
     if (products.length === 0) {
-      console.warn('[PRODUCTS-CLIENT] ⚠️ No products returned. Check API and database.');
+      console.warn('[PRODUCTS-CLIENT] ⚠️ WARNING: No products returned from API!');
+      console.warn('[PRODUCTS-CLIENT] ⚠️ This could mean:');
+      console.warn('[PRODUCTS-CLIENT]   1. Database is empty (run migrate-products.sql)');
+      console.warn('[PRODUCTS-CLIENT]   2. Environment variables not set (TURSO_DATABASE_URL, TURSO_AUTH_TOKEN)');
+      console.warn('[PRODUCTS-CLIENT]   3. API route is failing');
+    } else {
+      console.log('[PRODUCTS-CLIENT] 📋 Products sample:', products.slice(0, 3).map(p => ({
+        id: p.id,
+        name: p.name,
+        price: p.price,
+        stock: p.stock
+      })));
     }
     
     // Actualizar cache
     productsCache = products;
     cacheTimestamp = Date.now();
+    console.log('[PRODUCTS-CLIENT] 💾 Cache updated');
     
     return products;
   } catch (error: any) {
-    console.error('[PRODUCTS-CLIENT] ❌ Error fetching products:', error);
-    console.error('[PRODUCTS-CLIENT] Error details:', {
-      message: error.message,
-      stack: error.stack,
-    });
+    console.error('═══════════════════════════════════════════════════════════');
+    console.error('[PRODUCTS-CLIENT] ❌ ERROR fetching products');
+    console.error('[PRODUCTS-CLIENT] Error type:', error?.constructor?.name || 'Unknown');
+    console.error('[PRODUCTS-CLIENT] Error message:', error?.message);
+    console.error('[PRODUCTS-CLIENT] Error stack:', error?.stack);
+    console.error('[PRODUCTS-CLIENT] Full error:', error);
+    console.error('═══════════════════════════════════════════════════════════');
     return [];
   }
 };
