@@ -6,8 +6,8 @@ import ProductDetail from '../../components/ProductDetail';
 import PaymentMethods from '../../components/PaymentMethods.astro';
 import { getProductById, getAllProducts } from '../../data/products';
 
-// Generar todas las rutas estáticas para los productos
-export const prerender = true;
+// Deshabilitar prerender porque necesitamos datos dinámicos de Turso
+export const prerender = false;
 
 export async function getStaticPaths() {
   const products = await getAllProducts();
