@@ -111,9 +111,21 @@ const CheckoutForm = () => {
       
       // Procesar según método de pago
       if (formData.payment_method === 'mercadopago') {
-        // Por ahora solo mostrar mensaje - funcionalidad pendiente
-        alert('Mercado Pago estará disponible próximamente. Por favor, selecciona otro método de pago.');
-        setIsSubmitting(false);
+        // Crear preferencia de pago en Mercado Pago
+        const preferenceUrl = await createMercadoPagoPreference(
+          cartItems.map(item => ({
+            product: item,
+            quantity: item.quantity,
+          })),
+          orderId
+        );
+
+        if (!preferenceUrl) {
+          throw new Error('No se pudo crear la preferencia de pago. Por favor, intenta nuevamente.');
+        }
+
+        // Redirigir a Mercado Pago
+        window.location.href = preferenceUrl;
         return;
       } else if (formData.payment_method === 'transbank') {
         // Por ahora solo mostrar mensaje - funcionalidad pendiente

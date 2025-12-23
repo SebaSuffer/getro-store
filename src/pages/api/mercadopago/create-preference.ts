@@ -50,10 +50,13 @@ export const POST: APIRoute = async ({ request }) => {
 
     const data = await response.json();
     
+    // Usar sandbox_init_point si está disponible (modo test), sino init_point (producción)
+    const paymentUrl = data.sandbox_init_point || data.init_point;
+    
     return new Response(
       JSON.stringify({
         preference_id: data.id,
-        init_point: data.init_point,
+        init_point: paymentUrl,
         sandbox_init_point: data.sandbox_init_point,
       }),
       { status: 200, headers: { 'Content-Type': 'application/json' } }
@@ -66,6 +69,8 @@ export const POST: APIRoute = async ({ request }) => {
     );
   }
 };
+
+
 
 
 

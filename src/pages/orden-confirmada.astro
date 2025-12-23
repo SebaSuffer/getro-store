@@ -3,7 +3,12 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 
-const orderId = Astro.url.searchParams.get('id') || '';
+// Obtener orderId de diferentes fuentes (Mercado Pago puede enviarlo como external_reference)
+const orderId = Astro.url.searchParams.get('id') || 
+                Astro.url.searchParams.get('external_reference') || 
+                Astro.url.searchParams.get('preference_id') || '';
+const paymentStatus = Astro.url.searchParams.get('status') || 'approved';
+const paymentMethod = Astro.url.searchParams.get('method') || 'mercadopago';
 ---
 
 <BaseLayout>
@@ -25,9 +30,19 @@ const orderId = Astro.url.searchParams.get('id') || '';
               ¡Orden Confirmada!
             </h1>
             
-            <p class="text-black/70 font-light text-sm tracking-wide mb-12 max-w-lg mx-auto leading-relaxed">
-              Gracias por tu compra. Hemos recibido tu orden y te enviaremos un email de confirmación.
-            </p>
+            {paymentStatus === 'approved' ? (
+              <p class="text-black/70 font-light text-sm tracking-wide mb-12 max-w-lg mx-auto leading-relaxed">
+                Gracias por tu compra. Hemos recibido tu orden y te enviaremos un email de confirmación.
+              </p>
+            ) : paymentStatus === 'pending' ? (
+              <p class="text-black/70 font-light text-sm tracking-wide mb-12 max-w-lg mx-auto leading-relaxed">
+                Tu pago está siendo procesado. Te notificaremos cuando se complete.
+              </p>
+            ) : (
+              <p class="text-red-600 font-light text-sm tracking-wide mb-12 max-w-lg mx-auto leading-relaxed">
+                Hubo un problema con tu pago. Por favor, contacta con nosotros si el pago fue realizado.
+              </p>
+            )}
             
             {orderId && (
               <div class="border border-black/10 bg-white p-8 mb-12">

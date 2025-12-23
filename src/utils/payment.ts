@@ -72,7 +72,8 @@ export const createMercadoPagoPreference = async (items: any[], orderId: string)
     }
 
     const data = await response.json();
-    return data.init_point || data.preference_id;
+    // Retornar la URL de pago (init_point o sandbox_init_point)
+    return data.init_point || null;
   } catch (error) {
     console.error('Error en Mercado Pago:', error);
     return null;
