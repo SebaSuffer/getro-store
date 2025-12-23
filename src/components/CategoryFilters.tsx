@@ -11,6 +11,7 @@ const ALL_CATEGORIES = ['Colgantes', 'Cadenas', 'Pulseras', 'Anillos', 'Esclavas
 const CategoryFilters = ({ currentCategory: initialCategory }: CategoryFiltersProps) => {
   const [availableCategories, setAvailableCategories] = useState<string[]>([]);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
+  const [categoryProductCounts, setCategoryProductCounts] = useState<Record<string, number>>({});
 
   // Función para leer la categoría de la URL
   const getCategoryFromURL = (): string | null => {
