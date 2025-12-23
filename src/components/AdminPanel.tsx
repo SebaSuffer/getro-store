@@ -33,8 +33,33 @@ const AdminPanel = () => {
 
   const loadProducts = () => {
     const allProducts = getAllProducts();
-    setProducts(allProducts);
-    setFilteredProducts(allProducts);
+    
+    // Cargar productos editados desde localStorage
+    if (typeof window !== 'undefined') {
+      const editedProducts = JSON.parse(localStorage.getItem('gotra_edited_products') || '{}');
+      
+      // Combinar productos originales con productos editados
+      const mergedProducts = allProducts.map(product => {
+        const edited = editedProducts[product.id];
+        if (edited) {
+          // Usar datos editados, pero mantener estructura del producto original
+          return {
+            ...product,
+            ...edited,
+            // Asegurar que image_url editada se use si existe
+            image_url: edited.image_url || product.image_url,
+            image_alt: edited.image_alt || edited.name || product.image_alt,
+          };
+        }
+        return product;
+      });
+      
+      setProducts(mergedProducts);
+      setFilteredProducts(mergedProducts);
+    } else {
+      setProducts(allProducts);
+      setFilteredProducts(allProducts);
+    }
   };
 
   // Filtrar productos por búsqueda
@@ -74,13 +99,20 @@ const AdminPanel = () => {
   const handleSaveProduct = () => {
     if (!editingProduct) return;
 
+    // Validar que la URL de la imagen sea válida
+    if (editingProduct.image_url && !editingProduct.image_url.startsWith('http://') && !editingProduct.image_url.startsWith('https://')) {
+      alert('Por favor, ingresa una URL válida que comience con http:// o https://');
+      return;
+    }
+
     // Guardar cambios en localStorage
-    // IMPORTANTE: No guardar image_url en localStorage, siempre usar la del producto original
+    // Permitir cambiar la URL de la imagen con un link
     const editedProducts = JSON.parse(localStorage.getItem('gotra_edited_products') || '{}');
     const productToSave = {
       ...editingProduct,
-      // Asegurar que siempre use la URL de Cloudinary del producto original
-      image_url: getAllProducts().find(p => p.id === editingProduct.id)?.image_url || editingProduct.image_url,
+      // Guardar la URL de la imagen editada
+      image_url: editingProduct.image_url,
+      image_alt: editingProduct.image_alt || editingProduct.name,
     };
     editedProducts[editingProduct.id] = productToSave;
     localStorage.setItem('gotra_edited_products', JSON.stringify(editedProducts));
@@ -247,11 +279,30 @@ const AdminPanel = () => {
                       src={editingProduct.image_url}
                       alt={editingProduct.image_alt || editingProduct.name}
                       className="w-full h-full object-cover"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.src = 'https://via.placeholder.com/400?text=Imagen+no+disponible';
+                      }}
                     />
                   </div>
-                  <p className="text-xs text-black/60 font-light text-center">
+                  <p className="text-xs text-black/60 font-light text-center mb-4">
                     {editingProduct.name}
                   </p>
+                  <div>
+                    <label className="block text-xs font-light uppercase tracking-[0.2em] text-black mb-2">
+                      URL de la Imagen
+                    </label>
+                    <input
+                      type="url"
+                      value={editingProduct.image_url}
+                      onChange={(e) => setEditingProduct({ ...editingProduct, image_url: e.target.value })}
+                      placeholder="https://ejemplo.com/imagen.jpg"
+                      className="w-full bg-white border border-black/20 px-4 py-2 text-black text-sm font-light focus:outline-none focus:border-black/40"
+                    />
+                    <p className="text-[10px] text-black/50 font-light mt-1">
+                      Ingresa la URL completa de la imagen (ej: Cloudinary, Imgur, etc.)
+                    </p>
+                  </div>
                 </div>
                 <div className="space-y-4">
                   <div>
