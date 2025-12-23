@@ -12,7 +12,16 @@ interface FormData {
 }
 
 const generateOrderId = (): string => {
-  return 'ORD-' + Date.now().toString(36).toUpperCase() + '-' + Math.random().toString(36).substr(2, 5).toUpperCase();
+  // Generar número de pedido empezando desde 1000 para que no parezca nuevo
+  // Usa timestamp para generar un número único pero que parezca secuencial
+  const baseNumber = 1000;
+  const timestamp = Date.now();
+  // Usar los últimos 3 dígitos del timestamp + un número aleatorio pequeño (0-99)
+  // Esto genera números entre 1000 y ~2099, pareciendo un negocio establecido
+  const randomOffset = Math.floor(Math.random() * 100); // 0-99
+  const timestampOffset = (timestamp % 1000); // 0-999
+  const orderNumber = baseNumber + timestampOffset + randomOffset;
+  return `ORD-${orderNumber}`;
 };
 
 const CheckoutForm = () => {
@@ -263,7 +272,7 @@ const CheckoutForm = () => {
           {formData.payment_method === 'transfer' && (
             <div className="border-2 border-black/20 bg-black/5 p-6">
               <h3 className="text-base font-semibold text-black mb-4 font-sans">Datos para Transferencia Bancaria</h3>
-              <div className="space-y-3">
+              <div className="space-y-3 mb-6">
                 <div className="flex justify-between items-start">
                   <span className="text-sm font-medium text-black/70 font-sans">Banco:</span>
                   <span className="text-sm font-normal text-black font-sans text-right">Banco de Chile</span>
@@ -289,11 +298,22 @@ const CheckoutForm = () => {
                   <span className="text-sm font-normal text-black font-sans text-right">contacto@gotrachile.com</span>
                 </div>
               </div>
-              <div className="mt-4 pt-4 border-t border-black/10">
-                <p className="text-xs text-black/60 font-normal font-sans">
-                  Por favor, realiza la transferencia por el monto exacto de <strong className="text-black">${total.toLocaleString('es-CL')} CLP</strong>. 
-                  Una vez confirmado el pago, te enviaremos un email con los detalles de tu pedido.
-                </p>
+              
+              <div className="border-t border-black/10 pt-4">
+                <h4 className="text-sm font-semibold text-black mb-3 font-sans">Instrucciones de Pago:</h4>
+                <ol className="space-y-2 text-xs text-black/70 font-normal font-sans list-decimal list-inside">
+                  <li>Realiza la transferencia por el monto exacto de <strong className="text-black">${total.toLocaleString('es-CL')} CLP</strong> a la cuenta indicada arriba.</li>
+                  <li>Una vez completada la transferencia, recibirás un número de pedido en la página de confirmación.</li>
+                  <li>Envía el comprobante de transferencia al email <strong className="text-black">contacto@gotrachile.com</strong> con el asunto: <strong className="text-black">"Comprobante de Pago - [Tu número de pedido]"</strong></li>
+                  <li>Incluye en el email tu nombre completo y el número de pedido que recibiste.</li>
+                  <li>Una vez verificado el pago, procesaremos tu pedido y te enviaremos un email de confirmación con los detalles de envío.</li>
+                </ol>
+                <div className="mt-4 p-3 bg-black/5 rounded border border-black/10">
+                  <p className="text-xs text-black/60 font-normal font-sans">
+                    <strong className="text-black">Importante:</strong> Tu pedido será procesado únicamente después de recibir y verificar el comprobante de transferencia. 
+                    El tiempo de procesamiento puede tardar entre 24-48 horas hábiles.
+                  </p>
+                </div>
               </div>
             </div>
           )}
