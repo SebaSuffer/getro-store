@@ -258,6 +258,45 @@ const CheckoutForm = () => {
               ))}
             </div>
           </div>
+
+          {/* Información de Transferencia Bancaria */}
+          {formData.payment_method === 'transfer' && (
+            <div className="border-2 border-black/20 bg-black/5 p-6">
+              <h3 className="text-base font-semibold text-black mb-4 font-sans">Datos para Transferencia Bancaria</h3>
+              <div className="space-y-3">
+                <div className="flex justify-between items-start">
+                  <span className="text-sm font-medium text-black/70 font-sans">Banco:</span>
+                  <span className="text-sm font-normal text-black font-sans text-right">Banco de Chile</span>
+                </div>
+                <div className="flex justify-between items-start">
+                  <span className="text-sm font-medium text-black/70 font-sans">Tipo de Cuenta:</span>
+                  <span className="text-sm font-normal text-black font-sans text-right">Cuenta Corriente</span>
+                </div>
+                <div className="flex justify-between items-start">
+                  <span className="text-sm font-medium text-black/70 font-sans">Número de Cuenta:</span>
+                  <span className="text-sm font-normal text-black font-sans text-right font-mono">1234567890</span>
+                </div>
+                <div className="flex justify-between items-start">
+                  <span className="text-sm font-medium text-black/70 font-sans">RUT:</span>
+                  <span className="text-sm font-normal text-black font-sans text-right font-mono">12.345.678-9</span>
+                </div>
+                <div className="flex justify-between items-start">
+                  <span className="text-sm font-medium text-black/70 font-sans">Titular:</span>
+                  <span className="text-sm font-normal text-black font-sans text-right">GOTRA Joyería</span>
+                </div>
+                <div className="flex justify-between items-start">
+                  <span className="text-sm font-medium text-black/70 font-sans">Email:</span>
+                  <span className="text-sm font-normal text-black font-sans text-right">contacto@gotrachile.com</span>
+                </div>
+              </div>
+              <div className="mt-4 pt-4 border-t border-black/10">
+                <p className="text-xs text-black/60 font-normal font-sans">
+                  Por favor, realiza la transferencia por el monto exacto de <strong className="text-black">${total.toLocaleString('es-CL')} CLP</strong>. 
+                  Una vez confirmado el pago, te enviaremos un email con los detalles de tu pedido.
+                </p>
+              </div>
+            </div>
+          )}
           
           <button
             type="submit"
