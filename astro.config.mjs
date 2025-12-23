@@ -7,7 +7,7 @@ export default defineConfig({
   integrations: [react(), tailwind()],
   output: 'hybrid', // Hybrid permite archivos estáticos + rutas API dinámicas
   adapter: vercel({
-    // El runtime se toma del panel de Vercel (24.x) y package.json
+    runtime: 'nodejs20.x', // Forzar Node.js 20.x explícitamente
   }),
 });
 
