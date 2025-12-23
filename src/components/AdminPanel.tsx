@@ -5,6 +5,9 @@ import { getSubscribers, exportSubscribers } from '../utils/newsletter';
 import type { Product } from '../data/products';
 import Toast from './Toast';
 
+// Categorías disponibles
+const CATEGORIES = ['Colgantes', 'Cadenas', 'Pulseras', 'Anillos', 'Esclavas', 'Aros'];
+
 const AdminPanel = () => {
   const [authenticated, setAuthenticated] = useState(false);
   const [user, setUser] = useState<any>(null);
@@ -18,6 +21,7 @@ const AdminPanel = () => {
   const [toastMessage, setToastMessage] = useState('');
   const [showToast, setShowToast] = useState(false);
   const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
+  const [isCreating, setIsCreating] = useState(false);
 
   useEffect(() => {
     const checkAuth = () => {
@@ -97,6 +101,25 @@ const AdminPanel = () => {
   const handleEditProduct = (product: Product) => {
     setSelectedProduct(product);
     setEditingProduct({ ...product });
+    setIsCreating(false);
+  };
+
+  const handleCreateProduct = () => {
+    const newProduct: Product = {
+      id: 'new-' + Date.now(),
+      name: '',
+      description: '',
+      price: 0,
+      stock: 0,
+      category: 'Colgantes',
+      image_url: '',
+      image_alt: '',
+      is_new: false,
+      is_featured: false,
+    };
+    setEditingProduct(newProduct);
+    setSelectedProduct(null);
+    setIsCreating(true);
   };
 
   const handleDeleteProduct = async (productId: string) => {
@@ -194,6 +217,25 @@ const AdminPanel = () => {
   const handleSaveProduct = async () => {
     if (!editingProduct) return;
 
+    // Validaciones
+    if (!editingProduct.name.trim()) {
+      setToastMessage('El nombre del producto es requerido');
+      setShowToast(true);
+      return;
+    }
+
+    if (!editingProduct.category) {
+      setToastMessage('Debes seleccionar una categoría');
+      setShowToast(true);
+      return;
+    }
+
+    if (editingProduct.price <= 0) {
+      setToastMessage('El precio debe ser mayor a 0');
+      setShowToast(true);
+      return;
+    }
+
     // Validar que la URL de la imagen sea válida
     if (editingProduct.image_url && !editingProduct.image_url.startsWith('http://') && !editingProduct.image_url.startsWith('https://')) {
       setToastMessage('Por favor, ingresa una URL válida que comience con http:// o https://');
@@ -202,25 +244,46 @@ const AdminPanel = () => {
     }
 
     try {
-      // Actualizar producto en Turso
-      const response = await fetch(`/api/products/${editingProduct.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: editingProduct.name,
-          description: editingProduct.description,
-          price: editingProduct.price,
-          stock: editingProduct.stock,
-          category: editingProduct.category,
-          image_url: editingProduct.image_url,
-          image_alt: editingProduct.image_alt || editingProduct.name,
-          is_new: editingProduct.is_new,
-          is_featured: editingProduct.is_featured,
-        }),
-      });
+      let response;
+      
+      if (isCreating) {
+        // Crear nuevo producto
+        response = await fetch('/api/products', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: editingProduct.name,
+            description: editingProduct.description || '',
+            price: editingProduct.price,
+            stock: editingProduct.stock,
+            category: editingProduct.category,
+            image_url: editingProduct.image_url,
+            image_alt: editingProduct.image_alt || editingProduct.name,
+            is_new: editingProduct.is_new || false,
+            is_featured: editingProduct.is_featured || false,
+          }),
+        });
+      } else {
+        // Actualizar producto existente
+        response = await fetch(`/api/products/${editingProduct.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: editingProduct.name,
+            description: editingProduct.description,
+            price: editingProduct.price,
+            stock: editingProduct.stock,
+            category: editingProduct.category,
+            image_url: editingProduct.image_url,
+            image_alt: editingProduct.image_alt || editingProduct.name,
+            is_new: editingProduct.is_new,
+            is_featured: editingProduct.is_featured,
+          }),
+        });
+      }
 
       if (!response.ok) {
-        throw new Error('Error al actualizar el producto');
+        throw new Error(isCreating ? 'Error al crear el producto' : 'Error al actualizar el producto');
       }
 
       // Actualizar lista
@@ -245,11 +308,12 @@ const AdminPanel = () => {
       }
       
       setEditingProduct(null);
-      setToastMessage('Producto actualizado correctamente');
+      setIsCreating(false);
+      setToastMessage(isCreating ? 'Producto creado correctamente' : 'Producto actualizado correctamente');
       setShowToast(true);
     } catch (error: any) {
       console.error('Error saving product:', error);
-      setToastMessage('Error al actualizar el producto. Por favor, intenta nuevamente.');
+      setToastMessage(error.message || (isCreating ? 'Error al crear el producto' : 'Error al actualizar el producto'));
       setShowToast(true);
     }
   };
@@ -321,17 +385,28 @@ const AdminPanel = () => {
                 <h2 className="text-xl font-bold text-black mb-4">
                   Productos
                 </h2>
-                {selectedProducts.size > 0 && (
+                <div className="flex items-center gap-3">
                   <button
-                    onClick={handleDeleteSelected}
-                    className="px-4 py-2 bg-red-600 text-white text-sm font-medium hover:bg-red-700 transition-colors flex items-center gap-2"
+                    onClick={handleCreateProduct}
+                    className="px-4 py-2 bg-black text-white text-sm font-medium hover:bg-black/90 transition-colors flex items-center gap-2"
                   >
-                    <span className="material-symbols-outlined" style={{ fontSize: '16px', fontWeight: 300 }}>
-                      delete
+                    <span className="material-symbols-outlined" style={{ fontSize: '18px', fontWeight: 300 }}>
+                      add
                     </span>
-                    Eliminar Seleccionados ({selectedProducts.size})
+                    Crear Producto
                   </button>
-                )}
+                  {selectedProducts.size > 0 && (
+                    <button
+                      onClick={handleDeleteSelected}
+                      className="px-4 py-2 bg-red-600 text-white text-sm font-medium hover:bg-red-700 transition-colors flex items-center gap-2"
+                    >
+                      <span className="material-symbols-outlined" style={{ fontSize: '16px', fontWeight: 300 }}>
+                        delete
+                      </span>
+                      Eliminar Seleccionados ({selectedProducts.size})
+                    </button>
+                  )}
+                </div>
               </div>
               {/* Buscador */}
               <div className="relative">
@@ -444,7 +519,7 @@ const AdminPanel = () => {
             {editingProduct ? (
               <div className="border border-black/10 p-6">
                 <h2 className="text-xl font-light text-black uppercase tracking-[0.1em] mb-6 font-display">
-                  Editar Producto
+                  {isCreating ? 'Crear Producto' : 'Editar Producto'}
                 </h2>
                 {/* Imagen del producto */}
                 <div className="mb-6">
@@ -523,6 +598,42 @@ const AdminPanel = () => {
                       className="w-full bg-white border border-black/20 px-4 py-2 text-black text-base font-normal focus:outline-none focus:border-black/40"
                     />
                   </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-black mb-2">
+                      Categoría
+                    </label>
+                    <select
+                      value={editingProduct.category}
+                      onChange={(e) => setEditingProduct({ ...editingProduct, category: e.target.value })}
+                      className="w-full bg-white border border-black/20 px-4 py-2 text-black text-base font-normal focus:outline-none focus:border-black/40"
+                    >
+                      {CATEGORIES.map((category) => (
+                        <option key={category} value={category}>
+                          {category}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="flex gap-2">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={editingProduct.is_new || false}
+                        onChange={(e) => setEditingProduct({ ...editingProduct, is_new: e.target.checked })}
+                        className="w-4 h-4 text-black focus:ring-black cursor-pointer"
+                      />
+                      <span className="text-sm font-normal text-black">Producto Nuevo</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={editingProduct.is_featured || false}
+                        onChange={(e) => setEditingProduct({ ...editingProduct, is_featured: e.target.checked })}
+                        className="w-4 h-4 text-black focus:ring-black cursor-pointer"
+                      />
+                      <span className="text-sm font-normal text-black">Destacado</span>
+                    </label>
+                  </div>
                   <div className="flex gap-3">
                     <button
                       onClick={handleSaveProduct}
@@ -534,6 +645,7 @@ const AdminPanel = () => {
                       onClick={() => {
                         setEditingProduct(null);
                         setSelectedProduct(null);
+                        setIsCreating(false);
                       }}
                       className="flex-1 px-4 py-2 border border-black/20 text-black text-sm font-medium hover:border-black/40 transition-colors"
                     >

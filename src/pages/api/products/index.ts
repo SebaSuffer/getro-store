@@ -100,3 +100,69 @@ export const GET: APIRoute = async ({ request }) => {
   }
 };
 
+// POST /api/products - Crear un nuevo producto
+export const POST: APIRoute = async ({ request }) => {
+  try {
+    const body = await request.json();
+    const { name, description, price, stock, category, image_url, image_alt, is_new, is_featured } = body;
+
+    // Validaciones
+    if (!name || !category || !price || price <= 0) {
+      return new Response(
+        JSON.stringify({ error: 'Nombre, categoría y precio son requeridos' }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const client = getTursoClient();
+    if (!client) {
+      return new Response(
+        JSON.stringify({ error: 'Database not configured' }),
+        { status: 500, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Generar ID único
+    const id = 'prod-' + Date.now().toString(36) + '-' + Math.random().toString(36).substr(2, 9);
+
+    // Insertar producto
+    await client.execute({
+      sql: `INSERT INTO products (id, name, description, price, stock, category, image_url, image_alt, is_new, is_featured, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))`,
+      args: [
+        id,
+        name,
+        description || '',
+        price,
+        stock || 0,
+        category,
+        image_url || '',
+        image_alt || name,
+        is_new ? 1 : 0,
+        is_featured ? 1 : 0,
+      ],
+    });
+
+    return new Response(
+      JSON.stringify({ 
+        success: true, 
+        id,
+        message: 'Producto creado correctamente' 
+      }),
+      { 
+        status: 201, 
+        headers: { 'Content-Type': 'application/json' } 
+      }
+    );
+  } catch (error: any) {
+    console.error('Error creating product:', error);
+    return new Response(
+      JSON.stringify({ 
+        error: error.message || 'Error al crear el producto',
+        details: error.stack
+      }),
+      { status: 500, headers: { 'Content-Type': 'application/json' } }
+    );
+  }
+};
+
