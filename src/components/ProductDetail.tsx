@@ -146,8 +146,8 @@ const ProductDetail = ({ product: initialProduct }: ProductDetailProps) => {
     <div className="py-20">
       <div className="mx-auto max-w-[1920px] px-6 lg:px-12">
         <div className="mb-8">
-          <a href="/catalogo" className="text-xs font-light uppercase tracking-[0.2em] text-black/60 hover:text-black transition-colors inline-flex items-center gap-2">
-            <span className="material-symbols-outlined" style={{ fontSize: '16px', fontWeight: 300 }}>arrow_back</span>
+          <a href="/catalogo" className="text-sm font-normal text-black/60 hover:text-black transition-colors inline-flex items-center gap-2 font-sans">
+            <span className="material-symbols-outlined" style={{ fontSize: '18px', fontWeight: 300 }}>arrow_back</span>
             Volver al Catálogo
           </a>
         </div>
@@ -179,21 +179,21 @@ const ProductDetail = ({ product: initialProduct }: ProductDetailProps) => {
           {/* Información del Producto */}
           <div className="flex flex-col">
             <div className="mb-6">
-              <p className="text-xs uppercase tracking-[0.2em] text-black/60 mb-3 font-normal">{product.category}</p>
-              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-semibold text-black tracking-[0.02em] uppercase mb-6 font-display">
+              <p className="text-sm uppercase tracking-wide text-black/60 mb-3 font-normal font-sans">{product.category}</p>
+              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-semibold text-black tracking-tight mb-6 font-sans">
                 {product.name}
               </h1>
               
               <div className="mb-6">
                 {isOutOfStock ? (
-                  <span className="text-sm text-red-600 font-medium uppercase tracking-[0.1em]">Sin stock</span>
+                  <span className="text-base text-red-600 font-medium font-sans">Sin stock</span>
                 ) : (
-                  <span className="text-sm text-black/70 font-medium uppercase tracking-[0.1em]">Stock disponible: {currentStock}</span>
+                  <span className="text-base text-black/70 font-medium font-sans">Stock disponible: {currentStock}</span>
                 )}
               </div>
 
               <div className="mb-8">
-                <p className="text-4xl font-semibold text-black tracking-tight">
+                <p className="text-4xl font-bold text-black tracking-tight font-sans">
                   ${product.price.toLocaleString('es-CL')} CLP
                 </p>
               </div>
@@ -201,59 +201,59 @@ const ProductDetail = ({ product: initialProduct }: ProductDetailProps) => {
 
             {/* Descripción */}
             <div className="mb-8">
-              <h2 className="text-sm font-medium uppercase tracking-[0.15em] text-black mb-4 font-display">Descripción</h2>
-              <p className="text-base text-black/80 font-normal leading-relaxed whitespace-pre-line">
+              <h2 className="text-lg font-semibold text-black mb-4 font-sans">Descripción</h2>
+              <p className="text-base text-black/80 font-normal leading-relaxed whitespace-pre-line font-sans">
                 {product.description || 'Pieza de joyería fina elaborada con los más altos estándares de calidad.'}
               </p>
             </div>
 
             {/* Especificaciones Técnicas */}
             <div className="mb-8 border-t border-black/10 pt-8">
-              <h2 className="text-sm font-medium uppercase tracking-[0.15em] text-black mb-6 font-display">Especificaciones</h2>
+              <h2 className="text-lg font-semibold text-black mb-6 font-sans">Especificaciones</h2>
               <div className="space-y-4">
                 <div className="flex justify-between items-start">
-                  <span className="text-sm font-medium uppercase tracking-[0.05em] text-black/70">Material</span>
-                  <span className="text-sm font-normal text-black/90 text-right">{specs.material}</span>
+                  <span className="text-base font-medium text-black/70 font-sans">Material</span>
+                  <span className="text-base font-normal text-black/90 text-right font-sans">{specs.material}</span>
                 </div>
                 <div className="flex justify-between items-start">
-                  <span className="text-sm font-medium uppercase tracking-[0.05em] text-black/70">Pureza</span>
-                  <span className="text-sm font-normal text-black/90 text-right">{specs.pureza}</span>
+                  <span className="text-base font-medium text-black/70 font-sans">Pureza</span>
+                  <span className="text-base font-normal text-black/90 text-right font-sans">{specs.pureza}</span>
                 </div>
                 {specs.dimensiones && (
                   <div className="flex justify-between items-start">
-                    <span className="text-sm font-medium uppercase tracking-[0.05em] text-black/70">Dimensiones</span>
-                    <span className="text-sm font-normal text-black/90 text-right">{specs.dimensiones}</span>
+                    <span className="text-base font-medium text-black/70 font-sans">Dimensiones</span>
+                    <span className="text-base font-normal text-black/90 text-right font-sans">{specs.dimensiones}</span>
                   </div>
                 )}
                 {specs.peso && (
                   <div className="flex justify-between items-start">
-                    <span className="text-sm font-medium uppercase tracking-[0.05em] text-black/70">Peso</span>
-                    <span className="text-sm font-normal text-black/90 text-right">{specs.peso}</span>
+                    <span className="text-base font-medium text-black/70 font-sans">Peso</span>
+                    <span className="text-base font-normal text-black/90 text-right font-sans">{specs.peso}</span>
                   </div>
                 )}
                 <div className="flex justify-between items-start">
-                  <span className="text-sm font-medium uppercase tracking-[0.05em] text-black/70">Garantía</span>
-                  <span className="text-sm font-normal text-black/90 text-right">{specs.garantia}</span>
+                  <span className="text-base font-medium text-black/70 font-sans">Garantía</span>
+                  <span className="text-base font-normal text-black/90 text-right font-sans">{specs.garantia}</span>
                 </div>
               </div>
             </div>
 
             {/* Cuidados y Mantenimiento */}
             <div className="mb-8 border-t border-black/10 pt-8">
-              <h2 className="text-sm font-medium uppercase tracking-[0.15em] text-black mb-4 font-display">Cuidados</h2>
-              <p className="text-base font-normal text-black/80 leading-relaxed">
+              <h2 className="text-lg font-semibold text-black mb-4 font-sans">Cuidados</h2>
+              <p className="text-base font-normal text-black/80 leading-relaxed font-sans">
                 {specs.cuidados}
               </p>
             </div>
 
             {/* Información de Envío */}
             <div className="mb-8 border-t border-black/10 pt-8">
-              <h2 className="text-sm font-medium uppercase tracking-[0.15em] text-black mb-4 font-display">Envío y Packaging</h2>
+              <h2 className="text-lg font-semibold text-black mb-4 font-sans">Envío y Packaging</h2>
               <div className="space-y-2">
-                <p className="text-base font-normal text-black/80 leading-relaxed">
+                <p className="text-base font-normal text-black/80 leading-relaxed font-sans">
                   {specs.envio}
                 </p>
-                <p className="text-base font-normal text-black/80 leading-relaxed">
+                <p className="text-base font-normal text-black/80 leading-relaxed font-sans">
                   {specs.packaging}
                 </p>
               </div>
@@ -262,25 +262,25 @@ const ProductDetail = ({ product: initialProduct }: ProductDetailProps) => {
             {/* Cantidad y Botones */}
             <div className="mt-auto space-y-4 border-t border-black/10 pt-8">
               <div className="flex items-center gap-4">
-                <label className="text-sm font-medium uppercase tracking-[0.1em] text-black">Cantidad</label>
+                <label className="text-base font-medium text-black font-sans">Cantidad</label>
                 <div className="flex items-center gap-3">
                   <button
                     onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                    className="flex size-10 items-center justify-center border border-black/20 hover:border-black/40 transition-colors"
+                    className="flex size-12 items-center justify-center border border-black/20 hover:border-black/40 transition-colors"
                     aria-label="Disminuir cantidad"
                   >
-                    <span className="material-symbols-outlined" style={{ fontSize: '18px', fontWeight: 300 }}>remove</span>
+                    <span className="material-symbols-outlined" style={{ fontSize: '20px', fontWeight: 300 }}>remove</span>
                   </button>
-                  <span className="w-16 text-center font-medium text-black text-base">
+                  <span className="w-20 text-center font-semibold text-black text-lg font-sans">
                     {quantity}
                   </span>
                   <button
                     onClick={() => setQuantity(Math.min(currentStock, quantity + 1))}
                     disabled={quantity >= currentStock}
-                    className="flex size-10 items-center justify-center border border-black/20 hover:border-black/40 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                    className="flex size-12 items-center justify-center border border-black/20 hover:border-black/40 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                     aria-label="Aumentar cantidad"
                   >
-                    <span className="material-symbols-outlined" style={{ fontSize: '18px', fontWeight: 300 }}>add</span>
+                    <span className="material-symbols-outlined" style={{ fontSize: '20px', fontWeight: 300 }}>add</span>
                   </button>
                 </div>
               </div>
@@ -288,7 +288,7 @@ const ProductDetail = ({ product: initialProduct }: ProductDetailProps) => {
               <button
                 onClick={handleAddToCart}
                 disabled={isOutOfStock || isAdding}
-                className={`w-full h-14 flex items-center justify-center gap-2 text-sm font-medium uppercase tracking-[0.1em] transition-all ${
+                className={`w-full h-14 flex items-center justify-center gap-2 text-base font-semibold transition-all font-sans ${
                   isOutOfStock
                     ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
                     : 'bg-black text-white hover:bg-black/90 active:bg-black'
@@ -296,7 +296,7 @@ const ProductDetail = ({ product: initialProduct }: ProductDetailProps) => {
                 aria-label={`Añadir ${product.name} al carrito`}
                 tabIndex={isOutOfStock ? -1 : 0}
               >
-                <span className="material-symbols-outlined" style={{ fontSize: '20px', fontWeight: 300 }}>
+                <span className="material-symbols-outlined" style={{ fontSize: '22px', fontWeight: 300 }}>
                   {isAdding ? 'check' : 'shopping_bag'}
                 </span>
                 {isOutOfStock ? 'Agotado' : isAdding ? 'Añadido' : 'Añadir al Carrito'}
@@ -308,7 +308,7 @@ const ProductDetail = ({ product: initialProduct }: ProductDetailProps) => {
         {/* Productos Relacionados */}
         {relatedProducts.length > 0 && (
           <div className="border-t border-black/10 pt-16">
-            <h2 className="text-base font-medium uppercase tracking-[0.15em] text-black mb-12 font-display text-center">
+            <h2 className="text-xl font-semibold text-black mb-12 font-sans text-center">
               Productos Relacionados
             </h2>
             <div className="grid grid-cols-1 gap-12 sm:grid-cols-2 lg:grid-cols-4 mb-12">
@@ -319,7 +319,7 @@ const ProductDetail = ({ product: initialProduct }: ProductDetailProps) => {
             <div className="text-center">
               <a
                 href="/catalogo"
-                className="inline-flex h-12 items-center justify-center bg-black text-white px-10 text-sm font-medium uppercase tracking-[0.1em] transition-all hover:bg-black/90"
+                className="inline-flex h-12 items-center justify-center bg-black text-white px-10 text-base font-semibold transition-all hover:bg-black/90 font-sans"
               >
                 Ver Todo el Catálogo
               </a>
