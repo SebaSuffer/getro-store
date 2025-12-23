@@ -11,13 +11,21 @@
 
 ### Paso 2: Obtener Credenciales
 
-1. Una vez dentro del dashboard, ve a **"Settings"** (Configuración)
-2. En la sección **"Account Details"**, encontrarás:
-   - **Cloud Name**: Tu nombre de cuenta (ej: `gotra-joy`)
-   - **API Key**: Tu clave API
-   - **API Secret**: Tu secreto API (manténlo privado)
+1. Una vez dentro del dashboard, ve a **"API Keys"** (o Settings)
+2. Encontrarás:
+   - **Cloud Name**: `ddzoh72zv` (visible en el tag azul)
+   - **API Key**: `537523844893242` (visible en la tabla)
+   - **API Secret**: `xl5Ba5xinNaoDWfUyHxpCTLZwRk` (visible en la tabla)
 
-3. **Copia estos valores** - los necesitarás para Vercel
+3. **Tus credenciales:**
+   - Cloud Name: `ddzoh72zv`
+   - API Key: `537523844893242`
+   - API Secret: `xl5Ba5xinNaoDWfUyHxpCTLZwRk` ⚠️ Manténlo privado
+
+4. **Para el código solo necesitas el Cloud Name** - las URLs serán:
+   ```
+   https://res.cloudinary.com/ddzoh72zv/image/upload/f_auto,q_auto/
+   ```
 
 ### Paso 3: Subir Imágenes a Cloudinary
 
@@ -81,8 +89,8 @@ Reemplaza las rutas `/images/...` con las URLs de Cloudinary:
 // Antes:
 image_url: '/images/dsc05016.jpg',
 
-// Después:
-image_url: 'https://res.cloudinary.com/tu-cloud-name/image/upload/f_auto,q_auto/dsc05016.jpg',
+// Después (con tu Cloud Name):
+image_url: 'https://res.cloudinary.com/ddzoh72zv/image/upload/f_auto,q_auto/dsc05016.jpg',
 ```
 
 ### Paso 2: Actualizar Componentes
@@ -90,7 +98,7 @@ image_url: 'https://res.cloudinary.com/tu-cloud-name/image/upload/f_auto,q_auto/
 **`src/components/Hero.astro`:**
 ```astro
 <img 
-  src="https://res.cloudinary.com/tu-cloud-name/image/upload/f_auto,q_auto/dsc05016.jpg"
+  src="https://res.cloudinary.com/ddzoh72zv/image/upload/f_auto,q_auto/dsc05016.jpg"
   alt="Colección de joyas GOTRA"
 />
 ```
@@ -98,15 +106,20 @@ image_url: 'https://res.cloudinary.com/tu-cloud-name/image/upload/f_auto,q_auto/
 **`src/components/CategoriesSection.astro`:**
 ```typescript
 const categoryImages: Record<string, string> = {
-  'Cadenas': 'https://res.cloudinary.com/tu-cloud-name/image/upload/f_auto,q_auto/dsc05016.jpg',
-  'Pulseras': 'https://res.cloudinary.com/tu-cloud-name/image/upload/f_auto,q_auto/dsc05015.jpg',
-  // ... etc
+  'Cadenas': 'https://res.cloudinary.com/ddzoh72zv/image/upload/f_auto,q_auto/dsc05016.jpg',
+  'Pulseras': 'https://res.cloudinary.com/ddzoh72zv/image/upload/f_auto,q_auto/dsc05015.jpg',
+  'Anillos': 'https://res.cloudinary.com/ddzoh72zv/image/upload/f_auto,q_auto/dsc05014.jpg',
+  'Colgantes': 'https://res.cloudinary.com/ddzoh72zv/image/upload/f_auto,q_auto/dsc05010.jpg',
+  'Aros': 'https://res.cloudinary.com/ddzoh72zv/image/upload/f_auto,q_auto/dsc05008.jpg',
+  'Esclavas': 'https://res.cloudinary.com/ddzoh72zv/image/upload/f_auto,q_auto/dsc05012.jpg',
 };
 ```
 
 **`src/components/PaymentMethods.astro`:**
 ```astro
-<img src="https://res.cloudinary.com/tu-cloud-name/image/upload/f_auto,q_auto/Transbank-1200px-logo.png" />
+<img src="https://res.cloudinary.com/ddzoh72zv/image/upload/f_auto,q_auto/Transbank-1200px-logo.png" />
+<img src="https://res.cloudinary.com/ddzoh72zv/image/upload/f_auto,q_auto/Mercado-Pago-Logo.png" />
+<img src="https://res.cloudinary.com/ddzoh72zv/image/upload/f_auto,q_auto/transferencia-logo.png" />
 ```
 
 ### Paso 3: Crear Variable de Entorno (Opcional)
@@ -115,7 +128,7 @@ Para no repetir la URL base, puedes crear una variable:
 
 **`src/utils/cloudinary.ts`:**
 ```typescript
-const CLOUDINARY_BASE_URL = 'https://res.cloudinary.com/tu-cloud-name/image/upload/f_auto,q_auto';
+const CLOUDINARY_BASE_URL = 'https://res.cloudinary.com/ddzoh72zv/image/upload/f_auto,q_auto';
 
 export const getCloudinaryUrl = (imageName: string): string => {
   return `${CLOUDINARY_BASE_URL}/${imageName}`;
@@ -136,10 +149,12 @@ Si usas variables de entorno para Cloudinary:
 
 1. Ve a tu proyecto en [Vercel Dashboard](https://vercel.com/dashboard)
 2. Ve a **Settings** → **Environment Variables**
-3. Agrega:
-   - `CLOUDINARY_CLOUD_NAME` = `tu-cloud-name`
-   - `CLOUDINARY_API_KEY` = `tu-api-key`
-   - `CLOUDINARY_API_SECRET` = `tu-api-secret` (solo si necesitas subir desde el servidor)
+3. Agrega (opcional, solo si necesitas subir imágenes desde el servidor):
+   - `CLOUDINARY_CLOUD_NAME` = `ddzoh72zv`
+   - `CLOUDINARY_API_KEY` = `537523844893242`
+   - `CLOUDINARY_API_SECRET` = `xl5Ba5xinNaoDWfUyHxpCTLZwRk` ⚠️ Manténlo privado
+   
+   **Nota:** Si solo vas a usar URLs directas (no subir desde el código), NO necesitas estas variables.
 
 ### Paso 2: Redeploy
 
