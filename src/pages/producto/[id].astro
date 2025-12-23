@@ -9,16 +9,14 @@ import { getProductById, getAllProducts } from '../../data/products';
 // Deshabilitar prerender porque necesitamos datos dinámicos de Turso
 export const prerender = false;
 
-export async function getStaticPaths() {
-  const products = await getAllProducts();
-  return products.map((product) => ({
-    params: { id: product.id },
-    props: { product },
-  }));
+const { id } = Astro.params;
+
+if (!id) {
+  return Astro.redirect('/catalogo');
 }
 
-const { id } = Astro.params;
-const { product } = Astro.props;
+// Cargar producto desde Turso
+const product = await getProductById(id);
 
 if (!product) {
   return Astro.redirect('/catalogo');
