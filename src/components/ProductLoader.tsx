@@ -14,13 +14,12 @@ const ProductLoader = ({ initialProducts = [], category = null }: ProductLoaderP
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Si ya hay productos iniciales, no recargar
-    if (initialProducts.length > 0) {
-      setLoading(false);
-      return;
-    }
+    console.log('[PRODUCT-LOADER] Component mounted', { 
+      initialProductsCount: initialProducts.length, 
+      category 
+    });
 
-    // Cargar productos desde la API en el cliente
+    // Siempre intentar cargar productos en el cliente para asegurar que estén actualizados
     const loadProducts = async () => {
       try {
         console.log('[PRODUCT-LOADER] Loading products from API...');
@@ -28,10 +27,19 @@ const ProductLoader = ({ initialProducts = [], category = null }: ProductLoaderP
         setError(null);
 
         let allProducts = await getAllProducts();
+        console.log('[PRODUCT-LOADER] Raw products from API:', allProducts.length);
         
         // Filtrar por categoría si se especifica
         if (category) {
           allProducts = allProducts.filter(p => p.category === category);
+          console.log(`[PRODUCT-LOADER] Filtered by category "${category}":`, allProducts.length);
+        }
+
+        // Filtrar solo productos destacados si estamos en FeaturedProducts
+        // (esto se detecta si no hay categoría y estamos en la home)
+        if (!category && initialProducts.length === 0) {
+          allProducts = allProducts.filter(p => p.is_featured);
+          console.log('[PRODUCT-LOADER] Filtered featured products:', allProducts.length);
         }
 
         console.log(`[PRODUCT-LOADER] ✅ Loaded ${allProducts.length} products`);
@@ -39,13 +47,23 @@ const ProductLoader = ({ initialProducts = [], category = null }: ProductLoaderP
         setLoading(false);
       } catch (err: any) {
         console.error('[PRODUCT-LOADER] ❌ Error loading products:', err);
+        console.error('[PRODUCT-LOADER] Error details:', {
+          message: err.message,
+          stack: err.stack,
+        });
         setError('Error al cargar productos. Por favor, recarga la página.');
         setLoading(false);
+        // Si hay productos iniciales, mantenerlos como fallback
+        if (initialProducts.length > 0) {
+          setProducts(initialProducts);
+        }
       }
     };
 
+    // Si no hay productos iniciales, cargar inmediatamente
+    // Si hay productos iniciales, también cargar para actualizar
     loadProducts();
-  }, [category, initialProducts.length]);
+  }, [category]);
 
   if (loading) {
     return (

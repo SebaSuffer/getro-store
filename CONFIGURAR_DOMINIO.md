@@ -66,43 +66,67 @@ Esta es la opción más simple y recomendada.
 
 ---
 
-## Opción 2: Usar Registros DNS (Alternativa)
+## Opción 2: Usar Registros DNS (Lo que Vercel está mostrando)
 
-Si prefieres mantener los nameservers de HostingPlus, puedes configurar registros DNS:
+**Vercel está mostrando registros DNS en lugar de nameservers.** Esto significa que debes configurar registros DNS en HostingPlus.
 
-### Paso 1: Agregar Dominio en Vercel
+### Paso 1: Ver los Registros DNS en Vercel
 
 1. Ve a Vercel → Tu proyecto → **Settings** → **Domains**
-2. Agrega `gotrachile.com`
-3. Vercel te mostrará los registros DNS que necesitas configurar
+2. Haz clic en el dominio `gotrachile.com`
+3. Verás dos pestañas: **"DNS Records"** y **"Vercel DNS"**
+4. Haz clic en **"DNS Records"** (debería estar seleccionada por defecto)
 
 ### Paso 2: Configurar Registros en HostingPlus
 
-En HostingPlus, necesitarás agregar estos registros (Vercel te dará los valores exactos):
+Vercel te mostrará los registros exactos que necesitas. Basándome en lo que veo, necesitas:
 
-**Registro A o CNAME:**
-- **Tipo**: `CNAME` o `A`
-- **Nombre**: `@` o `gotrachile.com`
-- **Valor**: El que te dé Vercel (algo como `cname.vercel-dns.com` o una IP)
+#### Para `gotrachile.com` (dominio raíz):
+- **Tipo**: `A`
+- **Nombre**: `@` (o déjalo vacío, dependiendo de tu panel)
+- **Valor**: `216.198.79.1` (o el IP que Vercel te muestre)
+- **TTL**: 3600 (o el valor por defecto)
 
-**Para www:**
+#### Para `www.gotrachile.com`:
 - **Tipo**: `CNAME`
 - **Nombre**: `www`
-- **Valor**: El que te dé Vercel
+- **Valor**: `bdba6edb2a0ec205.vercel-dns-017.com.` (o el CNAME que Vercel te muestre - **incluye el punto final**)
+- **TTL**: 3600 (o el valor por defecto)
 
-### Paso 3: Verificar en Vercel
+### Paso 3: Configurar en HostingPlus
 
-Vercel verificará automáticamente cuando los registros estén configurados correctamente.
+1. Ve a tu panel de HostingPlus
+2. Busca la sección de **"DNS"** o **"Zona DNS"** o **"Registros DNS"**
+3. Agrega los dos registros mencionados arriba
+4. **IMPORTANTE**: 
+   - Para el registro A, el nombre puede ser `@` o `gotrachile.com` o simplemente vacío
+   - Para el CNAME, el valor debe terminar con un punto (`.`) al final
+5. Guarda los cambios
+
+### Paso 4: Verificar en Vercel
+
+1. Vuelve a Vercel
+2. Haz clic en **"Refresh"** en el dominio
+3. Vercel verificará automáticamente cuando los registros estén configurados
+4. El estado cambiará de "Invalid Configuration" a "Valid Configuration" cuando esté listo
+
+**Nota:** La propagación DNS puede tardar entre 5 minutos y 48 horas, pero generalmente es menos de 1 hora.
 
 ---
 
 ## Recomendación
 
-**Usa la Opción 1 (Nameservers de Vercel)** porque:
-- ✅ Más simple de configurar
-- ✅ Vercel gestiona todo automáticamente
+**Vercel está mostrando registros DNS (Opción 2), así que usa esa:**
+
+1. Ve a la pestaña **"DNS Records"** en Vercel
+2. Copia los registros exactos que Vercel muestra
+3. Configúralos en HostingPlus
+4. Espera la propagación (5 minutos a 48 horas)
+
+**Ventajas:**
+- ✅ Mantienes tus nameservers actuales de HostingPlus
 - ✅ SSL/HTTPS se configura automáticamente
-- ✅ Mejor rendimiento
+- ✅ Vercel gestiona la verificación automáticamente
 
 ---
 
