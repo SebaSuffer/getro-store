@@ -11,12 +11,9 @@ const ProductDetail = ({ product: initialProduct }: ProductDetailProps) => {
   const [isInCart, setIsInCart] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
   const [quantity, setQuantity] = useState(1);
-  const [isEditing, setIsEditing] = useState(false);
   const [currentStock, setCurrentStock] = useState(initialProduct.stock);
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
   const [product, setProduct] = useState(initialProduct);
-  const [editedDescription, setEditedDescription] = useState(initialProduct.description || '');
-  const [hasDescription, setHasDescription] = useState(!!initialProduct.description);
 
   useEffect(() => {
     const checkCart = () => {
@@ -35,8 +32,6 @@ const ProductDetail = ({ product: initialProduct }: ProductDetailProps) => {
           setProduct(updatedProduct);
           const stock = await getProductStock(updatedProduct.id);
           setCurrentStock(stock || updatedProduct.stock);
-          setEditedDescription(updatedProduct.description || '');
-          setHasDescription(!!updatedProduct.description);
         }
       } catch (error) {
         console.error('Error updating product:', error);
@@ -57,8 +52,6 @@ const ProductDetail = ({ product: initialProduct }: ProductDetailProps) => {
         const currentProduct = await getProductById(product.id);
         if (currentProduct) {
           setProduct(currentProduct);
-          setEditedDescription(currentProduct.description || '');
-          setHasDescription(!!currentProduct.description);
         }
         
         // Cargar stock actualizado
@@ -106,36 +99,6 @@ const ProductDetail = ({ product: initialProduct }: ProductDetailProps) => {
     }, 300);
   };
 
-  const handleSaveDescription = async () => {
-    try {
-      // Actualizar descripción en Turso
-      const response = await fetch(`/api/products/${product.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...product,
-          description: editedDescription,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Error al guardar la descripción');
-      }
-
-      setHasDescription(true);
-      setIsEditing(false);
-      
-      // Recargar producto
-      const { getProductById } = await import('../data/products');
-      const updatedProduct = await getProductById(product.id);
-      if (updatedProduct) {
-        setProduct(updatedProduct);
-      }
-    } catch (error) {
-      console.error('Error saving description:', error);
-      alert('Error al guardar la descripción');
-    }
-  };
 
   const isOutOfStock = currentStock <= 0;
 
@@ -239,69 +202,9 @@ const ProductDetail = ({ product: initialProduct }: ProductDetailProps) => {
             {/* Descripción */}
             <div className="mb-8">
               <h2 className="text-sm font-medium uppercase tracking-[0.15em] text-black mb-4 font-display">Descripción</h2>
-              
-              {!hasDescription && !isEditing && (
-                <div className="border border-yellow-500/30 bg-yellow-500/10 p-4 mb-4">
-                  <p className="text-sm text-yellow-800/90 font-normal mb-3">
-                    ⚠️ Este producto aún no tiene descripción. Puedes agregar una descripción haciendo clic en "Editar Descripción".
-                  </p>
-                  <button
-                    onClick={() => setIsEditing(true)}
-                    className="text-sm font-medium uppercase tracking-[0.1em] text-yellow-800 hover:text-yellow-900 underline"
-                  >
-                    Editar Descripción
-                  </button>
-                </div>
-              )}
-
-              {isEditing ? (
-                <div className="space-y-4">
-                  <textarea
-                    value={editedDescription}
-                    onChange={(e) => setEditedDescription(e.target.value)}
-                    rows={6}
-                    className="w-full border border-black/20 px-4 py-3 text-base font-normal bg-white text-black focus:outline-none focus:border-black/40 transition-colors resize-none"
-                    placeholder="Agrega una descripción detallada del producto..."
-                  />
-                  <div className="flex gap-3">
-                    <button
-                      onClick={handleSaveDescription}
-                      className="px-6 py-2 bg-black text-white text-sm font-medium uppercase tracking-[0.1em] hover:bg-black/90 transition-colors"
-                    >
-                      Guardar
-                    </button>
-                    <button
-                      onClick={() => {
-                        setIsEditing(false);
-                        setEditedDescription(product.description || '');
-                      }}
-                      className="px-6 py-2 border border-black/20 text-black text-sm font-medium uppercase tracking-[0.1em] hover:border-black/40 transition-colors"
-                    >
-                      Cancelar
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <div>
-                  {hasDescription ? (
-                    <p className="text-base text-black/80 font-normal leading-relaxed whitespace-pre-line mb-4">
-                      {editedDescription}
-                    </p>
-                  ) : (
-                    <p className="text-base text-black/80 font-normal leading-relaxed mb-4">
-                      {product.description || 'Pieza de joyería fina elaborada con los más altos estándares de calidad.'}
-                    </p>
-                  )}
-                  {hasDescription && (
-                    <button
-                      onClick={() => setIsEditing(true)}
-                      className="text-sm font-medium uppercase tracking-[0.1em] text-black/70 hover:text-black underline"
-                    >
-                      Editar Descripción
-                    </button>
-                  )}
-                </div>
-              )}
+              <p className="text-base text-black/80 font-normal leading-relaxed whitespace-pre-line">
+                {product.description || 'Pieza de joyería fina elaborada con los más altos estándares de calidad.'}
+              </p>
             </div>
 
             {/* Especificaciones Técnicas */}
