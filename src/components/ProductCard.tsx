@@ -69,13 +69,11 @@ const ProductCard = ({ product: initialProduct }: ProductCardProps) => {
     window.addEventListener('cartUpdated', checkCart);
     window.addEventListener('productUpdated', handleProductUpdate as EventListener);
     window.addEventListener('productDeleted', handleProductDelete as EventListener);
-    window.addEventListener('storage', handleStorageChange);
     
     return () => {
       window.removeEventListener('cartUpdated', checkCart);
       window.removeEventListener('productUpdated', handleProductUpdate as EventListener);
       window.removeEventListener('productDeleted', handleProductDelete as EventListener);
-      window.removeEventListener('storage', handleStorageChange);
     };
   }, [product.id]);
 

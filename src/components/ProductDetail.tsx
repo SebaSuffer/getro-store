@@ -78,7 +78,6 @@ const ProductDetail = ({ product: initialProduct }: ProductDetailProps) => {
     return () => {
       window.removeEventListener('cartUpdated', checkCart);
       window.removeEventListener('productUpdated', handleProductUpdate as EventListener);
-      window.removeEventListener('storage', handleStorageChange);
     };
   }, [product.id, product.stock]);
 
