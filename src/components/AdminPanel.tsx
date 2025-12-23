@@ -189,13 +189,20 @@ const AdminPanel = () => {
     // Permitir cambiar la URL de la imagen con un link
     const editedProducts = JSON.parse(localStorage.getItem('gotra_edited_products') || '{}');
     const productToSave = {
-      ...editingProduct,
-      // Guardar la URL de la imagen editada
+      name: editingProduct.name,
+      description: editingProduct.description,
+      price: editingProduct.price,
+      stock: editingProduct.stock,
+      category: editingProduct.category,
       image_url: editingProduct.image_url,
       image_alt: editingProduct.image_alt || editingProduct.name,
+      is_new: editingProduct.is_new,
+      is_featured: editingProduct.is_featured,
     };
     editedProducts[editingProduct.id] = productToSave;
     localStorage.setItem('gotra_edited_products', JSON.stringify(editedProducts));
+    
+    console.log('Producto guardado en localStorage:', editingProduct.id, productToSave);
 
     // Actualizar stock en el sistema de stock
     if (typeof window !== 'undefined') {
@@ -208,13 +215,24 @@ const AdminPanel = () => {
     loadProducts();
     
     // Disparar evento para que otras páginas sepan que deben recargar
-    // Disparar sin productId específico para que todos los componentes se actualicen
-    if (typeof window !== 'undefined') {
-      // Disparar evento global para que todos los ProductCards se actualicen
-      window.dispatchEvent(new CustomEvent('productUpdated'));
-      // También disparar con el ID específico por compatibilidad
-      window.dispatchEvent(new CustomEvent('productUpdated', { detail: { productId: editingProduct.id } }));
-    }
+    // Usar un pequeño delay para asegurar que localStorage se haya guardado
+    setTimeout(() => {
+      if (typeof window !== 'undefined') {
+        // Disparar evento global para que todos los ProductCards se actualicen
+        const event = new CustomEvent('productUpdated', { 
+          detail: { productId: editingProduct.id },
+          bubbles: true 
+        });
+        window.dispatchEvent(event);
+        console.log('Evento productUpdated disparado para:', editingProduct.id);
+        
+        // También disparar un evento de storage para forzar actualización
+        window.dispatchEvent(new StorageEvent('storage', {
+          key: 'gotra_edited_products',
+          newValue: JSON.stringify(editedProducts)
+        }));
+      }
+    }, 100);
     
     // Actualizar el producto seleccionado si es el mismo
     if (selectedProduct && selectedProduct.id === editingProduct.id) {

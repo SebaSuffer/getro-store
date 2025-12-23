@@ -34,24 +34,38 @@ const ProductDetail = ({ product: initialProduct }: ProductDetailProps) => {
       setIsInCart(cart.some(item => item.product.id === product.id));
     };
     
-    const handleProductUpdate = (event: CustomEvent) => {
-      if (event.detail.productId === product.id) {
-        // Recargar producto desde localStorage
-        const updatedProduct = getProductById(product.id);
-        if (updatedProduct) {
-          setProduct(updatedProduct);
-          const stock = getProductStock(updatedProduct.id);
-          setCurrentStock(stock || updatedProduct.stock);
-          const savedDescription = loadEditedDescription();
-          setEditedDescription(savedDescription);
-          setHasDescription(!!savedDescription);
-        }
+    const handleProductUpdate = (event?: CustomEvent) => {
+      // Recargar producto desde localStorage cuando se actualiza
+      const updatedProduct = getProductById(product.id);
+      if (updatedProduct) {
+        console.log('ProductDetail: Actualizando producto', product.id, updatedProduct.name);
+        setProduct(updatedProduct);
+        const stock = getProductStock(updatedProduct.id);
+        setCurrentStock(stock || updatedProduct.stock);
+        const savedDescription = loadEditedDescription();
+        setEditedDescription(savedDescription);
+        setHasDescription(!!savedDescription);
+      }
+    };
+    
+    const handleStorageChange = (e: StorageEvent) => {
+      // Escuchar cambios en localStorage
+      if (e.key === 'gotra_edited_products') {
+        handleProductUpdate();
       }
     };
     
     checkCart();
     window.addEventListener('cartUpdated', checkCart);
     window.addEventListener('productUpdated', handleProductUpdate as EventListener);
+    window.addEventListener('storage', handleStorageChange);
+    
+    // Cargar producto actualizado desde localStorage al montar
+    const currentProduct = getProductById(product.id);
+    if (currentProduct && currentProduct.name !== product.name) {
+      console.log('ProductDetail: Cargando producto actualizado al montar', product.id);
+      setProduct(currentProduct);
+    }
     
     // Cargar stock actualizado
     const stock = getProductStock(product.id);
@@ -69,6 +83,7 @@ const ProductDetail = ({ product: initialProduct }: ProductDetailProps) => {
     return () => {
       window.removeEventListener('cartUpdated', checkCart);
       window.removeEventListener('productUpdated', handleProductUpdate as EventListener);
+      window.removeEventListener('storage', handleStorageChange);
     };
   }, [product.id, product.stock]);
 

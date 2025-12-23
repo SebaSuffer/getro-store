@@ -20,11 +20,12 @@ const ProductCard = ({ product: initialProduct }: ProductCardProps) => {
       setIsInCart(cart.some(item => item.product.id === product.id));
     };
     
-    const handleProductUpdate = () => {
+    const handleProductUpdate = (event?: CustomEvent) => {
       // Recargar producto desde localStorage cuando se actualiza cualquier producto
       // Esto asegura que todos los productos se actualicen cuando hay cambios
       const updatedProduct = getProductById(product.id);
       if (updatedProduct) {
+        console.log('ProductCard: Actualizando producto', product.id, updatedProduct.name);
         setProduct(updatedProduct);
         const stock = getProductStock(updatedProduct.id);
         setCurrentStock(stock || updatedProduct.stock);
@@ -42,9 +43,17 @@ const ProductCard = ({ product: initialProduct }: ProductCardProps) => {
       }
     };
     
+    const handleStorageChange = (e: StorageEvent) => {
+      // Escuchar cambios en localStorage
+      if (e.key === 'gotra_edited_products') {
+        handleProductUpdate();
+      }
+    };
+    
     // Cargar producto actualizado desde localStorage al montar
     const currentProduct = getProductById(product.id);
-    if (currentProduct) {
+    if (currentProduct && currentProduct.name !== product.name) {
+      console.log('ProductCard: Cargando producto actualizado al montar', product.id);
       setProduct(currentProduct);
       const stock = getProductStock(currentProduct.id);
       setCurrentStock(stock || currentProduct.stock);
@@ -54,11 +63,13 @@ const ProductCard = ({ product: initialProduct }: ProductCardProps) => {
     window.addEventListener('cartUpdated', checkCart);
     window.addEventListener('productUpdated', handleProductUpdate as EventListener);
     window.addEventListener('productDeleted', handleProductDelete as EventListener);
+    window.addEventListener('storage', handleStorageChange);
     
     return () => {
       window.removeEventListener('cartUpdated', checkCart);
       window.removeEventListener('productUpdated', handleProductUpdate as EventListener);
       window.removeEventListener('productDeleted', handleProductDelete as EventListener);
+      window.removeEventListener('storage', handleStorageChange);
     };
   }, [product.id]);
 
