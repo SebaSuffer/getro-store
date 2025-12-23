@@ -3,12 +3,12 @@ import { getCategories } from '../data/products';
 
 const categories = getCategories();
 const categoryImages: Record<string, string> = {
-  'Cadenas': '/images/cadena-pancer-plata-3mm.jpg',
-  'Pulseras': '/images/pulsera-capri-plata-4mm.jpg',
-  'Anillos': '/images/anillo-black-2-line-v.jpg',
-  'Colgantes': '/images/colgante-placa-plata.jpg',
-  'Aros': '/images/aro-argolla-lumiere-plata-12mm.jpg',
-  'Esclavas': '/images/esclava-plata-5mm.jpg',
+  'Cadenas': '/images/dsc05016.jpg',
+  'Pulseras': '/images/dsc05015.jpg',
+  'Anillos': '/images/dsc05014.jpg',
+  'Colgantes': '/images/dsc05010.jpg',
+  'Aros': '/images/dsc05008.jpg',
+  'Esclavas': '/images/dsc05012.jpg',
 };
 ---
 
@@ -22,7 +22,7 @@ const categoryImages: Record<string, string> = {
       {categories.map((category) => (
         <a href={`/catalogo?categoria=${encodeURIComponent(category)}`} class="group relative aspect-square overflow-hidden bg-black">
           <img
-            src={categoryImages[category] || '/images/cadena-pancer-plata-3mm.jpg'}
+            src={categoryImages[category] || '/images/dsc05016.jpg'}
             alt={category}
             class="h-full w-full object-cover opacity-60 group-hover:opacity-80 transition-opacity duration-500"
             loading="lazy"
