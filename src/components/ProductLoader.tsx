@@ -6,9 +6,10 @@ import ProductCard from './ProductCard';
 interface ProductLoaderProps {
   initialProducts?: Product[];
   category?: string | null;
+  featuredOnly?: boolean;
 }
 
-const ProductLoader = ({ initialProducts = [], category = null }: ProductLoaderProps) => {
+const ProductLoader = ({ initialProducts = [], category = null, featuredOnly = false }: ProductLoaderProps) => {
   const [products, setProducts] = useState<Product[]>(initialProducts);
   const [loading, setLoading] = useState(initialProducts.length === 0);
   const [error, setError] = useState<string | null>(null);
@@ -35,9 +36,8 @@ const ProductLoader = ({ initialProducts = [], category = null }: ProductLoaderP
           console.log(`[PRODUCT-LOADER] Filtered by category "${category}":`, allProducts.length);
         }
 
-        // Filtrar solo productos destacados si estamos en FeaturedProducts
-        // (esto se detecta si no hay categoría y estamos en la home)
-        if (!category && initialProducts.length === 0) {
+        // Filtrar solo productos destacados si featuredOnly está activado
+        if (featuredOnly) {
           allProducts = allProducts.filter(p => p.is_featured);
           console.log('[PRODUCT-LOADER] Filtered featured products:', allProducts.length);
         }
