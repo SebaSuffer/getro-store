@@ -2,6 +2,15 @@
 import '../styles/globals.css';
 ---
 
+<script>
+  // Migrar productos editados con URLs antiguas a Cloudinary
+  if (typeof window !== 'undefined') {
+    import('../utils/migrateImages').then(({ migrateEditedProducts }) => {
+      migrateEditedProducts();
+    });
+  }
+</script>
+
 <!DOCTYPE html>
 <html lang="es" class="light">
   <head>

@@ -75,10 +75,13 @@ const ProductDetail = ({ product }: ProductDetailProps) => {
 
   const handleSaveDescription = () => {
     // Guardar en localStorage para persistencia
+    // IMPORTANTE: Solo guardar descripción, no image_url (siempre usar la del producto original)
     const editedProducts = JSON.parse(localStorage.getItem('gotra_edited_products') || '{}');
     editedProducts[product.id] = {
       ...product,
       description: editedDescription,
+      // Asegurar que siempre use la URL de Cloudinary del producto original
+      image_url: product.image_url,
     };
     localStorage.setItem('gotra_edited_products', JSON.stringify(editedProducts));
     setHasDescription(true);

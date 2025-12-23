@@ -75,8 +75,14 @@ const AdminPanel = () => {
     if (!editingProduct) return;
 
     // Guardar cambios en localStorage
+    // IMPORTANTE: No guardar image_url en localStorage, siempre usar la del producto original
     const editedProducts = JSON.parse(localStorage.getItem('gotra_edited_products') || '{}');
-    editedProducts[editingProduct.id] = editingProduct;
+    const productToSave = {
+      ...editingProduct,
+      // Asegurar que siempre use la URL de Cloudinary del producto original
+      image_url: getAllProducts().find(p => p.id === editingProduct.id)?.image_url || editingProduct.image_url,
+    };
+    editedProducts[editingProduct.id] = productToSave;
     localStorage.setItem('gotra_edited_products', JSON.stringify(editedProducts));
 
     // Actualizar stock en el sistema de stock
