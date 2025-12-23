@@ -138,15 +138,15 @@ const CheckoutForm = () => {
   }
 
   return (
-    <div className="flex flex-col gap-12 lg:flex-row">
-      <div className="flex-1">
-        <form onSubmit={handleSubmit} className="space-y-8">
-          <div className="border border-black/10 bg-white p-8">
-            <h2 className="text-base font-semibold text-black mb-8 font-sans">Información de Contacto</h2>
+    <div className="flex flex-col gap-8 lg:flex-row">
+      <div className="w-full lg:w-1/2">
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="border border-black/10 bg-white p-6">
+            <h2 className="text-base font-semibold text-black mb-6 font-sans">Información de Contacto</h2>
             
-            <div className="space-y-6">
+            <div className="space-y-4">
               <div>
-                <label htmlFor="customer_name" className="block text-sm font-medium text-black mb-2">
+                <label htmlFor="customer_name" className="block text-sm font-medium text-black mb-1.5">
                   Nombre Completo <span className="text-red-600">*</span>
                 </label>
                 <input
@@ -154,7 +154,7 @@ const CheckoutForm = () => {
                   id="customer_name"
                   value={formData.customer_name}
                   onChange={(e) => handleInputChange('customer_name', e.target.value)}
-                  className={`w-full border px-4 py-3 text-base font-normal ${
+                  className={`w-full border px-4 py-2.5 text-base font-normal ${
                     errors.customer_name
                       ? 'border-red-500'
                       : 'border-black/20'
@@ -167,7 +167,7 @@ const CheckoutForm = () => {
               </div>
               
               <div>
-                <label htmlFor="customer_email" className="block text-sm font-medium text-black mb-2">
+                <label htmlFor="customer_email" className="block text-sm font-medium text-black mb-1.5">
                   Email <span className="text-red-600">*</span>
                 </label>
                 <input
@@ -175,7 +175,7 @@ const CheckoutForm = () => {
                   id="customer_email"
                   value={formData.customer_email}
                   onChange={(e) => handleInputChange('customer_email', e.target.value)}
-                  className={`w-full border px-4 py-3 text-base font-normal ${
+                  className={`w-full border px-4 py-2.5 text-base font-normal ${
                     errors.customer_email
                       ? 'border-red-500'
                       : 'border-black/20'
@@ -188,7 +188,7 @@ const CheckoutForm = () => {
               </div>
               
               <div>
-                <label htmlFor="customer_phone" className="block text-sm font-medium text-black mb-2">
+                <label htmlFor="customer_phone" className="block text-sm font-medium text-black mb-1.5">
                   Teléfono <span className="text-red-600">*</span>
                 </label>
                 <input
@@ -196,7 +196,7 @@ const CheckoutForm = () => {
                   id="customer_phone"
                   value={formData.customer_phone}
                   onChange={(e) => handleInputChange('customer_phone', e.target.value)}
-                  className={`w-full border px-4 py-3 text-base font-normal ${
+                  className={`w-full border px-4 py-2.5 text-base font-normal ${
                     errors.customer_phone
                       ? 'border-red-500'
                       : 'border-black/20'
@@ -209,15 +209,15 @@ const CheckoutForm = () => {
               </div>
               
               <div>
-                <label htmlFor="customer_address" className="block text-sm font-medium text-black mb-2">
+                <label htmlFor="customer_address" className="block text-sm font-medium text-black mb-1.5">
                   Dirección de Envío <span className="text-red-600">*</span>
                 </label>
                 <textarea
                   id="customer_address"
                   value={formData.customer_address}
                   onChange={(e) => handleInputChange('customer_address', e.target.value)}
-                  rows={3}
-                  className={`w-full border px-4 py-3 text-base font-normal ${
+                  rows={2}
+                  className={`w-full border px-4 py-2.5 text-base font-normal ${
                     errors.customer_address
                       ? 'border-red-500'
                       : 'border-black/20'
@@ -231,10 +231,10 @@ const CheckoutForm = () => {
             </div>
           </div>
           
-          <div className="border border-black/10 bg-white p-8">
-            <h2 className="text-base font-semibold text-black mb-8 font-sans">Método de Pago</h2>
+          <div className="border border-black/10 bg-white p-6">
+            <h2 className="text-base font-semibold text-black mb-6 font-sans">Método de Pago</h2>
             
-            <div className="space-y-4">
+            <div className="space-y-3">
               {PAYMENT_METHODS.map((method) => (
                 <label
                   key={method.id}
@@ -269,25 +269,34 @@ const CheckoutForm = () => {
         </form>
       </div>
       
-      <div className="lg:w-96">
-        <div className="sticky top-24 border border-black/10 bg-white p-8">
-          <h2 className="text-base font-semibold text-black mb-8 font-sans">Resumen de Compra</h2>
+      <div className="w-full lg:w-1/2">
+        <div className="sticky top-24 border border-black/10 bg-white p-8 lg:p-10">
+          <h2 className="text-xl font-semibold text-black mb-8 font-sans">Resumen de Compra</h2>
           
-          <div className="space-y-4 mb-8">
+          <div className="space-y-5 mb-8">
             {cartItems.map((item) => (
-              <div key={item.product.id} className="flex justify-between text-sm font-normal">
-                <span className="text-black/80 font-sans">
-                  {item.product.name} x{item.quantity}
-                </span>
-                <span className="text-black font-sans">
-                  ${(item.product.price * item.quantity).toLocaleString('es-CL')} CLP
-                </span>
+              <div key={item.product.id} className="flex justify-between items-start">
+                <div className="flex-1 pr-4">
+                  <p className="text-base font-medium text-black font-sans mb-1">
+                    {item.product.name}
+                  </p>
+                  <p className="text-sm text-black/60 font-normal font-sans">
+                    Cantidad: {item.quantity}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-lg font-semibold text-black font-sans">
+                    ${(item.product.price * item.quantity).toLocaleString('es-CL')} CLP
+                  </p>
+                </div>
               </div>
             ))}
             
-            <div className="border-t border-black/10 pt-4 flex justify-between">
-              <span className="text-lg font-semibold text-black font-sans">Total</span>
-              <span className="text-lg font-semibold text-black font-sans">${total.toLocaleString('es-CL')} CLP</span>
+            <div className="border-t-2 border-black/20 pt-6 mt-6">
+              <div className="flex justify-between items-center">
+                <span className="text-xl font-semibold text-black font-sans">Total</span>
+                <span className="text-2xl font-bold text-black font-sans">${total.toLocaleString('es-CL')} CLP</span>
+              </div>
             </div>
           </div>
         </div>
