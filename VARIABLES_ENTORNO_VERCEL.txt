@@ -1,0 +1,38 @@
+═══════════════════════════════════════════════════════════
+VARIABLES DE ENTORNO PARA VERCEL
+═══════════════════════════════════════════════════════════
+
+Copia y pega estas variables en Vercel → Settings → Environment Variables:
+
+───────────────────────────────────────────────────────────
+NOMBRE: TURSO_DATABASE_URL
+VALOR: libsql://joystore-sebasuffer.aws-us-east-1.turso.io
+───────────────────────────────────────────────────────────
+
+───────────────────────────────────────────────────────────
+NOMBRE: TURSO_AUTH_TOKEN
+VALOR: [COPIA EL TOKEN COMPLETO DESDE TURSO]
+───────────────────────────────────────────────────────────
+
+⚠️ IMPORTANTE: El token en la imagen está truncado.
+Debes copiar el token COMPLETO desde Turso:
+1. Ve a Turso → Tu base de datos → Settings
+2. Haz clic en "Create Token" o "Show Token"
+3. Copia TODO el token (es muy largo, termina con muchos caracteres)
+4. Pégalo completo en Vercel
+
+═══════════════════════════════════════════════════════════
+INSTRUCCIONES:
+═══════════════════════════════════════════════════════════
+
+1. Ve a Vercel → Tu proyecto → Settings → Environment Variables
+2. Haz clic en "Add New"
+3. Agrega cada variable:
+   - Name: TURSO_DATABASE_URL
+   - Value: libsql://joystore-sebasuffer.aws-us-east-1.turso.io
+   - Environment: Production, Preview, Development (selecciona todos)
+4. Haz clic en "Save"
+5. Repite para TURSO_AUTH_TOKEN con el token completo
+
+═══════════════════════════════════════════════════════════
+
