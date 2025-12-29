@@ -16,7 +16,11 @@ export const getCart = (): CartItem[] => {
   }
 };
 
-export const addToCart = async (product: Product, quantity: number = 1): Promise<boolean> => {
+export const addToCart = async (
+  product: Product, 
+  quantity: number = 1, 
+  variation?: { id: string; brand: string; thickness: string; length: string; price_modifier: number }
+): Promise<boolean> => {
   if (typeof window === 'undefined') return false;
   
   // Validar stock antes de agregar
@@ -26,7 +30,18 @@ export const addToCart = async (product: Product, quantity: number = 1): Promise
   }
   
   const cart = getCart();
-  const existingItemIndex = cart.findIndex(item => item.product.id === product.id);
+  
+  // Para productos con variaciones, buscar por producto + variación
+  // Para productos sin variaciones, buscar solo por producto
+  const existingItemIndex = variation
+    ? cart.findIndex(item => 
+        item.product.id === product.id && 
+        item.variation?.id === variation.id
+      )
+    : cart.findIndex(item => 
+        item.product.id === product.id && 
+        !item.variation
+      );
   
   if (existingItemIndex >= 0) {
     const newQuantity = cart[existingItemIndex].quantity + quantity;
@@ -36,7 +51,7 @@ export const addToCart = async (product: Product, quantity: number = 1): Promise
     }
     cart[existingItemIndex].quantity = newQuantity;
   } else {
-    cart.push({ product, quantity });
+    cart.push({ product, quantity, variation });
   }
   
   localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cart));
@@ -93,7 +108,10 @@ export const getCartItemCount = (): number => {
 
 export const getCartTotal = (): number => {
   const cart = getCart();
-  return cart.reduce((total, item) => total + (item.product.price * item.quantity), 0);
+  return cart.reduce((total, item) => {
+    const itemPrice = item.product.price + (item.variation?.price_modifier || 0);
+    return total + (itemPrice * item.quantity);
+  }, 0);
 };
 
 // Procesar compra: descontar stock y limpiar carrito

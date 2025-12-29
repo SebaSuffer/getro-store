@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { addToCart, getCart } from '../utils/cart';
 import ProductCard from './ProductCard';
+import ChainVariationSelector from './ChainVariationSelector';
 import type { Product } from '../data/products';
 
 interface ProductDetailProps {
@@ -14,6 +15,8 @@ const ProductDetail = ({ product: initialProduct }: ProductDetailProps) => {
   const [currentStock, setCurrentStock] = useState(initialProduct.stock);
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
   const [product, setProduct] = useState(initialProduct);
+  const [selectedVariation, setSelectedVariation] = useState<any>(null);
+  const [displayPrice, setDisplayPrice] = useState(initialProduct.price);
 
   useEffect(() => {
     const checkCart = () => {
@@ -77,9 +80,21 @@ const ProductDetail = ({ product: initialProduct }: ProductDetailProps) => {
   const handleAddToCart = async () => {
     if (currentStock <= 0) return;
     
+    // Si es una cadena, verificar que se haya seleccionado una variación
+    if (product.category === 'Cadenas' && !selectedVariation) {
+      alert('Por favor, selecciona una variación (marca, grosor y largo) antes de añadir al carrito');
+      return;
+    }
+    
     setIsAdding(true);
     try {
-      const success = await addToCart(product, quantity);
+      const success = await addToCart(product, quantity, selectedVariation ? {
+        id: selectedVariation.id,
+        brand: selectedVariation.brand,
+        thickness: selectedVariation.thickness,
+        length: selectedVariation.length,
+        price_modifier: selectedVariation.price_modifier || 0,
+      } : undefined);
       
       if (!success) {
         alert('No hay suficiente stock disponible');
@@ -188,16 +203,53 @@ const ProductDetail = ({ product: initialProduct }: ProductDetailProps) => {
                 {isOutOfStock ? (
                   <span className="text-base text-red-600 font-medium font-sans">Sin stock</span>
                 ) : (
-                  <span className="text-base text-black/70 font-medium font-sans">Stock disponible: {currentStock}</span>
+                  <span className="text-base text-black/70 font-medium font-sans">
+                    Stock disponible: {currentStock}
+                    {selectedVariation && (
+                      <span className="text-sm text-black/50 ml-2">
+                        ({selectedVariation.brand} {selectedVariation.thickness} × {selectedVariation.length})
+                      </span>
+                    )}
+                  </span>
                 )}
               </div>
 
               <div className="mb-8">
                 <p className="text-4xl font-bold text-black tracking-tight font-sans">
-                  ${product.price.toLocaleString('es-CL')} CLP
+                  ${displayPrice.toLocaleString('es-CL')} CLP
                 </p>
+                {selectedVariation && selectedVariation.price_modifier !== 0 && (
+                  <p className="text-sm text-black/60 font-normal mt-2">
+                    Precio base: ${product.price.toLocaleString('es-CL')} CLP
+                    {selectedVariation.price_modifier > 0 && (
+                      <span className="text-red-600 ml-2">+{selectedVariation.price_modifier.toLocaleString('es-CL')} CLP</span>
+                    )}
+                    {selectedVariation.price_modifier < 0 && (
+                      <span className="text-green-600 ml-2">{selectedVariation.price_modifier.toLocaleString('es-CL')} CLP</span>
+                    )}
+                  </p>
+                )}
               </div>
             </div>
+
+            {/* Selector de Variaciones (solo para cadenas) */}
+            {product.category === 'Cadenas' && (
+              <div className="mb-8">
+                <ChainVariationSelector
+                  productId={product.id}
+                  basePrice={product.price}
+                  onVariationSelect={(variation, finalPrice) => {
+                    setSelectedVariation(variation);
+                    setDisplayPrice(finalPrice);
+                    if (variation) {
+                      setCurrentStock(variation.stock);
+                    } else {
+                      setCurrentStock(product.stock);
+                    }
+                  }}
+                />
+              </div>
+            )}
 
             {/* Descripción */}
             <div className="mb-8">
@@ -287,19 +339,25 @@ const ProductDetail = ({ product: initialProduct }: ProductDetailProps) => {
 
               <button
                 onClick={handleAddToCart}
-                disabled={isOutOfStock || isAdding}
+                disabled={isOutOfStock || isAdding || (product.category === 'Cadenas' && !selectedVariation)}
                 className={`w-full h-14 flex items-center justify-center gap-2 text-base font-semibold transition-all font-sans ${
-                  isOutOfStock
+                  isOutOfStock || (product.category === 'Cadenas' && !selectedVariation)
                     ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
                     : 'bg-black text-white hover:bg-black/90 active:bg-black'
                 }`}
                 aria-label={`Añadir ${product.name} al carrito`}
-                tabIndex={isOutOfStock ? -1 : 0}
+                tabIndex={isOutOfStock || (product.category === 'Cadenas' && !selectedVariation) ? -1 : 0}
               >
                 <span className="material-symbols-outlined" style={{ fontSize: '22px', fontWeight: 300 }}>
                   {isAdding ? 'check' : 'shopping_bag'}
                 </span>
-                {isOutOfStock ? 'Agotado' : isAdding ? 'Añadido' : 'Añadir al Carrito'}
+                {isOutOfStock 
+                  ? 'Agotado' 
+                  : product.category === 'Cadenas' && !selectedVariation
+                  ? 'Selecciona una variación'
+                  : isAdding 
+                  ? 'Añadido' 
+                  : 'Añadir al Carrito'}
               </button>
             </div>
           </div>

@@ -4,6 +4,7 @@ import { getAllProducts } from '../data/products';
 import { getSubscribers, exportSubscribers } from '../utils/newsletter';
 import type { Product } from '../data/products';
 import Toast from './Toast';
+import ChainVariationsManager from './ChainVariationsManager';
 
 // Categorías disponibles
 const CATEGORIES = ['Colgantes', 'Cadenas', 'Pulseras', 'Anillos', 'Esclavas', 'Aros'];
@@ -23,6 +24,7 @@ const AdminPanel = () => {
   const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
   const [isCreating, setIsCreating] = useState(false);
   const [chainType, setChainType] = useState<'plata_925' | 'oro'>('plata_925');
+  const [chainVariations, setChainVariations] = useState<any[]>([]);
 
   useEffect(() => {
     const checkAuth = () => {
@@ -104,27 +106,30 @@ const AdminPanel = () => {
     setEditingProduct({ ...product });
     setIsCreating(false);
     
-    // Si es una cadena, cargar su variación
+    // Si es una cadena, cargar sus variaciones
     if (product.category === 'Cadenas') {
       try {
         const response = await fetch(`/api/products/${product.id}/variations`);
         if (response.ok) {
           const variations = await response.json();
-          // Buscar la variación activa o la primera disponible
-          const activeVariation = variations.find((v: any) => v.is_active) || variations[0];
-          if (activeVariation) {
-            setChainType(activeVariation.chain_type as 'plata_925' | 'oro');
+          setChainVariations(variations || []);
+          // Buscar el tipo de cadena de la primera variación
+          if (variations.length > 0) {
+            setChainType(variations[0].chain_type as 'plata_925' | 'oro');
           } else {
             setChainType('plata_925'); // Por defecto
           }
         } else {
+          setChainVariations([]);
           setChainType('plata_925'); // Por defecto si no hay variaciones
         }
       } catch (error) {
-        console.error('Error loading product variation:', error);
+        console.error('Error loading product variations:', error);
+        setChainVariations([]);
         setChainType('plata_925'); // Por defecto en caso de error
       }
     } else {
+      setChainVariations([]);
       setChainType('plata_925');
     }
   };
@@ -146,6 +151,7 @@ const AdminPanel = () => {
     setSelectedProduct(null);
     setIsCreating(true);
     setChainType('plata_925');
+    setChainVariations([]);
   };
 
   const handleDeleteProduct = async (productId: string) => {
@@ -312,6 +318,28 @@ const AdminPanel = () => {
 
       if (!response.ok) {
         throw new Error(isCreating ? 'Error al crear el producto' : 'Error al actualizar el producto');
+      }
+
+      const result = await response.json();
+      const savedProductId = result.id || editingProduct.id;
+
+      // Si es una cadena y hay variaciones, guardarlas
+      if (editingProduct.category === 'Cadenas' && chainVariations.length > 0 && savedProductId) {
+        try {
+          await fetch(`/api/products/${savedProductId}/variations`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              variations: chainVariations.map(v => ({
+                ...v,
+                chain_type: chainType,
+              })),
+            }),
+          });
+        } catch (error) {
+          console.error('Error saving variations:', error);
+          // No fallar el guardado del producto si falla el guardado de variaciones
+        }
       }
 
       // Actualizar lista
@@ -657,43 +685,60 @@ const AdminPanel = () => {
                     </select>
                   </div>
                   {editingProduct.category === 'Cadenas' && (
-                    <div className="bg-gradient-to-br from-black/5 to-black/10 border border-black/20 rounded-lg p-5 space-y-3">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="material-symbols-outlined text-black/70" style={{ fontSize: '18px', fontWeight: 300 }}>
-                          category
-                        </span>
-                        <label className="block text-sm font-semibold text-black">
-                          Variación de Cadena
-                        </label>
-                      </div>
-                      <select
-                        value={chainType}
-                        onChange={(e) => setChainType(e.target.value as 'plata_925' | 'oro')}
-                        className="w-full bg-white border border-black/20 px-4 py-2.5 text-black text-base font-normal focus:outline-none focus:border-black/40 focus:ring-2 focus:ring-black/20 transition-all shadow-sm"
-                      >
-                        <option value="plata_925">Plata 925 - Disponible en tienda</option>
-                        <option value="oro">Oro - Guardado (no visible aún)</option>
-                      </select>
-                      <div className={`mt-3 p-3 rounded border ${
-                        chainType === 'plata_925' 
-                          ? 'bg-green-50 border-green-200' 
-                          : 'bg-amber-50 border-amber-200'
-                      }`}>
-                        <div className="flex items-start gap-2">
-                          <span className={`material-symbols-outlined text-sm flex-shrink-0 mt-0.5 ${
-                            chainType === 'plata_925' ? 'text-green-600' : 'text-amber-600'
-                          }`} style={{ fontSize: '18px', fontWeight: 300 }}>
-                            {chainType === 'plata_925' ? 'check_circle' : 'info'}
+                    <div className="space-y-4">
+                      <div className="bg-gradient-to-br from-black/5 to-black/10 border border-black/20 rounded-lg p-5 space-y-3">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="material-symbols-outlined text-black/70" style={{ fontSize: '18px', fontWeight: 300 }}>
+                            category
                           </span>
-                          <p className={`text-xs font-normal leading-relaxed ${
-                            chainType === 'plata_925' ? 'text-green-800' : 'text-amber-800'
-                          }`}>
-                            {chainType === 'oro' 
-                              ? 'Esta variación se guardará en la base de datos pero permanecerá oculta en la tienda hasta que se active manualmente desde la base de datos.' 
-                              : 'Esta variación estará disponible y visible para los clientes en la tienda online.'}
-                          </p>
+                          <label className="block text-sm font-semibold text-black">
+                            Tipo de Material
+                          </label>
+                        </div>
+                        <select
+                          value={chainType}
+                          onChange={(e) => setChainType(e.target.value as 'plata_925' | 'oro')}
+                          className="w-full bg-white border border-black/20 px-4 py-2.5 text-black text-base font-normal focus:outline-none focus:border-black/40 focus:ring-2 focus:ring-black/20 transition-all shadow-sm"
+                        >
+                          <option value="plata_925">Plata 925 - Disponible en tienda</option>
+                          <option value="oro">Oro - Guardado (no visible aún)</option>
+                        </select>
+                        <div className={`mt-3 p-3 rounded border ${
+                          chainType === 'plata_925' 
+                            ? 'bg-green-50 border-green-200' 
+                            : 'bg-amber-50 border-amber-200'
+                        }`}>
+                          <div className="flex items-start gap-2">
+                            <span className={`material-symbols-outlined text-sm flex-shrink-0 mt-0.5 ${
+                              chainType === 'plata_925' ? 'text-green-600' : 'text-amber-600'
+                            }`} style={{ fontSize: '18px', fontWeight: 300 }}>
+                              {chainType === 'plata_925' ? 'check_circle' : 'info'}
+                            </span>
+                            <p className={`text-xs font-normal leading-relaxed ${
+                              chainType === 'plata_925' ? 'text-green-800' : 'text-amber-800'
+                            }`}>
+                              {chainType === 'oro' 
+                                ? 'Esta variación se guardará en la base de datos pero permanecerá oculta en la tienda hasta que se active manualmente desde la base de datos.' 
+                                : 'Esta variación estará disponible y visible para los clientes en la tienda online.'}
+                            </p>
+                          </div>
                         </div>
                       </div>
+                      
+                      {/* Gestor de Variaciones */}
+                      {editingProduct.id && editingProduct.id !== 'new-' + Date.now().toString(36) && (
+                        <ChainVariationsManager
+                          productId={editingProduct.id}
+                          onVariationsChange={setChainVariations}
+                        />
+                      )}
+                      {(!editingProduct.id || editingProduct.id === 'new-' + Date.now().toString(36)) && (
+                        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                          <p className="text-xs text-amber-800 font-normal">
+                            Guarda el producto primero para poder añadir variaciones de marca y tamaño.
+                          </p>
+                        </div>
+                      )}
                     </div>
                   )}
                   <div className="flex gap-2">

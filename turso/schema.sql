@@ -51,13 +51,14 @@ CREATE TABLE IF NOT EXISTS newsletter_subscribers (
   is_active INTEGER NOT NULL DEFAULT 1
 );
 
--- Tabla de variaciones de productos (para cadenas de plata/oro, largos, grosores)
+-- Tabla de variaciones de productos (para cadenas de plata/oro, marcas, largos, grosores)
 CREATE TABLE IF NOT EXISTS product_variations (
   id TEXT PRIMARY KEY,
   product_id TEXT NOT NULL,
   chain_type TEXT NOT NULL DEFAULT 'plata_925', -- 'plata_925', 'oro'
-  length TEXT, -- Largo de la cadena (ej: '50cm', '60cm') - pendiente
-  thickness TEXT, -- Grosor de la cadena (ej: '3mm', '4mm') - pendiente
+  brand TEXT, -- Marca de la cadena: 'BARBADA', 'TRADICIONAL', 'GUCCI', 'CARTIER', 'TURBILLON'
+  thickness TEXT, -- Grosor de la cadena (ej: '3mm', '4mm')
+  length TEXT, -- Largo de la cadena (ej: '50cm', '60cm')
   price_modifier INTEGER DEFAULT 0, -- Modificador de precio (puede ser positivo o negativo)
   stock INTEGER NOT NULL DEFAULT 0,
   is_active INTEGER NOT NULL DEFAULT 1, -- Para ocultar variaciones no disponibles aún
@@ -76,6 +77,7 @@ CREATE INDEX IF NOT EXISTS idx_orders_created ON orders(created_at);
 CREATE INDEX IF NOT EXISTS idx_newsletter_email ON newsletter_subscribers(email);
 CREATE INDEX IF NOT EXISTS idx_product_variations_product ON product_variations(product_id);
 CREATE INDEX IF NOT EXISTS idx_product_variations_active ON product_variations(is_active);
+CREATE INDEX IF NOT EXISTS idx_product_variations_brand ON product_variations(brand);
 
 
 

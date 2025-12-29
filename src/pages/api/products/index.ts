@@ -143,27 +143,8 @@ export const POST: APIRoute = async ({ request }) => {
       ],
     });
 
-    // Si es una cadena, crear variación por defecto
-    if (category === 'Cadenas' && chain_type) {
-      const variationId = `var-${id}-${chain_type}`;
-      const isActive = chain_type === 'plata_925' ? 1 : 0; // Solo plata 925 visible por ahora
-      
-      await client.execute({
-        sql: `INSERT OR REPLACE INTO product_variations 
-              (id, product_id, chain_type, length, thickness, price_modifier, stock, is_active, created_at, updated_at)
-              VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))`,
-        args: [
-          variationId,
-          id,
-          chain_type,
-          null, // Largo pendiente
-          null, // Grosor pendiente
-          0, // Sin modificador de precio
-          stock || 0,
-          isActive,
-        ],
-      });
-    }
+    // Las variaciones ahora se gestionan manualmente desde el panel de administración
+    // No se crean automáticamente al crear el producto
 
     return new Response(
       JSON.stringify({ 

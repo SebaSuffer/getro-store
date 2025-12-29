@@ -19,4 +19,5 @@ CREATE TABLE IF NOT EXISTS product_variations (
 -- Crear índices
 CREATE INDEX IF NOT EXISTS idx_product_variations_product ON product_variations(product_id);
 CREATE INDEX IF NOT EXISTS idx_product_variations_active ON product_variations(is_active);
+CREATE INDEX IF NOT EXISTS idx_product_variations_brand ON product_variations(brand);
 

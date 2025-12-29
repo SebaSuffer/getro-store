@@ -14,6 +14,13 @@ export interface Product {
 export interface CartItem {
   product: Product;
   quantity: number;
+  variation?: {
+    id: string;
+    brand: string;
+    thickness: string;
+    length: string;
+    price_modifier: number;
+  };
 }
 
 // Cache de productos (para evitar múltiples requests)
