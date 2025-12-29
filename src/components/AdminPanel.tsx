@@ -583,7 +583,7 @@ const AdminPanel = () => {
           <div className="lg:col-span-1">
             {editingProduct ? (
               <div className="border border-black/10 p-6">
-                <h2 className="text-xl font-light text-black uppercase tracking-[0.1em] mb-6 font-display">
+                <h2 className="text-xl font-semibold text-black mb-6">
                   {isCreating ? 'Crear Producto' : 'Editar Producto'}
                 </h2>
                 {/* Imagen del producto */}
@@ -797,7 +797,7 @@ const AdminPanel = () => {
               </div>
             ) : (
               <div className="border border-black/10 p-6 text-center">
-                <p className="text-black/60 font-light text-sm">
+                <p className="text-black/60 text-sm">
                   Selecciona un producto para editar
                 </p>
               </div>
