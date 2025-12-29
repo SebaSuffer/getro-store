@@ -93,9 +93,21 @@ const ChainVariationsManager = ({ productId, onVariationsChange }: ChainVariatio
     }
   };
 
-  const handleAddVariation = () => {
+  const handleAddVariation = async () => {
     if (!selectedBrand || !selectedThickness || !selectedLength) {
       alert('Por favor, selecciona marca, grosor y largo');
+      return;
+    }
+
+    // Verificar si ya existe esta combinación
+    const exists = variations.some(
+      v => v.brand === selectedBrand && 
+           v.thickness === selectedThickness && 
+           v.length === selectedLength
+    );
+
+    if (exists) {
+      alert('Esta combinación de marca, grosor y largo ya existe');
       return;
     }
 
@@ -112,17 +124,75 @@ const ChainVariationsManager = ({ productId, onVariationsChange }: ChainVariatio
     setVariations(updatedVariations);
     onVariationsChange?.(updatedVariations);
 
+    // Guardar en la BD
+    try {
+      await saveVariations(updatedVariations);
+    } catch (error) {
+      console.error('Error saving variation:', error);
+      alert('Error al guardar la variación. Por favor, intenta nuevamente.');
+      // Revertir cambio
+      setVariations(variations);
+      onVariationsChange?.(variations);
+      return;
+    }
+
     // Resetear formulario
+    setSelectedBrand('');
     setSelectedThickness('');
     setSelectedLength('');
     setNewVariationStock(0);
     setNewVariationPriceModifier(0);
   };
 
-  const handleRemoveVariation = (index: number) => {
+  const handleRemoveVariation = async (index: number) => {
+    if (!confirm('¿Estás seguro de que deseas eliminar esta variación?')) {
+      return;
+    }
+
     const updatedVariations = variations.filter((_, i) => i !== index);
     setVariations(updatedVariations);
     onVariationsChange?.(updatedVariations);
+
+    // Guardar en la BD
+    try {
+      await saveVariations(updatedVariations);
+    } catch (error) {
+      console.error('Error removing variation:', error);
+      alert('Error al eliminar la variación. Por favor, intenta nuevamente.');
+      // Revertir cambio
+      setVariations(variations);
+      onVariationsChange?.(variations);
+    }
+  };
+
+  const saveVariations = async (variationsToSave: ChainVariation[]) => {
+    if (!productId || productId.startsWith('new-')) {
+      return; // No guardar si el producto aún no está guardado
+    }
+
+    setIsLoading(true);
+    try {
+      // Obtener el chain_type del producto (por defecto 'plata_925')
+      const response = await fetch(`/api/products/${productId}/variations`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          variations: variationsToSave.map(v => ({
+            ...v,
+            chain_type: 'plata_925', // Por ahora siempre plata_925, se puede mejorar después
+          })),
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Error al guardar variaciones');
+      }
+
+      // Recargar variaciones para asegurar sincronización
+      await loadVariations();
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const availableThicknesses = selectedBrand ? BRAND_OPTIONS[selectedBrand]?.thickness || [] : [];
@@ -132,6 +202,11 @@ const ChainVariationsManager = ({ productId, onVariationsChange }: ChainVariatio
 
   return (
     <div className="space-y-4">
+      {isLoading && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-center">
+          <p className="text-xs text-blue-800 font-normal">Guardando variaciones...</p>
+        </div>
+      )}
       <div className="bg-gradient-to-br from-black/5 to-black/10 border border-black/20 rounded-lg p-5 space-y-4">
         <div className="flex items-center gap-2 mb-4">
           <span className="material-symbols-outlined text-black/70" style={{ fontSize: '18px', fontWeight: 300 }}>

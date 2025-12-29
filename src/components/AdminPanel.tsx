@@ -114,7 +114,7 @@ const AdminPanel = () => {
           const variations = await response.json();
           setChainVariations(variations || []);
           // Buscar el tipo de cadena de la primera variación
-          if (variations.length > 0) {
+          if (variations.length > 0 && variations[0].chain_type) {
             setChainType(variations[0].chain_type as 'plata_925' | 'oro');
           } else {
             setChainType('plata_925'); // Por defecto
@@ -323,24 +323,8 @@ const AdminPanel = () => {
       const result = await response.json();
       const savedProductId = result.id || editingProduct.id;
 
-      // Si es una cadena y hay variaciones, guardarlas
-      if (editingProduct.category === 'Cadenas' && chainVariations.length > 0 && savedProductId) {
-        try {
-          await fetch(`/api/products/${savedProductId}/variations`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              variations: chainVariations.map(v => ({
-                ...v,
-                chain_type: chainType,
-              })),
-            }),
-          });
-        } catch (error) {
-          console.error('Error saving variations:', error);
-          // No fallar el guardado del producto si falla el guardado de variaciones
-        }
-      }
+      // Las variaciones ahora se guardan automáticamente desde ChainVariationsManager
+      // No necesitamos guardarlas aquí
 
       // Actualizar lista
       await loadProducts();
@@ -348,23 +332,48 @@ const AdminPanel = () => {
       // Disparar evento para que otras páginas sepan que deben recargar
       if (typeof window !== 'undefined') {
         const event = new CustomEvent('productUpdated', { 
-          detail: { productId: editingProduct.id },
+          detail: { productId: savedProductId },
           bubbles: true 
         });
         window.dispatchEvent(event);
       }
       
-      // Actualizar el producto seleccionado si es el mismo
-      if (selectedProduct && selectedProduct.id === editingProduct.id) {
+      // Si es un producto nuevo, actualizar el editingProduct con el ID real
+      if (isCreating && savedProductId) {
         const updatedProducts = await getAllProducts();
-        const updatedProduct = updatedProducts.find(p => p.id === editingProduct.id);
+        const updatedProduct = updatedProducts.find(p => p.id === savedProductId);
         if (updatedProduct) {
-          setSelectedProduct(updatedProduct);
+          setEditingProduct(updatedProduct);
+          setIsCreating(false);
+          // Recargar variaciones si es una cadena (aunque probablemente no haya ninguna aún)
+          if (updatedProduct.category === 'Cadenas') {
+            try {
+              const variationsResponse = await fetch(`/api/products/${savedProductId}/variations`);
+              if (variationsResponse.ok) {
+                const variations = await variationsResponse.json();
+                setChainVariations(variations || []);
+                if (variations.length > 0 && variations[0].chain_type) {
+                  setChainType(variations[0].chain_type as 'plata_925' | 'oro');
+                }
+              }
+            } catch (error) {
+              console.error('Error loading variations after save:', error);
+            }
+          }
         }
+      } else {
+        // Actualizar el producto seleccionado si es el mismo
+        if (selectedProduct && selectedProduct.id === savedProductId) {
+          const updatedProducts = await getAllProducts();
+          const updatedProduct = updatedProducts.find(p => p.id === savedProductId);
+          if (updatedProduct) {
+            setSelectedProduct(updatedProduct);
+          }
+        }
+        setEditingProduct(null);
+        setIsCreating(false);
       }
       
-      setEditingProduct(null);
-      setIsCreating(false);
       setToastMessage(isCreating ? 'Producto creado correctamente' : 'Producto actualizado correctamente');
       setShowToast(true);
     } catch (error: any) {
@@ -726,17 +735,22 @@ const AdminPanel = () => {
                       </div>
                       
                       {/* Gestor de Variaciones */}
-                      {editingProduct.id && editingProduct.id !== 'new-' + Date.now().toString(36) && (
+                      {editingProduct.id && !editingProduct.id.startsWith('new-') && (
                         <ChainVariationsManager
                           productId={editingProduct.id}
                           onVariationsChange={setChainVariations}
                         />
                       )}
-                      {(!editingProduct.id || editingProduct.id === 'new-' + Date.now().toString(36)) && (
+                      {(!editingProduct.id || editingProduct.id.startsWith('new-')) && (
                         <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-                          <p className="text-xs text-amber-800 font-normal">
-                            Guarda el producto primero para poder añadir variaciones de marca y tamaño.
-                          </p>
+                          <div className="flex items-start gap-2">
+                            <span className="material-symbols-outlined text-amber-600 flex-shrink-0 mt-0.5" style={{ fontSize: '18px', fontWeight: 300 }}>
+                              info
+                            </span>
+                            <p className="text-xs text-amber-800 font-normal">
+                              Guarda el producto primero para poder añadir variaciones de marca, grosor y largo.
+                            </p>
+                          </div>
                         </div>
                       )}
                     </div>
