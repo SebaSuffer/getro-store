@@ -1,17 +1,16 @@
 -- ============================================
--- QUERIES SIMPLES PARA EJECUTAR PASO A PASO
--- Ejecuta cada query UNA POR UNA
+-- SETUP COMPLETO - EJECUTAR EN ORDEN
 -- ============================================
 
--- QUERY 1: Verificar si la tabla product_variations existe
+-- PASO 1: Verificar si la tabla product_variations existe
 SELECT name FROM sqlite_master WHERE type='table' AND name='product_variations';
 
--- Si la query anterior NO retorna nada, ejecuta la QUERY 2
--- Si SÍ retorna 'product_variations', salta a la QUERY 3
+-- Si retorna 'product_variations' → Continúa al PASO 2
+-- Si NO retorna nada → Ejecuta el PASO 1B para crear la tabla
 
 -- ============================================
-
--- QUERY 2: Crear la tabla product_variations (solo si no existe)
+-- PASO 1B: Crear tabla (SOLO si no existe)
+-- ============================================
 CREATE TABLE IF NOT EXISTS product_variations (
   id TEXT PRIMARY KEY,
   product_id TEXT NOT NULL,
@@ -28,36 +27,36 @@ CREATE TABLE IF NOT EXISTS product_variations (
 );
 
 -- ============================================
-
--- QUERY 3: Verificar estructura actual de la tabla
+-- PASO 2: Verificar estructura actual
+-- ============================================
 PRAGMA table_info(product_variations);
 
--- Revisa los resultados. Si ves una columna llamada 'brand', ya está listo.
--- Si NO ves 'brand', ejecuta la QUERY 4
+-- Revisa los resultados:
+-- ✅ Si ves la columna 'brand' → Ya está todo listo, ve al PASO 4
+-- ❌ Si NO ves 'brand' → Ejecuta el PASO 3
 
 -- ============================================
-
--- QUERY 4: Añadir campo brand (solo si no existe)
--- ⚠️ IMPORTANTE: Ejecuta esta query SOLO si en la QUERY 3 NO viste la columna 'brand'
--- Si ya viste 'brand' en la QUERY 3, IGNORA esta query y ve directo a la QUERY 5
--- Si ejecutas esta query y la columna ya existe, verás un error "duplicate column name: brand"
--- ESO ES NORMAL, significa que ya está todo listo, solo continúa con la QUERY 5
+-- PASO 3: Añadir campo brand
+-- ============================================
+-- ⚠️ EJECUTA ESTO SOLO si en el PASO 2 NO viste la columna 'brand'
+-- Si ya existe 'brand', verás error "duplicate column name" - ESO ES NORMAL, ignóralo
 
 ALTER TABLE product_variations ADD COLUMN brand TEXT;
 
 -- ============================================
-
--- QUERY 5: Crear índices (ejecuta siempre)
+-- PASO 4: Crear índices (ejecuta siempre)
+-- ============================================
 CREATE INDEX IF NOT EXISTS idx_product_variations_product ON product_variations(product_id);
 CREATE INDEX IF NOT EXISTS idx_product_variations_active ON product_variations(is_active);
 CREATE INDEX IF NOT EXISTS idx_product_variations_brand ON product_variations(brand);
 
 -- ============================================
-
--- QUERY 6: Verificar que todo esté correcto
+-- PASO 5: Verificación final
+-- ============================================
 PRAGMA table_info(product_variations);
 
--- Deberías ver todas las columnas incluyendo: id, product_id, chain_type, brand, thickness, length, etc.
+-- Deberías ver estas columnas:
+-- id, product_id, chain_type, brand, thickness, length, price_modifier, stock, is_active, created_at, updated_at
 
 -- ============================================
 -- ✅ LISTO! La tabla está configurada correctamente
