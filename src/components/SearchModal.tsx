@@ -29,26 +29,45 @@ const SearchModal = ({ isOpen, onClose }: SearchModalProps) => {
   useEffect(() => {
     if (!searchQuery.trim()) {
       setResults([]);
+      setIsLoading(false);
       return;
     }
 
     setIsLoading(true);
     
-    // Simular un pequeño delay para mejor UX
-    const timeoutId = setTimeout(() => {
-      const allProducts = getAllProducts();
-      const query = searchQuery.toLowerCase().trim();
-      
-      const filtered = allProducts.filter((product) => {
-        const nameMatch = product.name.toLowerCase().includes(query);
-        const descMatch = product.description?.toLowerCase().includes(query);
-        const categoryMatch = product.category.toLowerCase().includes(query);
+    // Función asíncrona para buscar productos
+    const searchProducts = async () => {
+      try {
+        const allProducts = await getAllProducts();
+        const query = searchQuery.toLowerCase().trim();
         
-        return nameMatch || descMatch || categoryMatch;
-      });
-      
-      setResults(filtered);
-      setIsLoading(false);
+        if (!Array.isArray(allProducts)) {
+          console.error('[SEARCH-MODAL] getAllProducts did not return an array:', allProducts);
+          setResults([]);
+          setIsLoading(false);
+          return;
+        }
+        
+        const filtered = allProducts.filter((product) => {
+          const nameMatch = product.name.toLowerCase().includes(query);
+          const descMatch = product.description?.toLowerCase().includes(query);
+          const categoryMatch = product.category.toLowerCase().includes(query);
+          
+          return nameMatch || descMatch || categoryMatch;
+        });
+        
+        setResults(filtered);
+        setIsLoading(false);
+      } catch (error) {
+        console.error('[SEARCH-MODAL] Error searching products:', error);
+        setResults([]);
+        setIsLoading(false);
+      }
+    };
+
+    // Pequeño delay para mejor UX (debounce)
+    const timeoutId = setTimeout(() => {
+      searchProducts();
     }, 150);
 
     return () => clearTimeout(timeoutId);
