@@ -194,3 +194,6 @@ const SearchModal = ({ isOpen, onClose }: SearchModalProps) => {
 
 export default SearchModal;
 
+
+
+

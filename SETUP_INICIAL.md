@@ -76,3 +76,6 @@ TURSO_AUTH_TOKEN = [TOKEN COMPLETO DESDE TURSO]
 - La página principal usa ProductLoader para cargar en el cliente
 - Todos los logs están mejorados para debugging
 
+
+
+

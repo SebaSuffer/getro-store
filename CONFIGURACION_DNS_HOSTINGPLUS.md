@@ -88,3 +88,6 @@ Si tienes problemas configurando los DNS en HostingPlus, contacta a su soporte t
 - "Necesito configurar registros DNS para apuntar mi dominio a Vercel"
 - "Necesito un registro A para el dominio raíz y un CNAME para www"
 
+
+
+

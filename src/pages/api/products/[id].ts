@@ -74,7 +74,7 @@ export const PUT: APIRoute = async ({ params, request }) => {
     }
 
     const body = await request.json();
-    const { name, description, price, stock, image_url, image_alt, category, is_new, is_featured } = body;
+    const { name, description, price, stock, image_url, image_alt, category, is_new, is_featured, chain_type } = body;
 
     const client = getTursoClient();
     
@@ -93,6 +93,28 @@ export const PUT: APIRoute = async ({ params, request }) => {
             WHERE id = ?`,
       args: [name, description, price, stock, image_url, image_alt, category, is_new ? 1 : 0, is_featured ? 1 : 0, id],
     });
+
+    // Si es una cadena, actualizar o crear variación
+    if (category === 'Cadenas' && chain_type) {
+      const variationId = `var-${id}-${chain_type}`;
+      const isActive = chain_type === 'plata_925' ? 1 : 0; // Solo plata 925 visible por ahora
+      
+      await client.execute({
+        sql: `INSERT OR REPLACE INTO product_variations 
+              (id, product_id, chain_type, length, thickness, price_modifier, stock, is_active, created_at, updated_at)
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))`,
+        args: [
+          variationId,
+          id,
+          chain_type,
+          null, // Largo pendiente
+          null, // Grosor pendiente
+          0, // Sin modificador de precio
+          stock,
+          isActive,
+        ],
+      });
+    }
 
     return new Response(JSON.stringify({ success: true }), {
       status: 200,

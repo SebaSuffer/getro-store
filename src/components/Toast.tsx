@@ -41,3 +41,6 @@ const Toast = ({ message, isVisible, onClose, duration = 3000 }: ToastProps) => 
 
 export default Toast;
 
+
+
+

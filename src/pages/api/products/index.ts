@@ -104,7 +104,7 @@ export const GET: APIRoute = async ({ request }) => {
 export const POST: APIRoute = async ({ request }) => {
   try {
     const body = await request.json();
-    const { name, description, price, stock, category, image_url, image_alt, is_new, is_featured } = body;
+    const { name, description, price, stock, category, image_url, image_alt, is_new, is_featured, chain_type } = body;
 
     // Validaciones
     if (!name || !category || !price || price <= 0) {
@@ -142,6 +142,28 @@ export const POST: APIRoute = async ({ request }) => {
         is_featured ? 1 : 0,
       ],
     });
+
+    // Si es una cadena, crear variación por defecto
+    if (category === 'Cadenas' && chain_type) {
+      const variationId = `var-${id}-${chain_type}`;
+      const isActive = chain_type === 'plata_925' ? 1 : 0; // Solo plata 925 visible por ahora
+      
+      await client.execute({
+        sql: `INSERT OR REPLACE INTO product_variations 
+              (id, product_id, chain_type, length, thickness, price_modifier, stock, is_active, created_at, updated_at)
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))`,
+        args: [
+          variationId,
+          id,
+          chain_type,
+          null, // Largo pendiente
+          null, // Grosor pendiente
+          0, // Sin modificador de precio
+          stock || 0,
+          isActive,
+        ],
+      });
+    }
 
     return new Response(
       JSON.stringify({ 

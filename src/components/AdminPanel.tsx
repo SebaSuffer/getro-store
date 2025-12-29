@@ -22,6 +22,7 @@ const AdminPanel = () => {
   const [showToast, setShowToast] = useState(false);
   const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
   const [isCreating, setIsCreating] = useState(false);
+  const [chainType, setChainType] = useState<'plata_925' | 'oro'>('plata_925');
 
   useEffect(() => {
     const checkAuth = () => {
@@ -102,6 +103,8 @@ const AdminPanel = () => {
     setSelectedProduct(product);
     setEditingProduct({ ...product });
     setIsCreating(false);
+    // Resetear tipo de cadena al editar
+    setChainType('plata_925');
   };
 
   const handleCreateProduct = () => {
@@ -120,6 +123,7 @@ const AdminPanel = () => {
     setEditingProduct(newProduct);
     setSelectedProduct(null);
     setIsCreating(true);
+    setChainType('plata_925');
   };
 
   const handleDeleteProduct = async (productId: string) => {
@@ -261,6 +265,7 @@ const AdminPanel = () => {
             image_alt: editingProduct.image_alt || editingProduct.name,
             is_new: editingProduct.is_new || false,
             is_featured: editingProduct.is_featured || false,
+            chain_type: editingProduct.category === 'Cadenas' ? chainType : undefined,
           }),
         });
       } else {
@@ -278,6 +283,7 @@ const AdminPanel = () => {
             image_alt: editingProduct.image_alt || editingProduct.name,
             is_new: editingProduct.is_new,
             is_featured: editingProduct.is_featured,
+            chain_type: editingProduct.category === 'Cadenas' ? chainType : undefined,
           }),
         });
       }
@@ -614,6 +620,24 @@ const AdminPanel = () => {
                       ))}
                     </select>
                   </div>
+                  {editingProduct.category === 'Cadenas' && (
+                    <div>
+                      <label className="block text-sm font-semibold text-black mb-2">
+                        Tipo de Cadena
+                      </label>
+                      <select
+                        value={chainType}
+                        onChange={(e) => setChainType(e.target.value as 'plata_925' | 'oro')}
+                        className="w-full bg-white border border-black/20 px-4 py-2 text-black text-base font-normal focus:outline-none focus:border-black/40"
+                      >
+                        <option value="plata_925">Plata 925</option>
+                        <option value="oro">Oro (Próximamente - No visible en tienda)</option>
+                      </select>
+                      <p className="text-xs text-black/60 font-normal mt-1">
+                        {chainType === 'oro' ? 'Nota: Las cadenas de oro no se mostrarán en la tienda aún.' : 'Tipo de cadena disponible en la tienda.'}
+                      </p>
+                    </div>
+                  )}
                   <div className="flex gap-2">
                     <label className="flex items-center gap-2 cursor-pointer">
                       <input

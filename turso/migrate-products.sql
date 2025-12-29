@@ -22,3 +22,6 @@ INSERT INTO products (id, name, description, price, stock, image_url, image_alt,
 SELECT COUNT(*) as total_productos FROM products;
 SELECT name, price, stock FROM products ORDER BY name;
 
+
+
+

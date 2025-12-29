@@ -64,3 +64,6 @@ const CatalogTitle = ({ initialCategory }: CatalogTitleProps) => {
 
 export default CatalogTitle;
 
+
+
+
