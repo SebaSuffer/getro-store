@@ -99,12 +99,34 @@ const AdminPanel = () => {
     window.location.href = '/login';
   };
 
-  const handleEditProduct = (product: Product) => {
+  const handleEditProduct = async (product: Product) => {
     setSelectedProduct(product);
     setEditingProduct({ ...product });
     setIsCreating(false);
-    // Resetear tipo de cadena al editar
-    setChainType('plata_925');
+    
+    // Si es una cadena, cargar su variación
+    if (product.category === 'Cadenas') {
+      try {
+        const response = await fetch(`/api/products/${product.id}/variations`);
+        if (response.ok) {
+          const variations = await response.json();
+          // Buscar la variación activa o la primera disponible
+          const activeVariation = variations.find((v: any) => v.is_active) || variations[0];
+          if (activeVariation) {
+            setChainType(activeVariation.chain_type as 'plata_925' | 'oro');
+          } else {
+            setChainType('plata_925'); // Por defecto
+          }
+        } else {
+          setChainType('plata_925'); // Por defecto si no hay variaciones
+        }
+      } catch (error) {
+        console.error('Error loading product variation:', error);
+        setChainType('plata_925'); // Por defecto en caso de error
+      }
+    } else {
+      setChainType('plata_925');
+    }
   };
 
   const handleCreateProduct = () => {
@@ -559,16 +581,17 @@ const AdminPanel = () => {
                     </p>
                   </div>
                 </div>
-                <div className="space-y-4">
+                <div className="space-y-5">
                   <div>
                     <label className="block text-sm font-semibold text-black mb-2">
-                      Nombre
+                      Nombre del Producto
                     </label>
                     <input
                       type="text"
                       value={editingProduct.name}
                       onChange={(e) => setEditingProduct({ ...editingProduct, name: e.target.value })}
-                      className="w-full bg-white border border-black/20 px-4 py-2 text-black text-base font-normal focus:outline-none focus:border-black/40"
+                      placeholder="Ej: Cadena Cartier 3mm x 60cm"
+                      className="w-full bg-white border border-black/20 px-4 py-2.5 text-black text-base font-normal focus:outline-none focus:border-black/40 focus:ring-1 focus:ring-black/10 transition-all"
                     />
                   </div>
                   <div>
@@ -579,30 +602,37 @@ const AdminPanel = () => {
                       value={editingProduct.description || ''}
                       onChange={(e) => setEditingProduct({ ...editingProduct, description: e.target.value })}
                       rows={4}
-                      className="w-full bg-white border border-black/20 px-4 py-2 text-black text-base font-normal focus:outline-none focus:border-black/40 resize-none"
+                      placeholder="Describe las características del producto..."
+                      className="w-full bg-white border border-black/20 px-4 py-2.5 text-black text-base font-normal focus:outline-none focus:border-black/40 focus:ring-1 focus:ring-black/10 resize-none transition-all"
                     />
                   </div>
-                  <div>
-                    <label className="block text-sm font-semibold text-black mb-2">
-                      Precio (CLP)
-                    </label>
-                    <input
-                      type="number"
-                      value={editingProduct.price}
-                      onChange={(e) => setEditingProduct({ ...editingProduct, price: parseInt(e.target.value) || 0 })}
-                      className="w-full bg-white border border-black/20 px-4 py-2 text-black text-base font-normal focus:outline-none focus:border-black/40"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-semibold text-black mb-2">
-                      Stock
-                    </label>
-                    <input
-                      type="number"
-                      value={editingProduct.stock}
-                      onChange={(e) => setEditingProduct({ ...editingProduct, stock: parseInt(e.target.value) || 0 })}
-                      className="w-full bg-white border border-black/20 px-4 py-2 text-black text-base font-normal focus:outline-none focus:border-black/40"
-                    />
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-semibold text-black mb-2">
+                        Precio (CLP)
+                      </label>
+                      <input
+                        type="number"
+                        value={editingProduct.price}
+                        onChange={(e) => setEditingProduct({ ...editingProduct, price: parseInt(e.target.value) || 0 })}
+                        placeholder="0"
+                        min="0"
+                        className="w-full bg-white border border-black/20 px-4 py-2.5 text-black text-base font-normal focus:outline-none focus:border-black/40 focus:ring-1 focus:ring-black/10 transition-all"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-black mb-2">
+                        Stock
+                      </label>
+                      <input
+                        type="number"
+                        value={editingProduct.stock}
+                        onChange={(e) => setEditingProduct({ ...editingProduct, stock: parseInt(e.target.value) || 0 })}
+                        placeholder="0"
+                        min="0"
+                        className="w-full bg-white border border-black/20 px-4 py-2.5 text-black text-base font-normal focus:outline-none focus:border-black/40 focus:ring-1 focus:ring-black/10 transition-all"
+                      />
+                    </div>
                   </div>
                   <div>
                     <label className="block text-sm font-semibold text-black mb-2">
@@ -610,8 +640,14 @@ const AdminPanel = () => {
                     </label>
                     <select
                       value={editingProduct.category}
-                      onChange={(e) => setEditingProduct({ ...editingProduct, category: e.target.value })}
-                      className="w-full bg-white border border-black/20 px-4 py-2 text-black text-base font-normal focus:outline-none focus:border-black/40"
+                      onChange={(e) => {
+                        setEditingProduct({ ...editingProduct, category: e.target.value });
+                        // Resetear tipo de cadena si cambia de categoría
+                        if (e.target.value !== 'Cadenas') {
+                          setChainType('plata_925');
+                        }
+                      }}
+                      className="w-full bg-white border border-black/20 px-4 py-2.5 text-black text-base font-normal focus:outline-none focus:border-black/40 focus:ring-1 focus:ring-black/10 transition-all"
                     >
                       {CATEGORIES.map((category) => (
                         <option key={category} value={category}>
@@ -621,21 +657,43 @@ const AdminPanel = () => {
                     </select>
                   </div>
                   {editingProduct.category === 'Cadenas' && (
-                    <div>
-                      <label className="block text-sm font-semibold text-black mb-2">
-                        Tipo de Cadena
-                      </label>
+                    <div className="bg-gradient-to-br from-black/5 to-black/10 border border-black/20 rounded-lg p-5 space-y-3">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="material-symbols-outlined text-black/70" style={{ fontSize: '18px', fontWeight: 300 }}>
+                          category
+                        </span>
+                        <label className="block text-sm font-semibold text-black">
+                          Variación de Cadena
+                        </label>
+                      </div>
                       <select
                         value={chainType}
                         onChange={(e) => setChainType(e.target.value as 'plata_925' | 'oro')}
-                        className="w-full bg-white border border-black/20 px-4 py-2 text-black text-base font-normal focus:outline-none focus:border-black/40"
+                        className="w-full bg-white border border-black/20 px-4 py-2.5 text-black text-base font-normal focus:outline-none focus:border-black/40 focus:ring-2 focus:ring-black/20 transition-all shadow-sm"
                       >
-                        <option value="plata_925">Plata 925</option>
-                        <option value="oro">Oro (Próximamente - No visible en tienda)</option>
+                        <option value="plata_925">Plata 925 - Disponible en tienda</option>
+                        <option value="oro">Oro - Guardado (no visible aún)</option>
                       </select>
-                      <p className="text-xs text-black/60 font-normal mt-1">
-                        {chainType === 'oro' ? 'Nota: Las cadenas de oro no se mostrarán en la tienda aún.' : 'Tipo de cadena disponible en la tienda.'}
-                      </p>
+                      <div className={`mt-3 p-3 rounded border ${
+                        chainType === 'plata_925' 
+                          ? 'bg-green-50 border-green-200' 
+                          : 'bg-amber-50 border-amber-200'
+                      }`}>
+                        <div className="flex items-start gap-2">
+                          <span className={`material-symbols-outlined text-sm flex-shrink-0 mt-0.5 ${
+                            chainType === 'plata_925' ? 'text-green-600' : 'text-amber-600'
+                          }`} style={{ fontSize: '18px', fontWeight: 300 }}>
+                            {chainType === 'plata_925' ? 'check_circle' : 'info'}
+                          </span>
+                          <p className={`text-xs font-normal leading-relaxed ${
+                            chainType === 'plata_925' ? 'text-green-800' : 'text-amber-800'
+                          }`}>
+                            {chainType === 'oro' 
+                              ? 'Esta variación se guardará en la base de datos pero permanecerá oculta en la tienda hasta que se active manualmente desde la base de datos.' 
+                              : 'Esta variación estará disponible y visible para los clientes en la tienda online.'}
+                          </p>
+                        </div>
+                      </div>
                     </div>
                   )}
                   <div className="flex gap-2">
