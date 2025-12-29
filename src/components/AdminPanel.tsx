@@ -106,8 +106,8 @@ const AdminPanel = () => {
     setEditingProduct({ ...product });
     setIsCreating(false);
     
-    // Si es una cadena, cargar sus variaciones
-    if (product.category === 'Cadenas') {
+    // Si es una cadena o colgante, cargar sus variaciones
+    if (product.category === 'Cadenas' || product.category === 'Colgantes') {
       try {
         const response = await fetch(`/api/products/${product.id}/variations`);
         if (response.ok) {
@@ -293,7 +293,7 @@ const AdminPanel = () => {
             image_alt: editingProduct.image_alt || editingProduct.name,
             is_new: editingProduct.is_new || false,
             is_featured: editingProduct.is_featured || false,
-            chain_type: editingProduct.category === 'Cadenas' ? chainType : undefined,
+            chain_type: (editingProduct.category === 'Cadenas' || editingProduct.category === 'Colgantes') ? chainType : undefined,
           }),
         });
       } else {
@@ -311,7 +311,7 @@ const AdminPanel = () => {
             image_alt: editingProduct.image_alt || editingProduct.name,
             is_new: editingProduct.is_new,
             is_featured: editingProduct.is_featured,
-            chain_type: editingProduct.category === 'Cadenas' ? chainType : undefined,
+            chain_type: (editingProduct.category === 'Cadenas' || editingProduct.category === 'Colgantes') ? chainType : undefined,
           }),
         });
       }
@@ -345,8 +345,8 @@ const AdminPanel = () => {
         if (updatedProduct) {
           setEditingProduct(updatedProduct);
           setIsCreating(false);
-          // Recargar variaciones si es una cadena (aunque probablemente no haya ninguna aún)
-          if (updatedProduct.category === 'Cadenas') {
+          // Recargar variaciones si es una cadena o colgante (aunque probablemente no haya ninguna aún)
+          if (updatedProduct.category === 'Cadenas' || updatedProduct.category === 'Colgantes') {
             try {
               const variationsResponse = await fetch(`/api/products/${savedProductId}/variations`);
               if (variationsResponse.ok) {
@@ -680,7 +680,7 @@ const AdminPanel = () => {
                       onChange={(e) => {
                         setEditingProduct({ ...editingProduct, category: e.target.value });
                         // Resetear tipo de cadena si cambia de categoría
-                        if (e.target.value !== 'Cadenas') {
+                        if (e.target.value !== 'Cadenas' && e.target.value !== 'Colgantes') {
                           setChainType('plata_925');
                         }
                       }}
@@ -693,7 +693,7 @@ const AdminPanel = () => {
                       ))}
                     </select>
                   </div>
-                  {editingProduct.category === 'Cadenas' && (
+                  {(editingProduct.category === 'Cadenas' || editingProduct.category === 'Colgantes') && (
                     <div className="space-y-4">
                       <div className="bg-gradient-to-br from-black/5 to-black/10 border border-black/20 rounded-lg p-5 space-y-3">
                         <div className="flex items-center gap-2 mb-1">
@@ -701,7 +701,7 @@ const AdminPanel = () => {
                             category
                           </span>
                           <label className="block text-sm font-semibold text-black">
-                            Tipo de Material
+                            Tipo de Material de la Cadena
                           </label>
                         </div>
                         <select
@@ -748,7 +748,7 @@ const AdminPanel = () => {
                               info
                             </span>
                             <p className="text-xs text-amber-800 font-normal">
-                              Guarda el producto primero para poder añadir variaciones de marca, grosor y largo.
+                              Guarda el producto primero para poder añadir variaciones de marca, grosor y largo de la cadena.
                             </p>
                           </div>
                         </div>

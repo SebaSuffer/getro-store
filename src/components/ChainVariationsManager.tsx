@@ -212,7 +212,7 @@ const ChainVariationsManager = ({ productId, onVariationsChange }: ChainVariatio
           <span className="material-symbols-outlined text-black/70" style={{ fontSize: '18px', fontWeight: 300 }}>
             category
           </span>
-          <h3 className="text-sm font-semibold text-black">Gestionar Variaciones de Cadena</h3>
+          <h3 className="text-sm font-semibold text-black">Gestionar Variaciones de Cadena (Marca, Grosor y Largo)</h3>
         </div>
 
         {/* Formulario para añadir variación */}
