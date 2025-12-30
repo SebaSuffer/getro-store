@@ -83,20 +83,25 @@ const ChainVariationsManager = ({ productId, onVariationsChange }: ChainVariatio
   return (
     <div className="space-y-4">
       <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-        <div className="flex items-center justify-between mb-3">
-          <div>
-            <h3 className="text-sm font-semibold text-black mb-1">Variaciones de Cadena</h3>
-            <p className="text-xs text-gray-600">
-              {variations.length > 0 
-                ? `${variations.length} variación${variations.length !== 1 ? 'es' : ''} configurada${variations.length !== 1 ? 's' : ''}`
-                : 'No hay variaciones configuradas'}
-            </p>
-          </div>
+        <div className="mb-3">
+          <h3 className="text-sm font-semibold text-black mb-1">Variaciones de Cadena</h3>
+          <p className="text-xs text-gray-600 flex items-center gap-2">
+            {variations.length > 0 
+              ? `${variations.length} variación${variations.length !== 1 ? 'es' : ''} configurada${variations.length !== 1 ? 's' : ''}`
+              : 'No hay variaciones configuradas'}
+            {variations.length > 0 && (
+              <span className="px-2 py-0.5 bg-green-100 text-green-800 rounded text-[11px] font-normal">
+                Guardado
+              </span>
+            )}
+          </p>
+        </div>
+        <div className="flex justify-end">
           <button
             onClick={() => setIsModalOpen(true)}
             className="px-4 py-2 bg-black text-white text-sm font-medium hover:bg-gray-800 rounded"
           >
-            {variations.length > 0 ? 'Editar Variaciones' : 'Añadir Variaciones'}
+            {variations.length > 0 ? 'Ver / Editar' : 'Añadir Variaciones'}
           </button>
         </div>
 

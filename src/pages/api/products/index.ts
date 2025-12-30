@@ -36,7 +36,13 @@ export const GET: APIRoute = async ({ request }) => {
     console.log(`[API-PRODUCTS-${requestId}] 📝 Executing SQL query...`);
     
     const queryStartTime = Date.now();
-    const result = await client.execute('SELECT * FROM products ORDER BY created_at DESC');
+    const result = await client.execute(`
+      SELECT p.*, COUNT(pv.id) AS variation_count
+      FROM products p
+      LEFT JOIN product_variations pv ON p.id = pv.product_id
+      GROUP BY p.id
+      ORDER BY p.created_at DESC
+    `);
     const queryTime = Date.now() - queryStartTime;
     
     console.log(`[API-PRODUCTS-${requestId}] ⏱️ Query executed in ${queryTime}ms`);
@@ -55,7 +61,7 @@ export const GET: APIRoute = async ({ request }) => {
     }
     
     const mapStartTime = Date.now();
-    const products = result.rows.map((row: any) => ({
+      const products = result.rows.map((row: any) => ({
       id: row.id,
       name: row.name,
       description: row.description,
@@ -66,6 +72,8 @@ export const GET: APIRoute = async ({ request }) => {
       category: row.category,
       is_new: Boolean(row.is_new),
       is_featured: Boolean(row.is_featured),
+        has_variations: Boolean(row.variation_count),
+        variation_count: row.variation_count,
     }));
     const mapTime = Date.now() - mapStartTime;
     

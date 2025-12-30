@@ -23,7 +23,11 @@ export const GET: APIRoute = async ({ params }) => {
     }
 
     const result = await client.execute({
-      sql: 'SELECT * FROM products WHERE id = ?',
+      sql: `SELECT p.*, COUNT(pv.id) AS variation_count
+            FROM products p
+            LEFT JOIN product_variations pv ON p.id = pv.product_id
+            WHERE p.id = ?
+            GROUP BY p.id`,
       args: [id],
     });
 
@@ -46,6 +50,8 @@ export const GET: APIRoute = async ({ params }) => {
       category: row.category,
       is_new: Boolean(row.is_new),
       is_featured: Boolean(row.is_featured),
+      has_variations: Boolean(row.variation_count),
+      variation_count: row.variation_count,
     };
 
     return new Response(JSON.stringify(product), {

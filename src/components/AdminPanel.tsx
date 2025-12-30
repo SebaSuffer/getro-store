@@ -366,8 +366,8 @@ const AdminPanel = () => {
         if (selectedProduct && selectedProduct.id === savedProductId) {
           const updatedProducts = await getAllProducts();
           const updatedProduct = updatedProducts.find(p => p.id === savedProductId);
-          if (updatedProduct) {
-            setSelectedProduct(updatedProduct);
+        if (updatedProduct) {
+          setSelectedProduct(updatedProduct);
           }
         }
         setEditingProduct(null);
@@ -398,7 +398,7 @@ const AdminPanel = () => {
           isVisible={showToast} 
           onClose={() => setShowToast(false)} 
         />
-        <div className="py-20">
+        <div className="py-20 font-sans text-sm">
       <div className="mx-auto max-w-7xl px-6 lg:px-12">
         <div className="mb-12 flex items-center justify-between">
           <div>
@@ -644,31 +644,31 @@ const AdminPanel = () => {
                     />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-semibold text-black mb-2">
-                        Precio (CLP)
-                      </label>
-                      <input
-                        type="number"
-                        value={editingProduct.price}
-                        onChange={(e) => setEditingProduct({ ...editingProduct, price: parseInt(e.target.value) || 0 })}
+                  <div>
+                    <label className="block text-sm font-semibold text-black mb-2">
+                      Precio (CLP)
+                    </label>
+                    <input
+                      type="number"
+                      value={editingProduct.price}
+                      onChange={(e) => setEditingProduct({ ...editingProduct, price: parseInt(e.target.value) || 0 })}
                         placeholder="0"
                         min="0"
                         className="w-full bg-white border border-black/20 px-4 py-2.5 text-black text-base font-normal focus:outline-none focus:border-black/40 focus:ring-1 focus:ring-black/10 transition-all"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-semibold text-black mb-2">
-                        Stock
-                      </label>
-                      <input
-                        type="number"
-                        value={editingProduct.stock}
-                        onChange={(e) => setEditingProduct({ ...editingProduct, stock: parseInt(e.target.value) || 0 })}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-black mb-2">
+                      Stock
+                    </label>
+                    <input
+                      type="number"
+                      value={editingProduct.stock}
+                      onChange={(e) => setEditingProduct({ ...editingProduct, stock: parseInt(e.target.value) || 0 })}
                         placeholder="0"
                         min="0"
                         className="w-full bg-white border border-black/20 px-4 py-2.5 text-black text-base font-normal focus:outline-none focus:border-black/40 focus:ring-1 focus:ring-black/10 transition-all"
-                      />
+                    />
                     </div>
                   </div>
                   <div>

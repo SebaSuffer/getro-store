@@ -142,9 +142,12 @@ const ProductCard = ({ product: initialProduct }: ProductCardProps) => {
         <div className="mt-auto">
           <div className="mb-4">
             {isOutOfStock ? (
-              <span className="text-[10px] text-red-600/80 uppercase tracking-[0.2em] font-normal">Sin stock</span>
+              <span className="text-[10px] text-red-600/80 font-normal">Sin stock</span>
             ) : (
-              <span className="text-[10px] text-black/60 uppercase tracking-[0.2em] font-normal">Stock disponible</span>
+              <span className="text-[10px] text-black/60 font-normal">Stock disponible</span>
+            )}
+            {product.has_variations && (
+              <p className="text-[10px] text-green-600 font-normal mt-1">Variaciones disponibles</p>
             )}
           </div>
           

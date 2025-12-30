@@ -9,6 +9,8 @@ export interface Product {
   category: string;
   is_new: boolean;
   is_featured: boolean;
+  has_variations?: boolean;
+  variation_count?: number;
 }
 
 export interface CartItem {
