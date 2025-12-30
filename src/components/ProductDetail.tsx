@@ -77,14 +77,11 @@ const ProductDetail = ({ product: initialProduct }: ProductDetailProps) => {
     };
   }, [product.id, product.stock]);
 
+  const requiresVariation = product.has_variations && (product.category === 'Cadenas' || product.category === 'Colgantes');
+  const variationLocked = requiresVariation && !selectedVariation;
+
   const handleAddToCart = async () => {
-    if (currentStock <= 0) return;
-    
-    // Si es una cadena, verificar que se haya seleccionado una variación
-    if (product.category === 'Cadenas' && !selectedVariation) {
-      alert('Por favor, selecciona una variación (marca, grosor y largo) antes de añadir al carrito');
-      return;
-    }
+    if (currentStock <= 0 || variationLocked) return;
     
     setIsAdding(true);
     try {
@@ -232,8 +229,8 @@ const ProductDetail = ({ product: initialProduct }: ProductDetailProps) => {
               </div>
             </div>
 
-            {/* Selector de Variaciones (solo para cadenas) */}
-            {product.category === 'Cadenas' && (
+            {/* Selector de Variaciones (cadenas y colgantes con variaciones) */}
+            {(product.category === 'Cadenas' || product.category === 'Colgantes') && product.has_variations && (
               <div className="mb-8">
                 <ChainVariationSelector
                   productId={product.id}
@@ -339,24 +336,24 @@ const ProductDetail = ({ product: initialProduct }: ProductDetailProps) => {
 
               <button
                 onClick={handleAddToCart}
-                disabled={isOutOfStock || isAdding || (product.category === 'Cadenas' && !selectedVariation)}
+                disabled={isOutOfStock || isAdding || variationLocked}
                 className={`w-full h-14 flex items-center justify-center gap-2 text-base font-semibold transition-all font-sans ${
-                  isOutOfStock || (product.category === 'Cadenas' && !selectedVariation)
+                  isOutOfStock || variationLocked
                     ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
                     : 'bg-black text-white hover:bg-black/90 active:bg-black'
                 }`}
                 aria-label={`Añadir ${product.name} al carrito`}
-                tabIndex={isOutOfStock || (product.category === 'Cadenas' && !selectedVariation) ? -1 : 0}
+                tabIndex={isOutOfStock || variationLocked ? -1 : 0}
               >
                 <span className="material-symbols-outlined" style={{ fontSize: '22px', fontWeight: 300 }}>
                   {isAdding ? 'check' : 'shopping_bag'}
                 </span>
-                {isOutOfStock 
-                  ? 'Agotado' 
-                  : product.category === 'Cadenas' && !selectedVariation
+                {isOutOfStock
+                  ? 'Agotado'
+                  : variationLocked
                   ? 'Selecciona una variación'
-                  : isAdding 
-                  ? 'Añadido' 
+                  : isAdding
+                  ? 'Añadido'
                   : 'Añadir al Carrito'}
               </button>
             </div>
