@@ -551,6 +551,11 @@ const AdminPanel = () => {
                         <p className="text-sm text-black/70 font-normal mb-1">
                           {product.category} • ${product.price.toLocaleString('es-CL')} CLP
                         </p>
+                        {product.has_variations && (
+                          <p className="text-xs font-semibold text-black/60 uppercase tracking-[0.2em]">
+                            Variaciones ({product.variation_count || 0})
+                          </p>
+                        )}
                         <p className="text-sm text-black/60 font-normal">
                           Stock: {product.stock} unidades
                         </p>
