@@ -72,11 +72,11 @@ const ChainVariationSelector = ({ productId, basePrice, onVariationSelect }: Cha
   });
 
   return (
-    <div className="mb-8 space-y-6">
+    <div className="mb-8 space-y-6 font-sans">
       {Object.entries(variationsByBrand).map(([brand, brandVariations]) => (
         <div key={brand} className="space-y-3">
           <div className="flex items-center gap-2 mb-2">
-            <h3 className="text-base font-semibold text-black uppercase tracking-wide">{brand}</h3>
+            <h3 className="text-base font-semibold text-black">{brand}</h3>
             <span className="text-xs text-black/50 font-normal">({brandVariations.length} opciones)</span>
           </div>
           
