@@ -130,7 +130,8 @@ const ChainVariationSelector = ({ productId, basePrice, defaultVariation, onVari
               {visibleVariations.map((variation) => {
                 const isSelected = selectedVariation?.id === variation.id;
                 const isOutOfStock = variation.stock <= 0;
-                const displayText = `${variation.thickness} × ${variation.length}`;
+                // Mostrar solo la marca, sin medidas
+                const displayText = variation.brand;
                 
                 return (
                   <button
@@ -172,7 +173,7 @@ const ChainVariationSelector = ({ productId, basePrice, defaultVariation, onVari
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-semibold text-black mb-1">
-                Variación seleccionada: {selectedVariation.brand} {selectedVariation.thickness} × {selectedVariation.length}
+                Variación seleccionada: {selectedVariation.brand}
               </p>
               <p className="text-xs text-black/60">
                 Stock disponible: {selectedVariation.stock} unidades
@@ -184,7 +185,7 @@ const ChainVariationSelector = ({ productId, basePrice, defaultVariation, onVari
                 <p className="text-sm font-semibold text-black">
                   ${basePrice.toLocaleString('es-CL')} CLP
                   {selectedVariation.price_modifier > 0 && (
-                    <span className="text-red-600 ml-2">+{selectedVariation.price_modifier.toLocaleString('es-CL')}</span>
+                    <span className="text-green-600 ml-2">+{selectedVariation.price_modifier.toLocaleString('es-CL')}</span>
                   )}
                   {selectedVariation.price_modifier < 0 && (
                     <span className="text-green-600 ml-2">{selectedVariation.price_modifier.toLocaleString('es-CL')}</span>
