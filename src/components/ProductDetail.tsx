@@ -81,28 +81,17 @@ const ProductDetail = ({ product: initialProduct }: ProductDetailProps) => {
         }
         
         // Cargar cadenas disponibles para colgantes (nuevo sistema)
+        // Solo establecer defaultChainBrand, ChainVariationSelector manejará la selección automática
         if (currentProduct?.category === 'Colgantes') {
           try {
             const chainsResponse = await fetch(`/api/pendants/${product.id}/chains`);
             if (chainsResponse.ok) {
               const chains = await chainsResponse.json();
               if (chains.length > 0) {
-                // Buscar la cadena por defecto (PLATA 925) o usar la primera disponible con stock
+                // Buscar la cadena por defecto (PLATA 925) o usar la primera disponible
                 const availableChains = chains.filter((c: any) => c.stock > 0);
                 const defaultChain = availableChains.find((c: any) => c.brand === 'PLATA 925') || availableChains[0] || chains[0];
                 setDefaultChainBrand(defaultChain?.brand || null);
-                
-                // Si hay al menos una cadena disponible, seleccionarla automáticamente
-                if (defaultChain) {
-                  // Calcular precio con la cadena por defecto
-                  const sum = currentProduct.price + (defaultChain.price || 0);
-                  const { roundToProfessionalPrice } = await import('../utils/priceRounding');
-                  const finalPrice = roundToProfessionalPrice(sum);
-                  setSelectedVariation(defaultChain);
-                  setDisplayPrice(finalPrice);
-                  setSumPrice(sum);
-                  setCurrentStock(defaultChain.stock || currentProduct.stock);
-                }
               }
             }
           } catch (error) {

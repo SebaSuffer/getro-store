@@ -44,6 +44,7 @@ const AdminPanel = () => {
   const [isProductsModalOpen, setIsProductsModalOpen] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isImageSectionExpanded, setIsImageSectionExpanded] = useState(false);
+  const [productVariationsCount, setProductVariationsCount] = useState<Record<string, number>>({});
 
   useEffect(() => {
     const checkAuth = () => {
@@ -711,13 +712,14 @@ const AdminPanel = () => {
                       <th className="px-6 py-4 text-left text-base font-semibold text-black">Categoría</th>
                       <th className="px-6 py-4 text-left text-base font-semibold text-black">Stock</th>
                       <th className="px-6 py-4 text-left text-base font-semibold text-black">Precio</th>
+                      <th className="px-6 py-4 text-left text-base font-semibold text-black">Variaciones</th>
                       <th className="px-6 py-4 text-left text-base font-semibold text-black">Acciones</th>
                     </tr>
                   </thead>
                   <tbody>
                     {products.filter(p => p.category !== 'Cadenas').length === 0 ? (
                       <tr>
-                        <td colSpan={8} className="px-6 py-12 text-center text-black/50 font-normal text-base">
+                        <td colSpan={9} className="px-6 py-12 text-center text-black/50 font-normal text-base">
                           No hay productos disponibles
                         </td>
                       </tr>
@@ -775,6 +777,13 @@ const AdminPanel = () => {
                             </span>
                           </td>
                           <td className="px-6 py-4 text-black/90 font-normal text-base">${product.price.toLocaleString('es-CL')} CLP</td>
+                          <td className="px-6 py-4 text-black/90 font-normal text-base">
+                            {product.category === 'Colgantes' ? (
+                              <span className="font-semibold">{productVariationsCount[product.id] ?? 1}</span>
+                            ) : (
+                              <span className="text-black/40">-</span>
+                            )}
+                          </td>
                           <td className="px-6 py-4">
                             <button
                               onClick={() => handleEditProduct(product, 'products')}

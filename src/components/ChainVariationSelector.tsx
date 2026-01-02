@@ -31,10 +31,13 @@ const ChainVariationSelector = ({ productId, basePrice, defaultChainBrand, onVar
   }, [productId]);
 
   useEffect(() => {
-    // Solo ejecutar si hay cadenas y no hay una seleccionada
-    if (chains.length === 0 || selectedChain) return;
+    // Solo ejecutar si hay cadenas
+    if (chains.length === 0) return;
     
-    // Si solo hay 1 cadena, seleccionarla automáticamente (incluso si no tiene stock, para mostrarla)
+    // Si ya hay una cadena seleccionada, no hacer nada (evitar loops)
+    if (selectedChain) return;
+    
+    // Si solo hay 1 cadena, seleccionarla automáticamente
     if (chains.length === 1) {
       handleChainClick(chains[0]);
       return;
@@ -43,12 +46,12 @@ const ChainVariationSelector = ({ productId, basePrice, defaultChainBrand, onVar
     // Si hay más de 1 cadena, seleccionar la cadena por defecto (PLATA 925) o la primera disponible
     const foundChain = defaultChainBrand 
       ? chains.find(c => c.brand === defaultChainBrand && c.stock > 0)
-      : chains.find(c => c.brand === 'PLATA 925' && c.stock > 0) || chains.find(c => c.stock > 0);
+      : chains.find(c => c.brand === 'PLATA 925' && c.stock > 0) || chains.find(c => c.stock > 0) || chains[0];
     if (foundChain) {
       handleChainClick(foundChain);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [chains.length, defaultChainBrand]);
+  }, [chains, defaultChainBrand]);
 
   const loadChains = async () => {
     try {
