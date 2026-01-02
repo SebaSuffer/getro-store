@@ -14,10 +14,11 @@ interface ChainVariation {
 interface ChainVariationsManagerProps {
   productId: string;
   onVariationsChange?: (variations: ChainVariation[]) => void;
+  baseProductPrice?: number; // Precio base del producto para cálculos
 }
 
 
-const ChainVariationsManager = ({ productId, onVariationsChange }: ChainVariationsManagerProps) => {
+const ChainVariationsManager = ({ productId, onVariationsChange, baseProductPrice = 0 }: ChainVariationsManagerProps) => {
   const [variations, setVariations] = useState<ChainVariation[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -126,6 +127,7 @@ const ChainVariationsManager = ({ productId, onVariationsChange }: ChainVariatio
         variations={variations}
         onSave={handleSaveVariations}
         productId={productId}
+        baseProductPrice={baseProductPrice}
       />
     </div>
   );

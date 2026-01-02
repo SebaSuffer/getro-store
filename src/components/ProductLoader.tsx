@@ -8,11 +8,23 @@ interface ProductLoaderProps {
   initialProducts?: Product[];
   category?: string | null;
   featuredOnly?: boolean;
+  hidePrice?: boolean;
+  showExtraImage?: boolean;
+  extraImageUrl?: string;
+  extraImageAlt?: string;
 }
 
 const PRODUCTS_PER_PAGE = 12;
 
-const ProductLoader = ({ initialProducts = [], category = null, featuredOnly = false }: ProductLoaderProps) => {
+const ProductLoader = ({ 
+  initialProducts = [], 
+  category = null, 
+  featuredOnly = false, 
+  hidePrice = false,
+  showExtraImage = false,
+  extraImageUrl = '',
+  extraImageAlt = 'Imagen destacada'
+}: ProductLoaderProps) => {
   const [allProducts, setAllProducts] = useState<Product[]>(initialProducts);
   const [loading, setLoading] = useState(initialProducts.length === 0);
   const [error, setError] = useState<string | null>(null);
@@ -44,6 +56,22 @@ const ProductLoader = ({ initialProducts = [], category = null, featuredOnly = f
           const beforeFilter = products.length;
           products = products.filter(p => p.is_featured);
           console.log(`[PRODUCT-LOADER] ⭐ Filtered featured: ${beforeFilter} → ${products.length}`);
+          console.log(`[PRODUCT-LOADER] 📋 Featured products:`, products.map(p => ({ id: p.id, name: p.name, is_featured: p.is_featured })));
+        }
+
+        // Si hay initialProducts y featuredOnly, usar ambos (servidor + cliente)
+        if (featuredOnly && initialProducts.length > 0) {
+          const initialFeatured = initialProducts.filter(p => p.is_featured);
+          console.log(`[PRODUCT-LOADER] 🔄 Initial featured products: ${initialFeatured.length}`);
+          // Combinar y eliminar duplicados
+          const combined = [...products];
+          initialFeatured.forEach(ip => {
+            if (!combined.find(p => p.id === ip.id)) {
+              combined.push(ip);
+            }
+          });
+          products = combined.filter(p => p.is_featured);
+          console.log(`[PRODUCT-LOADER] ✅ Combined featured products: ${products.length}`);
         }
 
         setAllProducts(products);
@@ -60,7 +88,7 @@ const ProductLoader = ({ initialProducts = [], category = null, featuredOnly = f
     };
 
     loadProducts();
-  }, [category, featuredOnly]);
+  }, [category, featuredOnly, initialProducts]);
 
   // Escuchar cambios de categoría desde CategoryFilters (sin recargar página)
   useEffect(() => {
@@ -97,10 +125,17 @@ const ProductLoader = ({ initialProducts = [], category = null, featuredOnly = f
   }, [featuredOnly]);
 
   // Calcular productos paginados
-  const totalPages = Math.ceil(allProducts.length / PRODUCTS_PER_PAGE);
-  const startIndex = (currentPage - 1) * PRODUCTS_PER_PAGE;
-  const endIndex = startIndex + PRODUCTS_PER_PAGE;
-  const paginatedProducts = allProducts.slice(startIndex, endIndex);
+  // Para destacados, mostrar máximo 8 productos (2 filas de 4) SIN paginación
+  const maxFeaturedProducts = featuredOnly ? 8 : Infinity;
+  const limitedProducts = featuredOnly ? allProducts.slice(0, maxFeaturedProducts) : allProducts;
+  
+  // Si es featuredOnly, mostrar todos sin paginación (hasta 8)
+  // Si no, aplicar paginación normal
+  const shouldPaginate = !featuredOnly;
+  const totalPages = shouldPaginate ? Math.ceil(limitedProducts.length / PRODUCTS_PER_PAGE) : 1;
+  const startIndex = shouldPaginate ? (currentPage - 1) * PRODUCTS_PER_PAGE : 0;
+  const endIndex = shouldPaginate ? startIndex + PRODUCTS_PER_PAGE : limitedProducts.length;
+  const paginatedProducts = limitedProducts.slice(startIndex, endIndex);
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -145,7 +180,7 @@ const ProductLoader = ({ initialProducts = [], category = null, featuredOnly = f
     <>
       <div className="grid grid-cols-1 gap-12 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {paginatedProducts.map((product) => (
-          <ProductCard key={product.id} product={product} />
+          <ProductCard key={product.id} product={product} hidePrice={hidePrice} />
         ))}
       </div>
       

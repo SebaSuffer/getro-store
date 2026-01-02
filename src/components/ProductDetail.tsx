@@ -17,6 +17,10 @@ const ProductDetail = ({ product: initialProduct }: ProductDetailProps) => {
   const [product, setProduct] = useState(initialProduct);
   const [selectedVariation, setSelectedVariation] = useState<any>(null);
   const [displayPrice, setDisplayPrice] = useState(initialProduct.price);
+  const [sumPrice, setSumPrice] = useState<number | null>(null);
+  const [productImages, setProductImages] = useState<string[]>([initialProduct.image_url]);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [defaultVariation, setDefaultVariation] = useState<any>(null);
 
   useEffect(() => {
     const checkCart = () => {
@@ -60,6 +64,48 @@ const ProductDetail = ({ product: initialProduct }: ProductDetailProps) => {
         // Cargar stock actualizado
         const stock = await getProductStock(product.id);
         setCurrentStock(stock || product.stock);
+        
+        // Cargar imágenes del producto
+        try {
+          const imagesResponse = await fetch(`/api/products/${product.id}/images`);
+          if (imagesResponse.ok) {
+            const images = await imagesResponse.json();
+            if (images.length > 0) {
+              setProductImages(images.map((img: any) => img.image_url));
+            } else {
+              setProductImages([currentProduct?.image_url || product.image_url]);
+            }
+          }
+        } catch (error) {
+          console.error('Error loading images:', error);
+        }
+        
+        // Cargar variaciones y seleccionar la primera (por defecto) si existe
+        if (currentProduct?.has_variations && (currentProduct.category === 'Colgantes' || currentProduct.category === 'Cadenas')) {
+          try {
+            const variationsResponse = await fetch(`/api/products/${product.id}/variations`);
+            if (variationsResponse.ok) {
+              const variations = await variationsResponse.json();
+              const activeVariations = variations.filter((v: any) => v.is_active);
+              if (activeVariations.length > 0) {
+                // Buscar la variación por defecto (PLATA 925) o usar la primera
+                const defaultVar = activeVariations.find((v: any) => v.brand === 'PLATA 925' || v.id.includes('PLATA925-DEFAULT')) || activeVariations[0];
+                setDefaultVariation(defaultVar);
+                
+                // Calcular precio con la variación por defecto
+                const sum = currentProduct.price + (defaultVar.price_modifier || 0);
+                const { roundToProfessionalPrice } = await import('../utils/priceRounding');
+                const finalPrice = roundToProfessionalPrice(sum);
+                setSelectedVariation(defaultVar);
+                setDisplayPrice(finalPrice);
+                setSumPrice(sum);
+                setCurrentStock(defaultVar.stock || currentProduct.stock);
+              }
+            }
+          } catch (error) {
+            console.error('Error loading variations:', error);
+          }
+        }
         
         // Cargar productos relacionados
         const related = await getRelatedProducts(product.id, 4);
@@ -116,11 +162,21 @@ const ProductDetail = ({ product: initialProduct }: ProductDetailProps) => {
 
   // Información por defecto basada en la categoría
   const getDefaultSpecs = () => {
+    const cuidadosText = `Para mantener el brillo y la belleza de tu ${product.category.toLowerCase()}, te recomendamos seguir estos cuidados esenciales:
+
+Almacenamiento: Guarda cada pieza por separado en un lugar seco y hermético. Esto evitará rayones y prevendrá la oxidación, manteniendo tu joya como nueva por más tiempo.
+
+Protección: Evita el contacto directo con productos de limpieza, químicos, cosméticos, perfumes y agua clorada. Estos elementos pueden dañar el acabado y afectar el brillo natural de la plata.
+
+Orden de uso: Ponte tus joyas siempre al final de tu rutina diaria, después de haber aplicado cremas, lociones o maquillaje. Esto minimiza el contacto con productos que puedan afectar su apariencia.
+
+Limpieza: Para mantener el brillo, limpia periódicamente con un paño suave y seco. Si es necesario, puedes usar un paño especial para plata o una solución suave de agua tibia con jabón neutro, secando inmediatamente después.`;
+
     const baseSpecs = {
       material: 'Plata Sólida 925',
       pureza: '925/1000',
       garantia: '2 años',
-      cuidados: 'Evitar contacto con químicos, perfumes y agua de mar. Limpiar con paño suave.',
+      cuidados: cuidadosText,
       envio: 'Envío gratis a todo Chile en compras sobre $50.000',
       packaging: 'Incluye estuche de regalo y certificado de autenticidad',
     };
@@ -165,25 +221,59 @@ const ProductDetail = ({ product: initialProduct }: ProductDetailProps) => {
         </div>
 
         <div className="grid grid-cols-1 gap-12 lg:grid-cols-2 mb-16">
-          {/* Imagen Principal */}
-          <div className="relative aspect-square overflow-hidden bg-gray-50">
-            <img
-              alt={product.image_alt || product.name}
-              className="h-full w-full object-cover"
-              src={product.image_url}
-              loading="eager"
-              onError={(e) => {
-                // Fallback si la imagen no carga - usar imagen de Cloudinary
-                const target = e.target as HTMLImageElement;
-                const fallbackUrl = 'https://res.cloudinary.com/ddzoh72zv/image/upload/f_auto,q_auto/v1766458847/DSC05016_dwuz7c.jpg';
-                if (!target.src.includes('cloudinary.com')) {
-                  target.src = fallbackUrl;
-                }
-              }}
-            />
-            {product.is_new && (
-              <div className="absolute left-6 top-6 bg-black text-white px-4 py-2 text-[10px] font-light uppercase tracking-[0.2em]">
-                New
+          {/* Rollo de Imágenes */}
+          <div className="space-y-4">
+            <div className="relative aspect-square overflow-hidden bg-gray-50">
+              <img
+                alt={product.image_alt || product.name}
+                className="h-full w-full object-cover"
+                src={productImages[currentImageIndex] || product.image_url}
+                loading="eager"
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  const fallbackUrl = 'https://res.cloudinary.com/ddzoh72zv/image/upload/f_auto,q_auto/v1766458847/DSC05016_dwuz7c.jpg';
+                  if (!target.src.includes('cloudinary.com')) {
+                    target.src = fallbackUrl;
+                  }
+                }}
+              />
+              {product.is_new && (
+                <div className="absolute left-6 top-6 bg-black text-white px-4 py-2 text-[10px] font-light uppercase tracking-[0.2em]">
+                  New
+                </div>
+              )}
+              {productImages.length > 1 && (
+                <>
+                  <button
+                    onClick={() => setCurrentImageIndex((prev) => (prev > 0 ? prev - 1 : productImages.length - 1))}
+                    className="absolute left-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 transition-all"
+                    aria-label="Imagen anterior"
+                  >
+                    <span className="material-symbols-outlined" style={{ fontSize: '24px', fontWeight: 300 }}>chevron_left</span>
+                  </button>
+                  <button
+                    onClick={() => setCurrentImageIndex((prev) => (prev < productImages.length - 1 ? prev + 1 : 0))}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 transition-all"
+                    aria-label="Imagen siguiente"
+                  >
+                    <span className="material-symbols-outlined" style={{ fontSize: '24px', fontWeight: 300 }}>chevron_right</span>
+                  </button>
+                </>
+              )}
+            </div>
+            {productImages.length > 1 && (
+              <div className="flex gap-2 overflow-x-auto pb-2">
+                {productImages.map((imgUrl, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setCurrentImageIndex(index)}
+                    className={`flex-shrink-0 w-20 h-20 overflow-hidden border-2 transition-all ${
+                      currentImageIndex === index ? 'border-black' : 'border-black/20'
+                    }`}
+                  >
+                    <img src={imgUrl} alt={`${product.name} ${index + 1}`} className="w-full h-full object-cover" />
+                  </button>
+                ))}
               </div>
             )}
           </div>
@@ -211,22 +301,27 @@ const ProductDetail = ({ product: initialProduct }: ProductDetailProps) => {
                 )}
               </div>
 
-              <div className="mb-8">
-                <p className="text-4xl font-bold text-black tracking-tight font-sans">
-                  ${displayPrice.toLocaleString('es-CL')} CLP
-                </p>
-                {selectedVariation && selectedVariation.price_modifier !== 0 && (
-                  <p className="text-sm text-black/60 font-normal mt-2">
-                    Precio base: ${product.price.toLocaleString('es-CL')} CLP
-                    {selectedVariation.price_modifier > 0 && (
-                      <span className="text-red-600 ml-2">+{selectedVariation.price_modifier.toLocaleString('es-CL')} CLP</span>
-                    )}
-                    {selectedVariation.price_modifier < 0 && (
-                      <span className="text-green-600 ml-2">{selectedVariation.price_modifier.toLocaleString('es-CL')} CLP</span>
-                    )}
+              {product.category !== 'Cadenas' && (
+                <div className="mb-8">
+                  <p className="text-4xl font-bold text-black tracking-tight font-sans">
+                    ${displayPrice.toLocaleString('es-CL')} CLP
                   </p>
-                )}
-              </div>
+                  {selectedVariation && sumPrice && sumPrice !== displayPrice && (
+                    <p className="text-sm text-black/60 font-normal mt-2">
+                      Precio suma: ${sumPrice.toLocaleString('es-CL')} CLP
+                      <span className="text-black/40 ml-2">→</span>
+                      <span className="text-green-600 ml-2">Precio exhibición: ${displayPrice.toLocaleString('es-CL')} CLP</span>
+                    </p>
+                  )}
+                </div>
+              )}
+              {product.category === 'Cadenas' && (
+                <div className="mb-8">
+                  <p className="text-base text-black/70 font-normal font-sans">
+                    Las cadenas se muestran como referencia. El precio se calcula al seleccionar una cadena con un colgante.
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* Selector de Variaciones (cadenas y colgantes con variaciones) */}
@@ -235,13 +330,16 @@ const ProductDetail = ({ product: initialProduct }: ProductDetailProps) => {
                 <ChainVariationSelector
                   productId={product.id}
                   basePrice={product.price}
-                  onVariationSelect={(variation, finalPrice) => {
+                  defaultVariation={defaultVariation}
+                  onVariationSelect={(variation, finalPrice, sumPriceValue) => {
                     setSelectedVariation(variation);
                     setDisplayPrice(finalPrice);
+                    setSumPrice(sumPriceValue || null);
                     if (variation) {
                       setCurrentStock(variation.stock);
                     } else {
                       setCurrentStock(product.stock);
+                      setSumPrice(null);
                     }
                   }}
                 />
@@ -289,10 +387,10 @@ const ProductDetail = ({ product: initialProduct }: ProductDetailProps) => {
 
             {/* Cuidados y Mantenimiento */}
             <div className="mb-8 border-t border-black/10 pt-8">
-              <h2 className="text-lg font-semibold text-black mb-4 font-sans">Cuidados</h2>
-              <p className="text-base font-normal text-black/80 leading-relaxed font-sans">
+              <h2 className="text-lg font-semibold text-black mb-4 font-sans">Cuidados y Mantenimiento</h2>
+              <div className="text-base font-normal text-black/80 leading-relaxed font-sans whitespace-pre-line">
                 {specs.cuidados}
-              </p>
+              </div>
             </div>
 
             {/* Información de Envío */}

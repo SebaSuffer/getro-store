@@ -30,7 +30,12 @@ try {
     </div>
     
     <!-- Product Grid con fallback a carga en cliente -->
-    <ProductLoader client:load initialProducts={productsWithStock} featuredOnly={true} />
+    <ProductLoader 
+      client:load 
+      initialProducts={productsWithStock} 
+      featuredOnly={true} 
+      hidePrice={true}
+    />
     
     <div class="mt-20 text-center">
       <a href="/catalogo" class="inline-flex h-12 items-center justify-center bg-black text-white px-10 text-xs font-light uppercase tracking-[0.2em] transition-all hover:bg-black/90">

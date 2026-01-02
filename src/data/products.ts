@@ -154,10 +154,10 @@ export const getAllProductsSync = (): Product[] => {
   return productsCache || [];
 };
 
-// Obtener productos destacados
+// Obtener productos destacados (máximo 8 para 2 filas)
 export const getFeaturedProducts = async (): Promise<Product[]> => {
   const allProducts = await getAllProducts();
-  return allProducts.filter(p => p.is_featured).slice(0, 4);
+  return allProducts.filter(p => p.is_featured).slice(0, 8);
 };
 
 // Obtener productos por categoría

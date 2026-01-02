@@ -4,13 +4,15 @@ import type { Product } from '../data/products';
 
 interface ProductCardProps {
   product: Product;
+  hidePrice?: boolean;
 }
 
-const ProductCard = ({ product: initialProduct }: ProductCardProps) => {
+const ProductCard = ({ product: initialProduct, hidePrice = false }: ProductCardProps) => {
   const [isInCart, setIsInCart] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
   const [currentStock, setCurrentStock] = useState(initialProduct.stock);
   const [product, setProduct] = useState(initialProduct);
+  const [displayPrice, setDisplayPrice] = useState(initialProduct.price);
 
   useEffect(() => {
     const checkCart = () => {
@@ -52,12 +54,35 @@ const ProductCard = ({ product: initialProduct }: ProductCardProps) => {
       }
     };
     
-    // Cargar stock actualizado al montar
+    // Cargar stock actualizado al montar y calcular precio con cadena base
     const loadStock = async () => {
       try {
         const { getProductStock } = await import('../utils/stock');
         const stock = await getProductStock(product.id);
         setCurrentStock(stock || product.stock);
+        
+        // Si es un Colgante con variaciones, cargar la variación por defecto y calcular precio
+        if (product.has_variations && product.category === 'Colgantes' && !hidePrice) {
+          try {
+            const variationsResponse = await fetch(`/api/products/${product.id}/variations`);
+            if (variationsResponse.ok) {
+              const variations = await variationsResponse.json();
+              const activeVariations = variations.filter((v: any) => v.is_active);
+              if (activeVariations.length > 0) {
+                // Buscar la variación por defecto (PLATA 925) o usar la primera
+                const defaultVar = activeVariations.find((v: any) => v.brand === 'PLATA 925' || v.id.includes('PLATA925-DEFAULT')) || activeVariations[0];
+                if (defaultVar) {
+                  const sumPrice = product.price + (defaultVar.price_modifier || 0);
+                  const { roundToProfessionalPrice } = await import('../utils/priceRounding');
+                  const finalPrice = roundToProfessionalPrice(sumPrice);
+                  setDisplayPrice(finalPrice);
+                }
+              }
+            }
+          } catch (error) {
+            console.error('Error loading variations for price:', error);
+          }
+        }
       } catch (error) {
         console.error('Error loading stock:', error);
       }
@@ -107,20 +132,29 @@ const ProductCard = ({ product: initialProduct }: ProductCardProps) => {
   return (
     <div className="group relative flex flex-col overflow-hidden bg-white">
       <a href={`/producto/${product.id}`} className="relative aspect-square overflow-hidden bg-gray-50 cursor-pointer">
-        <img
-          alt={product.image_alt || product.name}
-          className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
-          src={product.image_url}
-          loading="lazy"
-          onError={(e) => {
-            // Fallback si la imagen no carga - usar imagen de Cloudinary
-            const target = e.target as HTMLImageElement;
-            const fallbackUrl = 'https://res.cloudinary.com/ddzoh72zv/image/upload/f_auto,q_auto/v1766458847/DSC05016_dwuz7c.jpg';
-            if (!target.src.includes('cloudinary.com')) {
-              target.src = fallbackUrl;
-            }
-          }}
-        />
+        {!product.image_url || product.image_url.trim() === '' ? (
+          <div className="h-full w-full flex items-center justify-center bg-gray-100 border border-gray-200">
+            <span className="text-sm text-gray-400 font-normal">Sin imagen</span>
+          </div>
+        ) : (
+          <img
+            alt={product.image_alt || product.name}
+            className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+            src={product.image_url}
+            loading="lazy"
+            onError={(e) => {
+              const target = e.target as HTMLImageElement;
+              target.style.display = 'none';
+              const parent = target.parentElement;
+              if (parent && !parent.querySelector('.no-image-placeholder')) {
+                const placeholder = document.createElement('div');
+                placeholder.className = 'h-full w-full flex items-center justify-center bg-gray-100 border border-gray-200 no-image-placeholder';
+                placeholder.innerHTML = '<span class="text-sm text-gray-400 font-normal">Sin imagen</span>';
+                parent.appendChild(placeholder);
+              }
+            }}
+          />
+        )}
         {product.is_new && (
           <div className="absolute left-4 top-4 bg-black text-white px-3 py-1.5 text-[10px] font-normal uppercase tracking-[0.2em]">
             New
@@ -135,39 +169,44 @@ const ProductCard = ({ product: initialProduct }: ProductCardProps) => {
       
       <div className="flex flex-1 flex-col p-6 bg-white">
         <div className="mb-4">
-          <p className="text-[10px] uppercase tracking-[0.3em] text-black/50 mb-2 font-normal">{product.category}</p>
-          <h3 className="text-base font-medium text-black uppercase tracking-[0.05em] leading-tight font-display">{product.name}</h3>
+          <p className="text-xs uppercase tracking-[0.2em] text-black/50 mb-2 font-normal">{product.category}</p>
+          <h3 className="text-lg font-medium text-black uppercase tracking-[0.05em] leading-tight font-display mb-3">{product.name}</h3>
+          {product.description && (
+            <p className="text-sm text-black/70 font-normal leading-relaxed line-clamp-2">{product.description}</p>
+          )}
         </div>
         
         <div className="mt-auto">
           <div className="mb-4">
             {isOutOfStock ? (
-              <span className="text-[10px] text-red-600/80 font-normal">Sin stock</span>
+              <span className="text-sm text-red-600/80 font-medium">Sin stock</span>
             ) : (
-              <span className="text-[10px] text-black/60 font-normal">Stock disponible</span>
+              <span className="text-sm text-black/70 font-medium">Stock disponible: {currentStock} unidades</span>
             )}
             {product.has_variations && (
-              <p className="text-[10px] text-green-600 font-normal mt-1">Variaciones disponibles</p>
+              <p className="text-xs text-green-600 font-normal mt-1">Variaciones disponibles</p>
             )}
           </div>
           
-          <div className="mb-6">
-            <p className="text-lg font-normal text-black tracking-wide">
-              ${product.price.toLocaleString('es-CL')} CLP
-            </p>
-          </div>
+          {!hidePrice && product.category !== 'Cadenas' && (
+            <div className="mb-6">
+              <p className="text-lg font-normal text-black tracking-wide">
+                ${displayPrice.toLocaleString('es-CL')} CLP
+              </p>
+            </div>
+          )}
           
           <div className="flex flex-col gap-3">
             <a
               href={`/producto/${product.id}`}
-              className="w-full h-11 flex items-center justify-center gap-2 text-[10px] font-normal uppercase tracking-[0.2em] border border-black/20 text-black hover:border-black/40 transition-all"
+              className="w-full h-12 flex items-center justify-center gap-2 text-xs font-normal uppercase tracking-[0.15em] border border-black/20 text-black hover:border-black/40 transition-all"
             >
               Ver Detalle
             </a>
             <button
               onClick={handleAddToCart}
               disabled={isOutOfStock || isAdding}
-              className={`w-full h-11 flex items-center justify-center gap-2 text-[10px] font-normal uppercase tracking-[0.2em] transition-all ${
+              className={`w-full h-12 flex items-center justify-center gap-2 text-xs font-normal uppercase tracking-[0.15em] transition-all ${
                 isOutOfStock
                   ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
                   : 'bg-black text-white hover:bg-black/90 active:bg-black'

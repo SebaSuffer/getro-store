@@ -34,8 +34,8 @@ export const GET: APIRoute = async ({ params }) => {
       brand: row.brand,
       thickness: row.thickness,
       length: row.length,
-      price_modifier: row.price_modifier,
-      stock: row.stock,
+      price_modifier: row.price_modifier ?? 0, // Asegurar que siempre sea un número
+      stock: row.stock ?? 0,
       is_active: Boolean(row.is_active),
       created_at: row.created_at,
       updated_at: row.updated_at,

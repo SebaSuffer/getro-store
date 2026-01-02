@@ -58,7 +58,7 @@ const productsWithStock = products;
           <CategoryFilters client:load currentCategory={categoria} />
           
           <!-- Product Grid con paginación y navegación sin recargar -->
-          <ProductLoader client:load initialProducts={productsWithStock} category={categoria} />
+          <ProductLoader client:load initialProducts={productsWithStock} category={categoria} hidePrice={true} />
         </div>
       </section>
       <PaymentMethods />
