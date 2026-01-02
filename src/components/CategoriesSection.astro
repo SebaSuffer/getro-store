@@ -1,21 +1,38 @@
 ---
 import { getAllCategories } from '../utils/categories';
+import { getProductsByCategory } from '../data/products';
 
 let categories: any[] = [];
 const categoryImages: Record<string, string> = {};
 
 try {
-  categories = await getAllCategories();
-  categories.forEach(cat => { categoryImages[cat.name] = cat.image_url; });
+  const allCategories = await getAllCategories();
+  
+  // Filtrar solo categorías que tienen productos
+  const categoriesWithProducts = [];
+  for (const cat of allCategories) {
+    try {
+      const products = await getProductsByCategory(cat.name);
+      if (products.length > 0) {
+        categoriesWithProducts.push(cat);
+        categoryImages[cat.name] = cat.image_url;
+      }
+    } catch (error) {
+      console.error(`[CATEGORIES-SECTION] Error checking products for ${cat.name}:`, error);
+    }
+  }
+  
+  categories = categoriesWithProducts;
+  console.log(`[CATEGORIES-SECTION] ✅ Showing ${categories.length} categories with products:`, categories.map(c => c.name));
 } catch (error: any) {
   console.error('[CATEGORIES-SECTION] Error:', error);
+  // Fallback: solo mostrar Colgantes y Cadenas si hay error
   categoryImages['Cadenas'] = 'https://res.cloudinary.com/ddzoh72zv/image/upload/f_auto,q_auto/v1766458847/DSC05016_dwuz7c.jpg';
-  categoryImages['Pulseras'] = 'https://res.cloudinary.com/ddzoh72zv/image/upload/f_auto,q_auto/v1766458847/DSC05015_kiamyb.jpg';
-  categoryImages['Anillos'] = 'https://res.cloudinary.com/ddzoh72zv/image/upload/f_auto,q_auto/v1766458847/DSC05014_tpyofl.jpg';
   categoryImages['Colgantes'] = 'https://res.cloudinary.com/ddzoh72zv/image/upload/f_auto,q_auto/v1766458846/DSC05010_zfxyxv.jpg';
-  categoryImages['Aros'] = 'https://res.cloudinary.com/ddzoh72zv/image/upload/f_auto,q_auto/v1766458846/DSC05008_clyhgx.jpg';
-  categoryImages['Esclavas'] = 'https://res.cloudinary.com/ddzoh72zv/image/upload/f_auto,q_auto/v1766458846/DSC05012_bbchhj.jpg';
-  categories = Object.keys(categoryImages).map(name => ({ name, image_url: categoryImages[name], image_alt: name }));
+  categories = [
+    { name: 'Cadenas', image_url: categoryImages['Cadenas'], image_alt: 'Cadenas' },
+    { name: 'Colgantes', image_url: categoryImages['Colgantes'], image_alt: 'Colgantes' }
+  ];
 }
 ---
 
@@ -26,7 +43,7 @@ try {
       <h2 class="text-4xl sm:text-5xl font-light text-black tracking-[0.05em] uppercase font-display">Categorías</h2>
     </div>
     
-    <div class="grid grid-cols-2 gap-6 sm:grid-cols-3 lg:grid-cols-6">
+    <div class={`grid grid-cols-2 gap-6 ${categories.length > 2 ? 'sm:grid-cols-3 lg:grid-cols-6' : 'sm:grid-cols-2 lg:grid-cols-2'}`}>
       {categories.map((category) => (
         <a href={`/catalogo?categoria=${encodeURIComponent(category.name)}`} class="group relative aspect-square overflow-hidden bg-black">
           <img
