@@ -44,6 +44,11 @@ const ProductLoader = ({
         
         console.log(`[PRODUCT-LOADER] ⏱️ Loaded ${products.length} products in ${loadTime}ms`);
         
+        // Excluir cadenas del catálogo (se muestran en sección separada)
+        const beforeChainFilter = products.length;
+        products = products.filter(p => p.category !== 'Cadenas');
+        console.log(`[PRODUCT-LOADER] 🔗 Excluded chains: ${beforeChainFilter} → ${products.length}`);
+        
         // Filtrar por categoría si se especifica
         if (category) {
           const beforeFilter = products.length;

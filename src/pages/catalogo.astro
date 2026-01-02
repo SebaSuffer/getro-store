@@ -23,10 +23,16 @@ try {
   allProducts = await getAllProducts();
   console.log(`[CATALOGO] ✅ Loaded ${allProducts.length} products, ${categories.length} categories`);
 
+  // Excluir cadenas del catálogo (se muestran en sección separada /cadenas)
+  allProducts = allProducts.filter(p => p.category !== 'Cadenas');
+  
   // Filtrar productos por categoría si se especifica
   products = categoria 
     ? await getProductsByCategory(categoria)
     : allProducts;
+  
+  // Asegurar que no se muestren cadenas incluso si se filtra por categoría
+  products = products.filter(p => p.category !== 'Cadenas');
   
   console.log(`[CATALOGO] ✅ Filtered to ${products.length} products${categoria ? ` for category: ${categoria}` : ''}`);
 } catch (error: any) {

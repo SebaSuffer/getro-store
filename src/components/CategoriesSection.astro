@@ -8,9 +8,12 @@ const categoryImages: Record<string, string> = {};
 try {
   const allCategories = await getAllCategories();
   
-  // Filtrar solo categorías que tienen productos
+  // Filtrar solo categorías que tienen productos (excluir "Cadenas" que se muestran en sección separada)
   const categoriesWithProducts = [];
   for (const cat of allCategories) {
+    // Excluir "Cadenas" ya que se muestran en /cadenas
+    if (cat.name === 'Cadenas') continue;
+    
     try {
       const products = await getProductsByCategory(cat.name);
       if (products.length > 0) {
@@ -26,11 +29,9 @@ try {
   console.log(`[CATEGORIES-SECTION] ✅ Showing ${categories.length} categories with products:`, categories.map(c => c.name));
 } catch (error: any) {
   console.error('[CATEGORIES-SECTION] Error:', error);
-  // Fallback: solo mostrar Colgantes y Cadenas si hay error
-  categoryImages['Cadenas'] = 'https://res.cloudinary.com/ddzoh72zv/image/upload/f_auto,q_auto/v1766458847/DSC05016_dwuz7c.jpg';
+  // Fallback: solo mostrar Colgantes si hay error (excluir Cadenas)
   categoryImages['Colgantes'] = 'https://res.cloudinary.com/ddzoh72zv/image/upload/f_auto,q_auto/v1766458846/DSC05010_zfxyxv.jpg';
   categories = [
-    { name: 'Cadenas', image_url: categoryImages['Cadenas'], image_alt: 'Cadenas' },
     { name: 'Colgantes', image_url: categoryImages['Colgantes'], image_alt: 'Colgantes' }
   ];
 }

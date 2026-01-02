@@ -6,7 +6,8 @@ interface CategoryFiltersProps {
 }
 
 // Todas las categorías posibles - Colgantes primero porque es la que tiene productos
-const ALL_CATEGORIES = ['Colgantes', 'Cadenas', 'Pulseras', 'Anillos', 'Esclavas', 'Aros'];
+// Excluir "Cadenas" ya que se muestran en sección separada
+const ALL_CATEGORIES = ['Colgantes', 'Pulseras', 'Anillos', 'Esclavas', 'Aros'];
 
 const CategoryFilters = ({ currentCategory: initialCategory }: CategoryFiltersProps) => {
   const [availableCategories, setAvailableCategories] = useState<string[]>([]);

@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { getCategories } from '../data/products';
 
-const ALL_CATEGORIES = ['Colgantes', 'Cadenas', 'Pulseras', 'Anillos', 'Esclavas', 'Aros'];
+// Excluir "Cadenas" ya que se muestran en sección separada (/cadenas)
+const ALL_CATEGORIES = ['Colgantes', 'Pulseras', 'Anillos', 'Esclavas', 'Aros'];
 
 const JewelryDropdown = () => {
   const [isOpen, setIsOpen] = useState(false);
