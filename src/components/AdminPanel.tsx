@@ -1931,20 +1931,28 @@ const AdminPanel = () => {
                         <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2">
                           {chains.filter((c: any) => c.is_active).map((chain: any) => {
                             const isSelected = selectedVariationForPrice?.brand === chain.brand;
+                            const isAlreadySaved = selectedPendantChains.has(chain.brand);
+                            const isDisabled = isAlreadySaved;
+                            
                             return (
                               <label
                                 key={chain.id}
-                                className={`flex items-center gap-3 p-3 border-2 transition-colors cursor-pointer rounded-lg ${
-                                  isSelected
-                                    ? 'border-blue-500 bg-blue-50'
-                                    : 'border-black/10 hover:border-black/20 bg-white'
+                                className={`flex items-center gap-3 p-3 border-2 transition-colors rounded-lg ${
+                                  isDisabled
+                                    ? 'border-gray-300 bg-gray-100 cursor-not-allowed opacity-60'
+                                    : isSelected
+                                    ? 'border-blue-500 bg-blue-50 cursor-pointer'
+                                    : 'border-black/10 hover:border-black/20 bg-white cursor-pointer'
                                 }`}
                               >
                                 <input
                                   type="radio"
                                   name="chain-selection"
                                   checked={isSelected}
+                                  disabled={isDisabled}
                                   onChange={async () => {
+                                    if (isDisabled) return;
+                                    
                                     // Seleccionar cadena para cálculo y agregarla a la lista de guardar
                                     const newSelected = new Set(selectedPendantChains);
                                     if (!newSelected.has(chain.brand)) {
@@ -1961,11 +1969,14 @@ const AdminPanel = () => {
                                     setCustomDisplayPrice(roundedPrice);
                                     setSelectedVariationForPrice(chain);
                                   }}
-                                  className="w-5 h-5 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                                  className="w-5 h-5 text-blue-600 focus:ring-blue-500 cursor-pointer disabled:cursor-not-allowed"
                                 />
                                 <div className="flex-1">
                                   <span className="text-base font-semibold text-black block">
                                     {chain.brand}
+                                    {isAlreadySaved && (
+                                      <span className="ml-2 text-xs text-gray-500 font-normal">(Ya guardada)</span>
+                                    )}
                                   </span>
                                   <span className="text-sm text-black/70">
                                     ${chain.price.toLocaleString('es-CL')} CLP
