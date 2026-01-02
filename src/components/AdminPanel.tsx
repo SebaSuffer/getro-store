@@ -89,6 +89,27 @@ const AdminPanel = () => {
       const allProducts = await getAllProducts();
       setProducts(allProducts);
       setFilteredProducts(allProducts);
+      
+      // Cargar número de variaciones para cada colgante
+      const variationsCount: Record<string, number> = {};
+      for (const product of allProducts) {
+        if (product.category === 'Colgantes') {
+          try {
+            const response = await fetch(`/api/pendants/${product.id}/chains`);
+            if (response.ok) {
+              const chains = await response.json();
+              variationsCount[product.id] = chains.length || 1; // Default 1 si no hay cadenas
+            } else {
+              variationsCount[product.id] = 1; // Default 1
+            }
+          } catch (error) {
+            variationsCount[product.id] = 1; // Default 1 en caso de error
+          }
+        } else {
+          variationsCount[product.id] = 0; // No aplica para otros productos
+        }
+      }
+      setProductVariationsCount(variationsCount);
     } catch (error) {
       console.error('Error loading products:', error);
       setProducts([]);
