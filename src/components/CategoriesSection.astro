@@ -43,16 +43,16 @@ try {
       <h2 class="text-4xl sm:text-5xl font-light text-black tracking-[0.05em] uppercase font-display">Categorías</h2>
     </div>
     
-    <div class={`grid grid-cols-2 gap-6 ${categories.length > 2 ? 'sm:grid-cols-3 lg:grid-cols-6' : 'sm:grid-cols-2 lg:grid-cols-2'}`}>
+    <div class={`grid grid-cols-2 gap-4 sm:gap-6 max-w-4xl mx-auto ${categories.length > 2 ? 'sm:grid-cols-3 lg:grid-cols-6' : 'sm:grid-cols-2 lg:grid-cols-2'}`}>
       {categories.map((category) => (
-        <a href={`/catalogo?categoria=${encodeURIComponent(category.name)}`} class="group relative aspect-square overflow-hidden bg-black">
+        <a href={`/catalogo?categoria=${encodeURIComponent(category.name)}`} class="group relative aspect-square overflow-hidden bg-black max-w-xs mx-auto">
           <img
             src={category.image_url || categoryImages[category.name] || 'https://res.cloudinary.com/ddzoh72zv/image/upload/f_auto,q_auto/v1766458847/DSC05016_dwuz7c.jpg'}
             alt={category.image_alt || category.name}
             class="h-full w-full object-cover opacity-60 group-hover:opacity-80 transition-opacity duration-500"
             loading="lazy"
           />
-          <div class="absolute inset-0 flex items-end p-6">
+          <div class="absolute inset-0 flex items-end p-4 sm:p-6">
             <span class="text-white font-light uppercase tracking-[0.2em] text-xs font-display">{category.name}</span>
           </div>
         </a>
