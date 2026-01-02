@@ -35,12 +35,6 @@ npm run build
 npm run preview
 ```
 
-## 🔐 Panel de Administración
-
-- **URL**: `/admin`
-- **Usuario**: `seba`
-- **Contraseña**: `seba2323`
-
 ## 📁 Estructura del Proyecto
 
 ```
