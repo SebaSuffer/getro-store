@@ -207,10 +207,19 @@ Limpieza: Para mantener el brillo, limpia periódicamente con un paño suave y s
     <div className="py-20">
       <div className="mx-auto max-w-[1920px] px-6 lg:px-12">
         <div className="mb-8">
-          <a href="/catalogo" className="text-sm font-normal text-black/60 hover:text-black transition-colors inline-flex items-center gap-2 font-sans">
+          <button
+            onClick={() => {
+              if (window.history.length > 1) {
+                window.history.back();
+              } else {
+                window.location.href = '/catalogo';
+              }
+            }}
+            className="text-sm font-normal text-black/60 hover:text-black transition-colors inline-flex items-center gap-2 font-sans cursor-pointer bg-transparent border-none"
+          >
             <span className="material-symbols-outlined" style={{ fontSize: '18px', fontWeight: 300 }}>arrow_back</span>
             Volver al Catálogo
-          </a>
+          </button>
         </div>
 
         <div className="grid grid-cols-1 gap-12 lg:grid-cols-2 mb-16">

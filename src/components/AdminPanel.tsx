@@ -1928,30 +1928,56 @@ const AdminPanel = () => {
                         </p>
                         <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2">
                           {chains.filter((c: any) => c.is_active).map((chain: any) => {
-                            const isSelected = selectedPendantChains.has(chain.brand);
+                            const isSelectedForSave = selectedPendantChains.has(chain.brand);
+                            const isSelectedForCalc = selectedVariationForPrice?.brand === chain.brand;
                             return (
-                              <label
+                              <div
                                 key={chain.id}
-                                className={`flex items-center gap-3 p-3 border-2 transition-colors cursor-pointer rounded-lg ${
-                                  isSelected
+                                className={`flex items-center gap-3 p-3 border-2 transition-colors rounded-lg ${
+                                  isSelectedForCalc
+                                    ? 'border-blue-500 bg-blue-50'
+                                    : isSelectedForSave
                                     ? 'border-black bg-black/5'
                                     : 'border-black/10 hover:border-black/20 bg-white'
                                 }`}
                               >
-                                <input
-                                  type="checkbox"
-                                  checked={isSelected}
-                                  onChange={async (e) => {
-                                    const newSelected = new Set(selectedPendantChains);
-                                    if (e.target.checked) {
-                                      // Prevenir duplicados
-                                      if (newSelected.has(chain.brand)) {
-                                        setToastMessage(`La cadena ${chain.brand} ya está seleccionada`);
-                                        setShowToast(true);
-                                        return;
+                                {/* Checkbox para guardar (múltiple selección) */}
+                                <label className="flex items-center gap-2 cursor-pointer">
+                                  <input
+                                    type="checkbox"
+                                    checked={isSelectedForSave}
+                                    onChange={(e) => {
+                                      const newSelected = new Set(selectedPendantChains);
+                                      if (e.target.checked) {
+                                        // Prevenir duplicados
+                                        if (newSelected.has(chain.brand)) {
+                                          return;
+                                        }
+                                        newSelected.add(chain.brand);
+                                      } else {
+                                        // No permitir deseleccionar si solo hay una cadena
+                                        if (selectedPendantChains.size <= 1) {
+                                          setToastMessage('Debe tener al menos una cadena seleccionada para guardar');
+                                          setShowToast(true);
+                                          return;
+                                        }
+                                        newSelected.delete(chain.brand);
                                       }
-                                      newSelected.add(chain.brand);
-                                      // Calcular precio cuando se selecciona
+                                      setSelectedPendantChains(newSelected as Set<string>);
+                                    }}
+                                    className="w-5 h-5 text-black focus:ring-black cursor-pointer"
+                                  />
+                                  <span className="text-xs text-black/60">Guardar</span>
+                                </label>
+                                
+                                {/* Radio para cálculo (selección única) */}
+                                <label className="flex items-center gap-2 cursor-pointer flex-1">
+                                  <input
+                                    type="radio"
+                                    name="chain-for-calculation"
+                                    checked={isSelectedForCalc}
+                                    onChange={async () => {
+                                      // Solo cambiar la selección para cálculo, no afecta las que se guardarán
                                       const sumPrice = editingProduct.price + chain.price;
                                       const { roundToProfessionalPrice } = await import('../utils/priceRounding');
                                       const roundedPrice = roundToProfessionalPrice(sumPrice);
@@ -1959,61 +1985,39 @@ const AdminPanel = () => {
                                       setCalculatedDisplayPrice(roundedPrice);
                                       setCustomDisplayPrice(roundedPrice);
                                       setSelectedVariationForPrice(chain);
-                                    } else {
-                                      // No permitir deseleccionar si solo hay una cadena
-                                      if (selectedPendantChains.size <= 1) {
-                                        setToastMessage('Debe tener al menos una cadena seleccionada');
-                                        setShowToast(true);
-                                        return;
-                                      }
-                                      newSelected.delete(chain.brand);
-                                      if (selectedVariationForPrice?.brand === chain.brand) {
-                                        // Seleccionar otra cadena si se deselecciona la actual
-                                        const remainingChains = Array.from(newSelected);
-                                        if (remainingChains.length > 0) {
-                                          const otherChain = chains.find((c: any) => c.brand === remainingChains[0]);
-                                          if (otherChain) {
-                                            const sumPrice = editingProduct.price + otherChain.price;
-                                            const { roundToProfessionalPrice } = await import('../utils/priceRounding');
-                                            const roundedPrice = roundToProfessionalPrice(sumPrice);
-                                            setCalculatedSumPrice(sumPrice);
-                                            setCalculatedDisplayPrice(roundedPrice);
-                                            setCustomDisplayPrice(roundedPrice);
-                                            setSelectedVariationForPrice(otherChain);
-                                          }
-                                        } else {
-                                          setSelectedVariationForPrice(null);
-                                          setCalculatedSumPrice(null);
-                                          setCalculatedDisplayPrice(null);
-                                          setCustomDisplayPrice(null);
-                                        }
-                                      }
-                                    }
-                                    setSelectedPendantChains(newSelected as Set<string>);
-                                  }}
-                                  className="w-5 h-5 text-black focus:ring-black cursor-pointer"
-                                />
-                                <div className="flex-1">
-                                  <span className="text-base font-semibold text-black block">
-                                    {chain.brand}
-                                    {isSelected && (
-                                      <span className="ml-2 text-xs text-green-600 font-normal">(Seleccionada)</span>
-                                    )}
-                                  </span>
-                                  <span className="text-sm text-black/70">
-                                    ${chain.price.toLocaleString('es-CL')} CLP
-                                  </span>
-                                </div>
-                              </label>
+                                    }}
+                                    className="w-5 h-5 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                                  />
+                                  <div className="flex-1">
+                                    <span className="text-base font-semibold text-black block">
+                                      {chain.brand}
+                                      {isSelectedForSave && (
+                                        <span className="ml-2 text-xs text-green-600 font-normal">(Para guardar)</span>
+                                      )}
+                                      {isSelectedForCalc && (
+                                        <span className="ml-2 text-xs text-blue-600 font-normal">(Para cálculo)</span>
+                                      )}
+                                    </span>
+                                    <span className="text-sm text-black/70">
+                                      ${chain.price.toLocaleString('es-CL')} CLP
+                                    </span>
+                                  </div>
+                                </label>
+                              </div>
                             );
                           })}
                         </div>
                         {selectedPendantChains.size > 0 && (
                           <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded text-sm">
-                            <p className="font-semibold text-blue-900 mb-1">Variaciones actuales:</p>
+                            <p className="font-semibold text-blue-900 mb-1">Cadenas a guardar:</p>
                             <p className="text-blue-700">
                               {Array.from(selectedPendantChains).join(', ')} ({selectedPendantChains.size})
                             </p>
+                            {selectedVariationForPrice && (
+                              <p className="text-blue-600 mt-1 text-xs">
+                                Cálculo usando: <strong>{selectedVariationForPrice.brand}</strong>
+                              </p>
+                            )}
                           </div>
                         )}
                         <button
