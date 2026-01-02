@@ -199,7 +199,7 @@ const AdminPanel = () => {
             const chainsResponse = await fetch(`/api/pendants/${product.id}/chains`);
             if (chainsResponse.ok) {
               const chains = await chainsResponse.json();
-              const selectedBrands = new Set(chains.map((c: any) => c.brand));
+              const selectedBrands = new Set<string>(chains.map((c: any) => c.brand as string));
               setSelectedPendantChains(selectedBrands);
               
               // Si hay cadenas seleccionadas, calcular precio automáticamente (priorizar PLATA 925)
@@ -1897,7 +1897,7 @@ const AdminPanel = () => {
                                         setCustomDisplayPrice(null);
                                       }
                                     }
-                                    setSelectedPendantChains(newSelected);
+                                    setSelectedPendantChains(newSelected as Set<string>);
                                   }}
                                   className="w-5 h-5 text-black focus:ring-black cursor-pointer"
                                 />
@@ -2097,9 +2097,9 @@ const AdminPanel = () => {
                 </div>
               </div>
             </div>
-          </div>
         )}
 
+        {/* Tab de Categorías */}
         {activeTab === 'categories' && (
           <div className="space-y-6">
             <h2 className="text-xl font-bold text-black">Gestión de Imágenes de Categorías</h2>
