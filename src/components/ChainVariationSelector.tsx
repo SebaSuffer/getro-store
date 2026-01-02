@@ -34,20 +34,18 @@ const ChainVariationSelector = ({ productId, basePrice, defaultChainBrand, onVar
     // Solo ejecutar si hay cadenas y no hay una seleccionada
     if (chains.length === 0 || selectedChain) return;
     
-    // Si solo hay 1 cadena, seleccionarla automáticamente
-    if (chains.length === 1 && chains[0].stock > 0) {
+    // Si solo hay 1 cadena, seleccionarla automáticamente (incluso si no tiene stock, para mostrarla)
+    if (chains.length === 1) {
       handleChainClick(chains[0]);
       return;
     }
     
     // Si hay más de 1 cadena, seleccionar la cadena por defecto (PLATA 925) o la primera disponible
-    if (chains.length > 1) {
-      const foundChain = defaultChainBrand 
-        ? chains.find(c => c.brand === defaultChainBrand && c.stock > 0)
-        : chains.find(c => c.stock > 0);
-      if (foundChain) {
-        handleChainClick(foundChain);
-      }
+    const foundChain = defaultChainBrand 
+      ? chains.find(c => c.brand === defaultChainBrand && c.stock > 0)
+      : chains.find(c => c.brand === 'PLATA 925' && c.stock > 0) || chains.find(c => c.stock > 0);
+    if (foundChain) {
+      handleChainClick(foundChain);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [chains.length, defaultChainBrand]);
@@ -71,8 +69,8 @@ const ChainVariationSelector = ({ productId, basePrice, defaultChainBrand, onVar
   };
 
   const handleChainClick = async (chain: Chain) => {
-    if (chain.stock <= 0) return; // No seleccionar si no hay stock
-    
+    // Permitir seleccionar incluso si no hay stock (para mostrar la cadena incluida)
+    // El stock se verificará en el botón de agregar al carrito
     setSelectedChain(chain);
     // Calcular precio: basePrice (dije) + price (cadena)
     const sumPrice = basePrice + (chain.price || 0);

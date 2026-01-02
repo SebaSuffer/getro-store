@@ -87,18 +87,22 @@ const ProductDetail = ({ product: initialProduct }: ProductDetailProps) => {
             if (chainsResponse.ok) {
               const chains = await chainsResponse.json();
               if (chains.length > 0) {
-                // Buscar la cadena por defecto (PLATA 925) o usar la primera
-                const defaultChain = chains.find((c: any) => c.brand === 'PLATA 925') || chains[0];
+                // Buscar la cadena por defecto (PLATA 925) o usar la primera disponible con stock
+                const availableChains = chains.filter((c: any) => c.stock > 0);
+                const defaultChain = availableChains.find((c: any) => c.brand === 'PLATA 925') || availableChains[0] || chains[0];
                 setDefaultChainBrand(defaultChain?.brand || null);
                 
-                // Calcular precio con la cadena por defecto
-                const sum = currentProduct.price + (defaultChain.price || 0);
-                const { roundToProfessionalPrice } = await import('../utils/priceRounding');
-                const finalPrice = roundToProfessionalPrice(sum);
-                setSelectedVariation(defaultChain);
-                setDisplayPrice(finalPrice);
-                setSumPrice(sum);
-                setCurrentStock(defaultChain.stock || currentProduct.stock);
+                // Si hay al menos una cadena disponible, seleccionarla automáticamente
+                if (defaultChain) {
+                  // Calcular precio con la cadena por defecto
+                  const sum = currentProduct.price + (defaultChain.price || 0);
+                  const { roundToProfessionalPrice } = await import('../utils/priceRounding');
+                  const finalPrice = roundToProfessionalPrice(sum);
+                  setSelectedVariation(defaultChain);
+                  setDisplayPrice(finalPrice);
+                  setSumPrice(sum);
+                  setCurrentStock(defaultChain.stock || currentProduct.stock);
+                }
               }
             }
           } catch (error) {

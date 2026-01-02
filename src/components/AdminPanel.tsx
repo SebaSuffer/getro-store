@@ -1594,9 +1594,9 @@ const AdminPanel = () => {
               <div className="flex-1 overflow-y-auto">
                 <div className="p-6">
                   {/* Layout 2x2: Foto | Detalles | Variaciones | Cálculos */}
-                  <div className="grid grid-cols-2 grid-rows-2 gap-6 h-full min-h-[700px]">
+                  <div className="grid grid-cols-2 grid-rows-2 gap-x-6 gap-y-4 items-start h-full min-h-[700px]">
                     {/* Cuadrante 1: Foto (arriba izquierda) */}
-                    <div className="space-y-4">
+                    <div className="space-y-4 max-h-full overflow-y-auto">
                       <h3 className="text-lg font-semibold text-black">Foto</h3>
                       
                       {/* Carousel de imágenes */}
@@ -1756,7 +1756,7 @@ const AdminPanel = () => {
                     </div>
                     
                     {/* Cuadrante 2: Detalles (arriba derecha) */}
-                    <div className="space-y-4">
+                    <div className="space-y-4 max-h-full overflow-y-auto">
                       <h3 className="text-lg font-semibold text-black">Detalles</h3>
                       <div className="space-y-4">
                         <div>
@@ -1856,7 +1856,7 @@ const AdminPanel = () => {
 
                     {/* Cuadrante 3: Variaciones/Nombres (abajo izquierda) - Solo para Colgantes */}
                     {editingProduct.category === 'Colgantes' && editingProduct.id && !editingProduct.id.startsWith('new-') ? (
-                      <div className="space-y-4">
+                      <div className="space-y-4 max-h-full overflow-y-auto">
                         <h3 className="text-lg font-semibold text-black">Variaciones</h3>
                         <p className="text-sm text-black/60">
                           Selecciona qué cadenas estarán disponibles para este colgante
@@ -1965,7 +1965,7 @@ const AdminPanel = () => {
 
                     {/* Cuadrante 4: Cálculos (abajo derecha) - Solo para Colgantes */}
                     {editingProduct.category === 'Colgantes' && editingProduct.id && !editingProduct.id.startsWith('new-') ? (
-                      <div className="space-y-4">
+                      <div className="space-y-4 max-h-full overflow-y-auto">
                         <h3 className="text-lg font-semibold text-black">Cálculo</h3>
                         {selectedVariationForPrice ? (
                           <div className="bg-gradient-to-br from-blue-50 to-blue-100 border-2 border-blue-300 rounded-lg p-5 space-y-5 h-full flex flex-col">
