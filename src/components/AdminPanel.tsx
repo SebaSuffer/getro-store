@@ -25,7 +25,8 @@ const AdminPanel = () => {
   const [chains, setChains] = useState<any[]>([]);
   const [editingChain, setEditingChain] = useState<any>(null);
   const [isChainsModalOpen, setIsChainsModalOpen] = useState(false);
-  const [selectedPendantChains, setSelectedPendantChains] = useState<Set<string>>(new Set());
+  const [selectedPendantChains, setSelectedPendantChains] = useState<Set<string>>(new Set()); // Cadenas ya guardadas en BD
+  const [temporarySelectedChain, setTemporarySelectedChain] = useState<string | null>(null); // Cadena seleccionada temporalmente para cálculo
   const [toastMessage, setToastMessage] = useState('');
   const [showToast, setShowToast] = useState(false);
   const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
@@ -236,19 +237,7 @@ const AdminPanel = () => {
                     const reloadedChains = await reloadResponse.json();
                     const selectedBrands = new Set<string>(reloadedChains.map((c: any) => c.brand as string));
                     setSelectedPendantChains(selectedBrands);
-                    
-                    if (reloadedChains.length > 0) {
-                      const plata925Chain = reloadedChains.find((c: any) => c.brand === 'PLATA 925') || reloadedChains[0];
-                      if (plata925Chain && product.price) {
-                        const sumPrice = product.price + (plata925Chain.price || 0);
-                        setCalculatedSumPrice(sumPrice);
-                        const { roundToProfessionalPrice } = await import('../utils/priceRounding');
-                        const roundedPrice = roundToProfessionalPrice(sumPrice);
-                        setCalculatedDisplayPrice(roundedPrice);
-                        setCustomDisplayPrice((product as any).display_price || roundedPrice);
-                        setSelectedVariationForPrice(plata925Chain);
-                      }
-                    }
+                    // No seleccionar automáticamente, el usuario puede elegir
                   }
                 } catch (error) {
                   console.error('Error adding default chain:', error);
@@ -258,19 +247,9 @@ const AdminPanel = () => {
                 const selectedBrands = new Set<string>(chains.map((c: any) => c.brand as string));
                 setSelectedPendantChains(selectedBrands);
                 
-                // Si hay cadenas seleccionadas, calcular precio automáticamente (priorizar PLATA 925)
-                const plata925Chain = chains.find((c: any) => c.brand === 'PLATA 925') || chains[0];
-                if (plata925Chain && product.price) {
-                  const sumPrice = product.price + (plata925Chain.price || 0);
-                  setCalculatedSumPrice(sumPrice);
-                  const { roundToProfessionalPrice } = await import('../utils/priceRounding');
-                  const roundedPrice = roundToProfessionalPrice(sumPrice);
-                  setCalculatedDisplayPrice(roundedPrice);
-                  setCustomDisplayPrice((product as any).display_price || roundedPrice);
-                  setSelectedVariationForPrice(plata925Chain);
-                  // También agregar a selectedPendantChains para que se muestre como seleccionada
-                  setSelectedPendantChains(new Set([plata925Chain.brand]));
-                }
+                // Las cadenas ya están guardadas, solo mostrarlas
+                // No seleccionar automáticamente ninguna para cálculo
+                // El usuario puede seleccionar una nueva si quiere
               }
             }
           } catch (error) {
@@ -1925,93 +1904,162 @@ const AdminPanel = () => {
                     {editingProduct.category === 'Colgantes' && editingProduct.id && !editingProduct.id.startsWith('new-') ? (
                       <div className="space-y-4 max-h-full overflow-y-auto">
                         <h3 className="text-lg font-semibold text-black">Variaciones</h3>
-                        <p className="text-sm text-black/60">
-                          Selecciona qué cadenas estarán disponibles para este colgante
-                        </p>
-                        <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2">
-                          {chains.filter((c: any) => c.is_active).map((chain: any) => {
-                            const isSelected = selectedVariationForPrice?.brand === chain.brand;
-                            const isAlreadySaved = selectedPendantChains.has(chain.brand);
-                            const isDisabled = isAlreadySaved;
-                            
-                            return (
-                              <label
-                                key={chain.id}
-                                className={`flex items-center gap-3 p-3 border-2 transition-colors rounded-lg ${
-                                  isDisabled
-                                    ? 'border-gray-300 bg-gray-100 cursor-not-allowed opacity-60'
-                                    : isSelected
-                                    ? 'border-blue-500 bg-blue-50 cursor-pointer'
-                                    : 'border-black/10 hover:border-black/20 bg-white cursor-pointer'
-                                }`}
-                              >
-                                <input
-                                  type="radio"
-                                  name="chain-selection"
-                                  checked={isSelected}
-                                  disabled={isDisabled}
-                                  onChange={async () => {
-                                    if (isDisabled) return;
-                                    
-                                    // Seleccionar cadena para cálculo y agregarla a la lista de guardar
-                                    const newSelected = new Set(selectedPendantChains);
-                                    if (!newSelected.has(chain.brand)) {
-                                      newSelected.add(chain.brand);
-                                    }
-                                    setSelectedPendantChains(newSelected as Set<string>);
-                                    
-                                    // Calcular precio
-                                    const sumPrice = editingProduct.price + chain.price;
-                                    const { roundToProfessionalPrice } = await import('../utils/priceRounding');
-                                    const roundedPrice = roundToProfessionalPrice(sumPrice);
-                                    setCalculatedSumPrice(sumPrice);
-                                    setCalculatedDisplayPrice(roundedPrice);
-                                    setCustomDisplayPrice(roundedPrice);
-                                    setSelectedVariationForPrice(chain);
-                                  }}
-                                  className="w-5 h-5 text-blue-600 focus:ring-blue-500 cursor-pointer disabled:cursor-not-allowed"
-                                />
-                                <div className="flex-1">
-                                  <span className="text-base font-semibold text-black block">
-                                    {chain.brand}
-                                    {isAlreadySaved && (
-                                      <span className="ml-2 text-xs text-gray-500 font-normal">(Ya guardada)</span>
-                                    )}
-                                  </span>
-                                  <span className="text-sm text-black/70">
-                                    ${chain.price.toLocaleString('es-CL')} CLP
-                                  </span>
-                                </div>
-                              </label>
-                            );
-                          })}
+                        
+                        {/* Cadenas ya guardadas */}
+                        {selectedPendantChains.size > 0 && (
+                          <div className="space-y-2">
+                            <p className="text-sm font-semibold text-black">Cadenas guardadas:</p>
+                            <div className="space-y-2">
+                              {Array.from(selectedPendantChains).map((brand) => {
+                                const chain = chains.find((c: any) => c.brand === brand);
+                                if (!chain) return null;
+                                return (
+                                  <div
+                                    key={chain.id}
+                                    className="flex items-center justify-between p-3 border-2 border-gray-300 bg-gray-100 rounded-lg"
+                                  >
+                                    <div>
+                                      <span className="text-base font-semibold text-black block">{chain.brand}</span>
+                                      <span className="text-sm text-black/70">
+                                        ${chain.price.toLocaleString('es-CL')} CLP
+                                      </span>
+                                    </div>
+                                    <button
+                                      onClick={async () => {
+                                        try {
+                                          // Eliminar esta cadena de las guardadas
+                                          const newSaved = new Set(selectedPendantChains);
+                                          newSaved.delete(brand);
+                                          
+                                          // Actualizar en BD
+                                          const response = await fetch(`/api/pendants/${editingProduct.id}/chains`, {
+                                            method: 'POST',
+                                            headers: { 'Content-Type': 'application/json' },
+                                            body: JSON.stringify({
+                                              chainBrands: Array.from(newSaved),
+                                            }),
+                                          });
+                                          
+                                          if (response.ok) {
+                                            setSelectedPendantChains(newSaved);
+                                            // Si era la cadena seleccionada para cálculo, limpiar
+                                            if (selectedVariationForPrice?.brand === brand) {
+                                              setSelectedVariationForPrice(null);
+                                              setCalculatedSumPrice(null);
+                                              setCalculatedDisplayPrice(null);
+                                              setCustomDisplayPrice(null);
+                                            }
+                                            setToastMessage('Cadena eliminada correctamente');
+                                            setShowToast(true);
+                                            // Recargar productos para actualizar contador
+                                            await loadProducts();
+                                          } else {
+                                            throw new Error('Error al eliminar');
+                                          }
+                                        } catch (error) {
+                                          setToastMessage('Error al eliminar la cadena');
+                                          setShowToast(true);
+                                        }
+                                      }}
+                                      className="px-3 py-1 bg-red-600 text-white text-xs font-medium hover:bg-red-700 transition-colors rounded"
+                                    >
+                                      Eliminar
+                                    </button>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+                        
+                        {/* Seleccionar nueva cadena */}
+                        <div className="space-y-2">
+                          <p className="text-sm font-semibold text-black">Agregar nueva cadena:</p>
+                          <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2">
+                            {chains
+                              .filter((c: any) => c.is_active && !selectedPendantChains.has(c.brand))
+                              .map((chain: any) => {
+                                const isSelected = temporarySelectedChain === chain.brand;
+                                
+                                return (
+                                  <label
+                                    key={chain.id}
+                                    className={`flex items-center gap-3 p-3 border-2 transition-colors cursor-pointer rounded-lg ${
+                                      isSelected
+                                        ? 'border-blue-500 bg-blue-50'
+                                        : 'border-black/10 hover:border-black/20 bg-white'
+                                    }`}
+                                  >
+                                    <input
+                                      type="radio"
+                                      name="chain-selection"
+                                      checked={isSelected}
+                                      onChange={async () => {
+                                        // Cambiar selección temporal (puede deseleccionar si hace click de nuevo)
+                                        if (isSelected) {
+                                          setTemporarySelectedChain(null);
+                                          setSelectedVariationForPrice(null);
+                                          setCalculatedSumPrice(null);
+                                          setCalculatedDisplayPrice(null);
+                                          setCustomDisplayPrice(null);
+                                        } else {
+                                          setTemporarySelectedChain(chain.brand);
+                                          
+                                          // Calcular precio
+                                          const sumPrice = editingProduct.price + chain.price;
+                                          const { roundToProfessionalPrice } = await import('../utils/priceRounding');
+                                          const roundedPrice = roundToProfessionalPrice(sumPrice);
+                                          setCalculatedSumPrice(sumPrice);
+                                          setCalculatedDisplayPrice(roundedPrice);
+                                          setCustomDisplayPrice(roundedPrice);
+                                          setSelectedVariationForPrice(chain);
+                                        }
+                                      }}
+                                      className="w-5 h-5 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                                    />
+                                    <div className="flex-1">
+                                      <span className="text-base font-semibold text-black block">
+                                        {chain.brand}
+                                      </span>
+                                      <span className="text-sm text-black/70">
+                                        ${chain.price.toLocaleString('es-CL')} CLP
+                                      </span>
+                                    </div>
+                                  </label>
+                                );
+                              })}
+                          </div>
                         </div>
-                        {selectedVariationForPrice && (
+                        
+                        {temporarySelectedChain && selectedVariationForPrice && (
                           <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded text-sm">
-                            <p className="font-semibold text-blue-900 mb-1">Cadena seleccionada:</p>
+                            <p className="font-semibold text-blue-900 mb-1">Cadena a guardar:</p>
                             <p className="text-blue-700">
                               {selectedVariationForPrice.brand} - ${selectedVariationForPrice.price.toLocaleString('es-CL')} CLP
                             </p>
                             <p className="text-blue-600 mt-1 text-xs">
-                              Esta cadena se guardará al presionar "Guardar Cadenas y Precio"
+                              Presiona "Guardar Cadenas y Precio" para guardar esta cadena
                             </p>
                           </div>
                         )}
+                        
                         <button
                           onClick={async () => {
-                            if (!selectedVariationForPrice) {
-                              setToastMessage('Debe seleccionar una cadena');
+                            if (!temporarySelectedChain || !selectedVariationForPrice) {
+                              setToastMessage('Debe seleccionar una cadena para guardar');
                               setShowToast(true);
                               return;
                             }
                             try {
-                              // Guardar solo la cadena seleccionada
-                              const chainBrandsToSave = [selectedVariationForPrice.brand];
+                              // Agregar la cadena temporal a las guardadas
+                              const newSaved = new Set(selectedPendantChains);
+                              newSaved.add(temporarySelectedChain);
+                              
                               const response = await fetch(`/api/pendants/${editingProduct.id}/chains`, {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
                                 body: JSON.stringify({
-                                  chainBrands: chainBrandsToSave,
+                                  chainBrands: Array.from(newSaved),
                                 }),
                               });
                               if (response.ok) {
@@ -2030,13 +2078,25 @@ const AdminPanel = () => {
                                     console.error('Error saving display price:', error);
                                   }
                                 }
-                                setToastMessage('Cadenas y precio actualizados correctamente');
+                                
+                                // Actualizar estado: la cadena temporal ahora está guardada
+                                setSelectedPendantChains(newSaved);
+                                setTemporarySelectedChain(null);
+                                setSelectedVariationForPrice(null);
+                                setCalculatedSumPrice(null);
+                                setCalculatedDisplayPrice(null);
+                                setCustomDisplayPrice(null);
+                                
+                                setToastMessage('Cadena guardada correctamente');
                                 setShowToast(true);
+                                
+                                // Recargar productos para actualizar contador
+                                await loadProducts();
                               } else {
                                 throw new Error('Error al actualizar');
                               }
                             } catch (error: any) {
-                              setToastMessage('Error al actualizar cadenas');
+                              setToastMessage('Error al guardar la cadena');
                               setShowToast(true);
                             }
                           }}
