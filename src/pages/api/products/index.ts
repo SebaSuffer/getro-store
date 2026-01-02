@@ -72,8 +72,9 @@ export const GET: APIRoute = async ({ request }) => {
       category: row.category,
       is_new: Boolean(row.is_new),
       is_featured: Boolean(row.is_featured),
-        has_variations: Boolean(row.variation_count),
-        variation_count: row.variation_count,
+      has_variations: Boolean(row.variation_count),
+      variation_count: row.variation_count,
+      display_price: row.display_price || null,
     }));
     const mapTime = Date.now() - mapStartTime;
     

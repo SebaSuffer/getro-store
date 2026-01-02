@@ -1,29 +1,24 @@
 import { useState, useEffect } from 'react';
 
-interface ChainVariation {
+interface Chain {
   id: string;
-  product_id: string;
-  product_name: string;
-  product_image_url: string;
   brand: string;
-  thickness: string;
-  length: string;
-  price_modifier: number;
+  name: string;
+  thickness: string | null;
+  length: string | null;
+  price: number;
   stock: number;
-}
-
-interface ChainsData {
-  chains: any[];
-  variations: ChainVariation[];
-  groupedByBrand: Record<string, ChainVariation[]>;
+  image_url: string | null;
+  image_alt: string | null;
+  description: string | null;
+  is_active: boolean;
 }
 
 const ChainsViewer = () => {
-  const [chainsData, setChainsData] = useState<ChainsData | null>(null);
+  const [chains, setChains] = useState<Chain[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [expandedBrands, setExpandedBrands] = useState<Set<string>>(new Set());
-  const [selectedVariation, setSelectedVariation] = useState<ChainVariation | null>(null);
+  const [selectedChain, setSelectedChain] = useState<Chain | null>(null);
 
   useEffect(() => {
     loadChains();
@@ -34,17 +29,26 @@ const ChainsViewer = () => {
       setLoading(true);
       setError(null);
       
-      const response = await fetch('/api/chains');
+      const response = await fetch('/api/chains/manage');
       if (!response.ok) {
         throw new Error('Error al cargar las cadenas');
       }
       
       const data = await response.json();
-      setChainsData(data);
-      
-      // Expandir todas las marcas por defecto
-      const brands = Object.keys(data.groupedByBrand || {});
-      setExpandedBrands(new Set(brands));
+      // Filtrar solo cadenas activas y validar URLs de imagen
+      const activeChains = (data || []).filter((chain: Chain) => chain.is_active !== false).map((chain: Chain) => {
+        const imageUrl = chain.image_url?.trim() || '';
+        // Validar que la URL sea válida (empiece con http:// o https:// y tenga al menos 20 caracteres)
+        const isValidUrl = imageUrl && 
+          (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) &&
+          imageUrl.length > 20;
+        
+        return {
+          ...chain,
+          image_url: isValidUrl ? imageUrl : null,
+        };
+      });
+      setChains(activeChains);
     } catch (err: any) {
       console.error('Error loading chains:', err);
       setError(err.message || 'Error al cargar las cadenas');
@@ -53,18 +57,8 @@ const ChainsViewer = () => {
     }
   };
 
-  const handleToggleBrand = (brand: string) => {
-    const newExpanded = new Set(expandedBrands);
-    if (newExpanded.has(brand)) {
-      newExpanded.delete(brand);
-    } else {
-      newExpanded.add(brand);
-    }
-    setExpandedBrands(newExpanded);
-  };
-
-  const handleVariationClick = (variation: ChainVariation) => {
-    setSelectedVariation(variation);
+  const handleChainClick = (chain: Chain) => {
+    setSelectedChain(chain);
   };
 
   const formatPrice = (price: number) => {
@@ -102,7 +96,7 @@ const ChainsViewer = () => {
     );
   }
 
-  if (!chainsData || Object.keys(chainsData.groupedByBrand || {}).length === 0) {
+  if (chains.length === 0 && !loading) {
     return (
       <div className="flex items-center justify-center py-20">
         <p className="text-sm text-black/60 font-light">No hay cadenas disponibles</p>
@@ -110,150 +104,24 @@ const ChainsViewer = () => {
     );
   }
 
-  const brands = Object.keys(chainsData.groupedByBrand).sort();
-
   return (
     <div className="w-full">
-      {/* Lista de marcas */}
-      <div className="space-y-4 mb-12">
-        {brands.map((brand) => {
-          const variations = chainsData.groupedByBrand[brand];
-          const isExpanded = expandedBrands.has(brand);
-          
-          // Agrupar variaciones por grosor dentro de la marca
-          const groupedByThickness: Record<string, ChainVariation[]> = {};
-          variations.forEach((v) => {
-            const thickness = v.thickness || 'Sin especificar';
-            if (!groupedByThickness[thickness]) {
-              groupedByThickness[thickness] = [];
-            }
-            groupedByThickness[thickness].push(v);
-          });
-
-          return (
-            <div key={brand} className="border border-black/10 bg-white">
-              {/* Header de marca */}
-              <button
-                onClick={() => handleToggleBrand(brand)}
-                className="w-full px-6 py-4 flex items-center justify-between hover:bg-black/5 transition-colors text-left"
-                aria-expanded={isExpanded}
-              >
-                <h3 className="text-base font-light uppercase tracking-wider text-black">
-                  {brand}
-                </h3>
-                <span
-                  className="material-symbols-outlined transition-transform duration-200"
-                  style={{
-                    fontSize: '20px',
-                    fontWeight: 300,
-                    transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
-                  }}
-                >
-                  expand_more
-                </span>
-              </button>
-
-              {/* Variaciones agrupadas por grosor */}
-              {isExpanded && (
-                <div className="border-t border-black/10">
-                  {Object.keys(groupedByThickness).sort().map((thickness) => {
-                    const thicknessVariations = groupedByThickness[thickness];
-                    
-                    return (
-                      <div key={thickness} className="border-b border-black/5 last:border-b-0">
-                        <div className="px-6 py-3 bg-black/2">
-                          <h4 className="text-sm font-light text-black/80 uppercase tracking-wide">
-                            {thickness}
-                          </h4>
-                        </div>
-                        <div className="px-6 py-4 space-y-3">
-                          {thicknessVariations.map((variation) => (
-                            <button
-                              key={variation.id}
-                              onClick={() => handleVariationClick(variation)}
-                              className={`w-full text-left p-4 border transition-all ${
-                                selectedVariation?.id === variation.id
-                                  ? 'border-black/30 bg-black/5'
-                                  : 'border-black/10 hover:border-black/20 hover:bg-black/2'
-                              }`}
-                            >
-                              <div className="flex items-start justify-between gap-4">
-                                <div className="flex-1">
-                                  <div className="flex items-center gap-3 mb-2">
-                                    <span className="text-sm font-light text-black/90">
-                                      {variation.length}
-                                    </span>
-                                    {variation.stock > 0 ? (
-                                      <span className="text-xs text-black/60 font-light">
-                                        Stock: {variation.stock}
-                                      </span>
-                                    ) : (
-                                      <span className="text-xs text-red-600/80 font-light">
-                                        Sin stock
-                                      </span>
-                                    )}
-                                  </div>
-                                  {variation.price_modifier > 0 && (
-                                    <p className="text-sm font-light text-black/70">
-                                      {formatPrice(variation.price_modifier)}
-                                    </p>
-                                  )}
-                                </div>
-                                {variation.product_image_url && (
-                                  <div className="w-16 h-16 overflow-hidden bg-gray-50 border border-black/10 flex-shrink-0">
-                                    <img
-                                      src={variation.product_image_url}
-                                      alt={variation.product_name}
-                                      className="w-full h-full object-cover"
-                                      onError={(e) => {
-                                        const target = e.target as HTMLImageElement;
-                                        target.style.display = 'none';
-                                      }}
-                                    />
-                                  </div>
-                                )}
-                              </div>
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Panel de detalles de variación seleccionada */}
-      {selectedVariation && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setSelectedVariation(null)}>
+      {/* Grid de cadenas similar al catálogo */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        {chains.map((chain) => (
           <div
-            className="bg-white max-w-2xl w-full max-h-[90vh] overflow-y-auto p-8"
-            onClick={(e) => e.stopPropagation()}
+            key={chain.id}
+            className="group relative flex flex-col overflow-hidden bg-white cursor-pointer"
+            onClick={() => handleChainClick(chain)}
           >
-            <div className="flex items-start justify-between mb-6">
-              <h2 className="text-2xl font-light uppercase tracking-wider text-black">
-                {selectedVariation.brand}
-              </h2>
-              <button
-                onClick={() => setSelectedVariation(null)}
-                className="text-black/60 hover:text-black transition-colors"
-                aria-label="Cerrar"
-              >
-                <span className="material-symbols-outlined" style={{ fontSize: '24px', fontWeight: 300 }}>
-                  close
-                </span>
-              </button>
-            </div>
-
-            {selectedVariation.product_image_url && (
-              <div className="mb-6 aspect-square overflow-hidden bg-gray-50 border border-black/10">
+            {/* Imagen clickeable */}
+            <div className="relative aspect-square overflow-hidden bg-gray-50">
+              {chain.image_url ? (
                 <img
-                  src={selectedVariation.product_image_url}
-                  alt={selectedVariation.product_name}
-                  className="w-full h-full object-cover"
+                  alt={chain.image_alt || chain.brand}
+                  className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+                  src={chain.image_url}
+                  loading="lazy"
                   onError={(e) => {
                     const target = e.target as HTMLImageElement;
                     target.style.display = 'none';
@@ -266,49 +134,144 @@ const ChainsViewer = () => {
                     }
                   }}
                 />
-              </div>
-            )}
-
-            <div className="space-y-4">
-              <div>
-                <h3 className="text-sm font-light uppercase tracking-wider text-black/60 mb-2">
-                  Producto
-                </h3>
-                <p className="text-base font-light text-black">{selectedVariation.product_name}</p>
-              </div>
-
-              <div>
-                <h3 className="text-sm font-light uppercase tracking-wider text-black/60 mb-2">
-                  Grosor
-                </h3>
-                <p className="text-base font-light text-black">{selectedVariation.thickness}</p>
-              </div>
-
-              <div>
-                <h3 className="text-sm font-light uppercase tracking-wider text-black/60 mb-2">
-                  Largo
-                </h3>
-                <p className="text-base font-light text-black">{selectedVariation.length}</p>
-              </div>
-
-              {selectedVariation.price_modifier > 0 && (
-                <div>
-                  <h3 className="text-sm font-light uppercase tracking-wider text-black/60 mb-2">
-                    Precio
-                  </h3>
-                  <p className="text-lg font-light text-black">
-                    {formatPrice(selectedVariation.price_modifier)}
-                  </p>
+              ) : (
+                <div className="h-full w-full flex items-center justify-center bg-gray-100 border border-gray-200">
+                  <span className="text-sm text-gray-400 font-normal">Sin imagen</span>
                 </div>
               )}
+              {chain.stock <= 0 && (
+                <div className="absolute inset-0 bg-black/70 flex items-center justify-center">
+                  <span className="text-white font-normal uppercase tracking-[0.2em] text-sm">Agotado</span>
+                </div>
+              )}
+            </div>
+            
+            {/* Información de la cadena - Solo nombre */}
+            <div className="flex flex-1 flex-col p-6 bg-white">
+              <h3 
+                className="text-lg font-medium text-black uppercase tracking-[0.05em] leading-tight font-display cursor-pointer hover:text-black/70 transition-colors text-center"
+                onClick={() => handleChainClick(chain)}
+              >
+                {chain.brand}
+              </h3>
+            </div>
+          </div>
+        ))}
+      </div>
 
-              <div>
-                <h3 className="text-sm font-light uppercase tracking-wider text-black/60 mb-2">
-                  Stock
-                </h3>
-                <p className={`text-base font-light ${selectedVariation.stock > 0 ? 'text-black' : 'text-red-600'}`}>
-                  {selectedVariation.stock > 0 ? `${selectedVariation.stock} unidades disponibles` : 'Sin stock'}
-                </p>
+      {/* Modal de detalles de cadena seleccionada - Diseño grande con foto a la izquierda */}
+      {selectedChain && (
+        <div 
+          className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" 
+          onClick={() => setSelectedChain(null)}
+        >
+          <div
+            className="bg-white max-w-6xl w-full max-h-[95vh] overflow-hidden flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header con botón cerrar */}
+            <div className="flex items-center justify-between px-8 py-6 border-b border-black/10">
+              <h2 className="text-3xl font-light uppercase tracking-wider text-black font-display">
+                {selectedChain.brand}
+              </h2>
+              <button
+                onClick={() => setSelectedChain(null)}
+                className="text-black/60 hover:text-black transition-colors"
+                aria-label="Cerrar"
+              >
+                <span className="material-symbols-outlined" style={{ fontSize: '28px', fontWeight: 300 }}>
+                  close
+                </span>
+              </button>
+            </div>
+
+            {/* Contenido principal: Foto a la izquierda, detalles a la derecha */}
+            <div className="flex-1 overflow-y-auto">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-0">
+                {/* Columna izquierda: Imagen */}
+                <div className="bg-gray-50 flex items-center justify-center min-h-[500px] lg:min-h-[600px]">
+                  {selectedChain.image_url ? (
+                    <img
+                      src={selectedChain.image_url}
+                      alt={selectedChain.image_alt || selectedChain.name}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.style.display = 'none';
+                        const parent = target.parentElement;
+                        if (parent && !parent.querySelector('.no-image-placeholder')) {
+                          const placeholder = document.createElement('div');
+                          placeholder.className = 'h-full w-full flex items-center justify-center bg-gray-100 border border-gray-200 no-image-placeholder';
+                          placeholder.innerHTML = '<span class="text-base text-gray-400 font-normal">Sin imagen</span>';
+                          parent.appendChild(placeholder);
+                        }
+                      }}
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-gray-100">
+                      <span className="text-base text-gray-400 font-normal">Sin imagen</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Columna derecha: Detalles */}
+                <div className="p-8 lg:p-12 flex flex-col">
+                  {/* Nombre */}
+                  <div className="mb-8">
+                    <h3 className="text-sm font-light uppercase tracking-wider text-black/60 mb-3 font-sans">
+                      Nombre
+                    </h3>
+                    <p className="text-2xl font-light text-black font-sans">
+                      {selectedChain.name || selectedChain.brand}
+                    </p>
+                  </div>
+
+                  {/* Descripción */}
+                  {selectedChain.description && (
+                    <div className="mb-8 border-t border-black/10 pt-8">
+                      <h3 className="text-sm font-light uppercase tracking-wider text-black/60 mb-4 font-sans">
+                        Descripción
+                      </h3>
+                      <p className="text-base font-normal text-black/80 leading-relaxed font-sans">
+                        {selectedChain.description}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Cuidados y Mantenimiento */}
+                  <div className="mb-8 border-t border-black/10 pt-8">
+                    <h3 className="text-lg font-semibold text-black mb-4 font-sans">Cuidados y Mantenimiento</h3>
+                    <div className="text-base font-normal text-black/80 leading-relaxed font-sans whitespace-pre-line">
+                      {`Para mantener el brillo y la belleza de tu cadena de plata 925, te recomendamos seguir estos cuidados esenciales:
+
+Almacenamiento: Guarda cada pieza por separado en un lugar seco y hermético. Esto evitará rayones y prevendrá la oxidación, manteniendo tu joya como nueva por más tiempo.
+
+Protección: Evita el contacto directo con productos de limpieza, químicos, cosméticos, perfumes y agua clorada. Estos elementos pueden dañar el acabado y afectar el brillo natural de la plata.
+
+Orden de uso: Ponte tus joyas siempre al final de tu rutina diaria, después de haber aplicado cremas, lociones o maquillaje. Esto minimiza el contacto con productos que puedan afectar su apariencia.
+
+Limpieza: Para mantener el brillo, limpia periódicamente con un paño suave y seco. Si es necesario, puedes usar un paño especial para plata o una solución suave de agua tibia con jabón neutro, secando inmediatamente después.`}
+                    </div>
+                  </div>
+
+                  {/* Información adicional */}
+                  <div className="mt-auto border-t border-black/10 pt-8">
+                    <div className="space-y-4">
+                      <div>
+                        <h4 className="text-sm font-semibold text-black mb-2 font-sans">Material</h4>
+                        <p className="text-base font-normal text-black/80 font-sans">Plata Sólida 925</p>
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-semibold text-black mb-2 font-sans">Pureza</h4>
+                        <p className="text-base font-normal text-black/80 font-sans">925/1000</p>
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-semibold text-black mb-2 font-sans">Garantía</h4>
+                        <p className="text-base font-normal text-black/80 font-sans">2 años</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>

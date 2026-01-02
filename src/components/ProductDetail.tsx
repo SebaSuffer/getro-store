@@ -20,7 +20,7 @@ const ProductDetail = ({ product: initialProduct }: ProductDetailProps) => {
   const [sumPrice, setSumPrice] = useState<number | null>(null);
   const [productImages, setProductImages] = useState<string[]>([initialProduct.image_url]);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [defaultVariation, setDefaultVariation] = useState<any>(null);
+  const [defaultChainBrand, setDefaultChainBrand] = useState<string | null>(null);
 
   useEffect(() => {
     const checkCart = () => {
@@ -80,30 +80,29 @@ const ProductDetail = ({ product: initialProduct }: ProductDetailProps) => {
           console.error('Error loading images:', error);
         }
         
-        // Cargar variaciones y seleccionar la primera (por defecto) si existe
-        if (currentProduct?.has_variations && (currentProduct.category === 'Colgantes' || currentProduct.category === 'Cadenas')) {
+        // Cargar cadenas disponibles para colgantes (nuevo sistema)
+        if (currentProduct?.category === 'Colgantes') {
           try {
-            const variationsResponse = await fetch(`/api/products/${product.id}/variations`);
-            if (variationsResponse.ok) {
-              const variations = await variationsResponse.json();
-              const activeVariations = variations.filter((v: any) => v.is_active);
-              if (activeVariations.length > 0) {
-                // Buscar la variación por defecto (PLATA 925) o usar la primera
-                const defaultVar = activeVariations.find((v: any) => v.brand === 'PLATA 925' || v.id.includes('PLATA925-DEFAULT')) || activeVariations[0];
-                setDefaultVariation(defaultVar);
+            const chainsResponse = await fetch(`/api/pendants/${product.id}/chains`);
+            if (chainsResponse.ok) {
+              const chains = await chainsResponse.json();
+              if (chains.length > 0) {
+                // Buscar la cadena por defecto (PLATA 925) o usar la primera
+                const defaultChain = chains.find((c: any) => c.brand === 'PLATA 925') || chains[0];
+                setDefaultChainBrand(defaultChain?.brand || null);
                 
-                // Calcular precio con la variación por defecto
-                const sum = currentProduct.price + (defaultVar.price_modifier || 0);
+                // Calcular precio con la cadena por defecto
+                const sum = currentProduct.price + (defaultChain.price || 0);
                 const { roundToProfessionalPrice } = await import('../utils/priceRounding');
                 const finalPrice = roundToProfessionalPrice(sum);
-                setSelectedVariation(defaultVar);
+                setSelectedVariation(defaultChain);
                 setDisplayPrice(finalPrice);
                 setSumPrice(sum);
-                setCurrentStock(defaultVar.stock || currentProduct.stock);
+                setCurrentStock(defaultChain.stock || currentProduct.stock);
               }
             }
           } catch (error) {
-            console.error('Error loading variations:', error);
+            console.error('Error loading chains:', error);
           }
         }
         
@@ -123,8 +122,9 @@ const ProductDetail = ({ product: initialProduct }: ProductDetailProps) => {
     };
   }, [product.id, product.stock]);
 
-  const requiresVariation = product.has_variations && (product.category === 'Cadenas' || product.category === 'Colgantes');
-  const variationLocked = requiresVariation && !selectedVariation;
+  // Solo colgantes requieren selección de cadena
+  const requiresChain = product.category === 'Colgantes';
+  const variationLocked = requiresChain && !selectedVariation;
 
   const handleAddToCart = async () => {
     if (currentStock <= 0 || variationLocked) return;
@@ -134,9 +134,9 @@ const ProductDetail = ({ product: initialProduct }: ProductDetailProps) => {
       const success = await addToCart(product, quantity, selectedVariation ? {
         id: selectedVariation.id,
         brand: selectedVariation.brand,
-        thickness: selectedVariation.thickness,
-        length: selectedVariation.length,
-        price_modifier: selectedVariation.price_modifier || 0,
+        thickness: selectedVariation.thickness || '',
+        length: selectedVariation.length || '',
+        price_modifier: selectedVariation.price || 0, // Usar price de la cadena
       } : undefined);
       
       if (!success) {
@@ -292,9 +292,9 @@ Limpieza: Para mantener el brillo, limpia periódicamente con un paño suave y s
                 ) : (
                   <span className="text-base text-black/70 font-medium font-sans">
                     Stock disponible: {currentStock}
-                    {selectedVariation && (
+                    {selectedVariation && selectedVariation.brand && (
                       <span className="text-sm text-black/50 ml-2">
-                        ({selectedVariation.brand} {selectedVariation.thickness} × {selectedVariation.length})
+                        ({selectedVariation.brand})
                       </span>
                     )}
                   </span>
@@ -306,13 +306,6 @@ Limpieza: Para mantener el brillo, limpia periódicamente con un paño suave y s
                   <p className="text-4xl font-bold text-black tracking-tight font-sans">
                     ${displayPrice.toLocaleString('es-CL')} CLP
                   </p>
-                  {selectedVariation && sumPrice && sumPrice !== displayPrice && (
-                    <p className="text-sm text-black/60 font-normal mt-2">
-                      Precio suma: ${sumPrice.toLocaleString('es-CL')} CLP
-                      <span className="text-black/40 ml-2">→</span>
-                      <span className="text-green-600 ml-2">Precio exhibición: ${displayPrice.toLocaleString('es-CL')} CLP</span>
-                    </p>
-                  )}
                 </div>
               )}
               {product.category === 'Cadenas' && (
@@ -324,19 +317,19 @@ Limpieza: Para mantener el brillo, limpia periódicamente con un paño suave y s
               )}
             </div>
 
-            {/* Selector de Variaciones (cadenas y colgantes con variaciones) */}
-            {(product.category === 'Cadenas' || product.category === 'Colgantes') && product.has_variations && (
+            {/* Selector de Cadenas (solo para colgantes) */}
+            {product.category === 'Colgantes' && (
               <div className="mb-8">
                 <ChainVariationSelector
                   productId={product.id}
                   basePrice={product.price}
-                  defaultVariation={defaultVariation}
-                  onVariationSelect={(variation, finalPrice, sumPriceValue) => {
-                    setSelectedVariation(variation);
+                  defaultChainBrand={defaultChainBrand}
+                  onVariationSelect={(chain, finalPrice, sumPriceValue) => {
+                    setSelectedVariation(chain);
                     setDisplayPrice(finalPrice);
                     setSumPrice(sumPriceValue || null);
-                    if (variation) {
-                      setCurrentStock(variation.stock);
+                    if (chain) {
+                      setCurrentStock(chain.stock);
                     } else {
                       setCurrentStock(product.stock);
                       setSumPrice(null);
@@ -406,55 +399,66 @@ Limpieza: Para mantener el brillo, limpia periódicamente con un paño suave y s
               </div>
             </div>
 
-            {/* Cantidad y Botones */}
-            <div className="mt-auto space-y-4 border-t border-black/10 pt-8">
-              <div className="flex items-center gap-4">
-                <label className="text-base font-medium text-black font-sans">Cantidad</label>
-                <div className="flex items-center gap-3">
-                  <button
-                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                    className="flex size-12 items-center justify-center border border-black/20 hover:border-black/40 transition-colors"
-                    aria-label="Disminuir cantidad"
-                  >
-                    <span className="material-symbols-outlined" style={{ fontSize: '20px', fontWeight: 300 }}>remove</span>
-                  </button>
-                  <span className="w-20 text-center font-semibold text-black text-lg font-sans">
-                    {quantity}
-                  </span>
-                  <button
-                    onClick={() => setQuantity(Math.min(currentStock, quantity + 1))}
-                    disabled={quantity >= currentStock}
-                    className="flex size-12 items-center justify-center border border-black/20 hover:border-black/40 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                    aria-label="Aumentar cantidad"
-                  >
-                    <span className="material-symbols-outlined" style={{ fontSize: '20px', fontWeight: 300 }}>add</span>
-                  </button>
+            {/* Cantidad y Botones - Ocultar para cadenas */}
+            {product.category !== 'Cadenas' && (
+              <div className="mt-auto space-y-4 border-t border-black/10 pt-8">
+                <div className="flex items-center gap-4">
+                  <label className="text-base font-medium text-black font-sans">Cantidad</label>
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                      className="flex size-12 items-center justify-center border border-black/20 hover:border-black/40 transition-colors"
+                      aria-label="Disminuir cantidad"
+                    >
+                      <span className="material-symbols-outlined" style={{ fontSize: '20px', fontWeight: 300 }}>remove</span>
+                    </button>
+                    <span className="w-20 text-center font-semibold text-black text-lg font-sans">
+                      {quantity}
+                    </span>
+                    <button
+                      onClick={() => setQuantity(Math.min(currentStock, quantity + 1))}
+                      disabled={quantity >= currentStock}
+                      className="flex size-12 items-center justify-center border border-black/20 hover:border-black/40 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                      aria-label="Aumentar cantidad"
+                    >
+                      <span className="material-symbols-outlined" style={{ fontSize: '20px', fontWeight: 300 }}>add</span>
+                    </button>
+                  </div>
                 </div>
-              </div>
 
-              <button
-                onClick={handleAddToCart}
-                disabled={isOutOfStock || isAdding || variationLocked}
-                className={`w-full h-14 flex items-center justify-center gap-2 text-base font-semibold transition-all font-sans ${
-                  isOutOfStock || variationLocked
-                    ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                    : 'bg-black text-white hover:bg-black/90 active:bg-black'
-                }`}
-                aria-label={`Añadir ${product.name} al carrito`}
-                tabIndex={isOutOfStock || variationLocked ? -1 : 0}
-              >
-                <span className="material-symbols-outlined" style={{ fontSize: '22px', fontWeight: 300 }}>
-                  {isAdding ? 'check' : 'shopping_bag'}
-                </span>
-                {isOutOfStock
-                  ? 'Agotado'
-                  : variationLocked
-                  ? 'Selecciona una variación'
-                  : isAdding
-                  ? 'Añadido'
-                  : 'Añadir al Carrito'}
-              </button>
-            </div>
+                <button
+                  onClick={handleAddToCart}
+                  disabled={isOutOfStock || isAdding || variationLocked}
+                  className={`w-full h-14 flex items-center justify-center gap-2 text-base font-semibold transition-all font-sans ${
+                    isOutOfStock || variationLocked
+                      ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                      : 'bg-black text-white hover:bg-black/90 active:bg-black'
+                  }`}
+                  aria-label={`Añadir ${product.name} al carrito`}
+                  tabIndex={isOutOfStock || variationLocked ? -1 : 0}
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: '22px', fontWeight: 300 }}>
+                    {isAdding ? 'check' : 'shopping_bag'}
+                  </span>
+                  {isOutOfStock
+                    ? 'Agotado'
+                    : variationLocked
+                    ? 'Selecciona una variación'
+                    : isAdding
+                    ? 'Añadido'
+                    : 'Añadir al Carrito'}
+                </button>
+              </div>
+            )}
+            
+            {/* Mensaje para cadenas */}
+            {product.category === 'Cadenas' && (
+              <div className="mt-auto space-y-4 border-t border-black/10 pt-8">
+                <p className="text-base font-normal text-black/70 font-sans text-center">
+                  Las cadenas se muestran como referencia. Selecciona un colgante para ver las opciones de cadenas disponibles.
+                </p>
+              </div>
+            )}
           </div>
         </div>
 

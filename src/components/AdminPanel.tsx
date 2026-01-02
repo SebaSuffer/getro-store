@@ -21,7 +21,11 @@ const AdminPanel = () => {
   const [subscribers, setSubscribers] = useState<any[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
-  const [activeTab, setActiveTab] = useState<'products' | 'stock' | 'newsletter' | 'categories'>('products');
+  const [activeTab, setActiveTab] = useState<'products' | 'chains' | 'newsletter' | 'categories'>('products');
+  const [chains, setChains] = useState<any[]>([]);
+  const [editingChain, setEditingChain] = useState<any>(null);
+  const [isChainsModalOpen, setIsChainsModalOpen] = useState(false);
+  const [selectedPendantChains, setSelectedPendantChains] = useState<Set<string>>(new Set());
   const [toastMessage, setToastMessage] = useState('');
   const [showToast, setShowToast] = useState(false);
   const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
@@ -38,6 +42,8 @@ const AdminPanel = () => {
   const [customDisplayPrice, setCustomDisplayPrice] = useState<number | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isProductsModalOpen, setIsProductsModalOpen] = useState(false);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [isImageSectionExpanded, setIsImageSectionExpanded] = useState(false);
 
   useEffect(() => {
     const checkAuth = () => {
@@ -48,6 +54,7 @@ const AdminPanel = () => {
         loadProducts();
         loadSubscribers();
         loadCategories();
+        loadChains();
       } else {
         window.location.href = '/login';
       }
@@ -69,6 +76,13 @@ const AdminPanel = () => {
     };
   }, []);
 
+  // Cargar cadenas cuando se cambia a la pestaña de cadenas
+  useEffect(() => {
+    if (activeTab === 'chains') {
+      loadChains();
+    }
+  }, [activeTab]);
+
   const loadProducts = async () => {
     try {
       const allProducts = await getAllProducts();
@@ -78,6 +92,19 @@ const AdminPanel = () => {
       console.error('Error loading products:', error);
       setProducts([]);
       setFilteredProducts([]);
+    }
+  };
+
+  const loadChains = async () => {
+    try {
+      const response = await fetch('/api/chains/manage');
+      if (response.ok) {
+        const data = await response.json();
+        setChains(data || []);
+      }
+    } catch (error) {
+      console.error('Error loading chains:', error);
+      setChains([]);
     }
   };
 
@@ -152,63 +179,48 @@ const AdminPanel = () => {
     window.location.href = '/login';
   };
 
-  const handleEditProduct = async (product: Product, fromTab: 'products' | 'stock' = 'products') => {
+  const handleEditProduct = async (product: Product, fromTab: 'products' = 'products') => {
     try {
       console.log(`[ADMIN] ✏️ Editing product: ${product.id} - ${product.name} from ${fromTab}`);
       setSelectedProduct(product);
       setEditingProduct({ ...product });
       setIsCreating(false);
-      if (fromTab === 'stock') {
-        setIsEditModalOpen(true);
-      } else {
-        setIsProductsModalOpen(true);
-        setActiveTab(fromTab);
-        // Cargar imágenes y variaciones cuando se abre desde productos
-        if (product.id && !product.id.startsWith('new-')) {
-          await loadProductImages(product.id);
-          // Cargar variaciones también
-          try {
-            const variationsResponse = await fetch(`/api/products/${product.id}/variations`);
-            if (variationsResponse.ok) {
-              const variations = await variationsResponse.json();
-              setChainVariations(variations || []);
-            }
-          } catch (error) {
-            console.error('Error loading variations:', error);
-          }
-        }
-      }
+      setIsEditModalOpen(true);
       
       // Cargar imágenes del producto (no bloquear si falla)
-      loadProductImages(product.id).catch((err) => {
-        console.warn(`[ADMIN] ⚠️ Could not load images for ${product.id}, continuing anyway:`, err);
-      });
-      
-      // Si es una cadena o colgante, cargar sus variaciones
-      if (product.category === 'Cadenas' || product.category === 'Colgantes') {
-        try {
-          const response = await fetch(`/api/products/${product.id}/variations`);
-          if (response.ok) {
-            const variations = await response.json();
-            setChainVariations(variations || []);
-            // Buscar el tipo de cadena de la primera variación
-            if (variations.length > 0 && variations[0].chain_type) {
-              setChainType(variations[0].chain_type as 'plata_925' | 'oro');
-            } else {
-              setChainType('plata_925'); // Por defecto
+      if (product.id && !product.id.startsWith('new-')) {
+        loadProductImages(product.id).catch((err) => {
+          console.warn(`[ADMIN] ⚠️ Could not load images for ${product.id}, continuing anyway:`, err);
+        });
+        
+        // Si es un colgante, cargar cadenas disponibles y calcular precio
+        if (product.category === 'Colgantes') {
+          try {
+            const chainsResponse = await fetch(`/api/pendants/${product.id}/chains`);
+            if (chainsResponse.ok) {
+              const chains = await chainsResponse.json();
+              const selectedBrands = new Set(chains.map((c: any) => c.brand));
+              setSelectedPendantChains(selectedBrands);
+              
+              // Si hay cadenas seleccionadas, calcular precio automáticamente (priorizar PLATA 925)
+              if (chains.length > 0) {
+                const plata925Chain = chains.find((c: any) => c.brand === 'PLATA 925') || chains[0];
+                if (plata925Chain && product.price) {
+                  const sumPrice = product.price + (plata925Chain.price || 0);
+                  setCalculatedSumPrice(sumPrice);
+                  const { roundToProfessionalPrice } = await import('../utils/priceRounding');
+                  const roundedPrice = roundToProfessionalPrice(sumPrice);
+                  setCalculatedDisplayPrice(roundedPrice);
+                  // Si el producto tiene display_price, usarlo; si no, usar el redondeado
+                  setCustomDisplayPrice((product as any).display_price || roundedPrice);
+                  setSelectedVariationForPrice(plata925Chain);
+                }
+              }
             }
-          } else {
-            setChainVariations([]);
-            setChainType('plata_925'); // Por defecto si no hay variaciones
+          } catch (error) {
+            console.error('Error loading pendant chains:', error);
           }
-        } catch (error) {
-          console.error('Error loading product variations:', error);
-          setChainVariations([]);
-          setChainType('plata_925'); // Por defecto en caso de error
         }
-      } else {
-        setChainVariations([]);
-        setChainType('plata_925');
       }
     } catch (error: any) {
       console.error(`[ADMIN] ❌ Error editing product ${product.id}:`, error.message || error);
@@ -400,10 +412,11 @@ const AdminPanel = () => {
   };
 
   const handleSelectAll = () => {
-    if (selectedProducts.size === filteredProducts.length) {
+    const nonChainProducts = filteredProducts.filter(p => p.category !== 'Cadenas');
+    if (selectedProducts.size === nonChainProducts.length && nonChainProducts.length > 0) {
       setSelectedProducts(new Set());
     } else {
-      setSelectedProducts(new Set(filteredProducts.map(p => p.id)));
+      setSelectedProducts(new Set(nonChainProducts.map(p => p.id)));
     }
   };
 
@@ -484,14 +497,26 @@ const AdminPanel = () => {
       const result = await response.json();
       const savedProductId = result.id || editingProduct.id;
 
-      // Las variaciones ahora se guardan automáticamente desde ChainVariationsManager
-      // No necesitamos guardarlas aquí
+      // Si es un colgante, guardar las cadenas disponibles
+      if (editingProduct.category === 'Colgantes' && savedProductId && selectedPendantChains.size > 0) {
+        try {
+          await fetch(`/api/pendants/${savedProductId}/chains`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              chainBrands: Array.from(selectedPendantChains),
+            }),
+          });
+        } catch (error) {
+          console.error('Error saving pendant chains:', error);
+        }
+      }
 
       // Actualizar lista
       await loadProducts();
       
       // Si estamos en Stock, actualizar selectedProductForView y cerrar modal si está abierto
-      if (activeTab === 'stock' && selectedProductForView && selectedProductForView.id === savedProductId) {
+      if (activeTab === 'products' && selectedProductForView && selectedProductForView.id === savedProductId) {
         const updatedProducts = await getAllProducts();
         const updatedProduct = updatedProducts.find(p => p.id === savedProductId);
         if (updatedProduct) {
@@ -605,14 +630,14 @@ const AdminPanel = () => {
             Productos
           </button>
           <button
-            onClick={() => setActiveTab('stock')}
+            onClick={() => setActiveTab('chains')}
             className={`px-6 py-3 text-sm font-medium transition-colors border-b-2 ${
-              activeTab === 'stock'
+              activeTab === 'chains'
                 ? 'border-black text-black'
                 : 'border-transparent text-black/40 hover:text-black/60'
             }`}
           >
-            Stock
+            Cadenas
           </button>
           <button
             onClick={() => setActiveTab('newsletter')}
@@ -637,6 +662,432 @@ const AdminPanel = () => {
         </div>
 
         {activeTab === 'products' && (
+          <div className="space-y-6">
+            {/* Tabla de productos (fusionada de Stock) */}
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="text-2xl font-bold text-black">Gestión de Productos</h2>
+                <p className="text-base text-black/60 mt-1">
+                  {products.filter(p => p.is_featured && p.category !== 'Cadenas').length} de 8 productos destacados
+                </p>
+              </div>
+              <div className="flex gap-3">
+                {selectedProducts.size === 0 && (
+                  <button
+                    onClick={handleCreateProduct}
+                    className="px-6 py-3 bg-black text-white text-base font-medium hover:bg-black/90 transition-colors flex items-center gap-2"
+                  >
+                    <span className="material-symbols-outlined" style={{ fontSize: '20px', fontWeight: 300 }}>add</span>
+                    Añadir Producto
+                  </button>
+                )}
+                {selectedProducts.size > 0 && (
+                  <button
+                    onClick={handleDeleteSelected}
+                    className="px-6 py-3 bg-red-600 text-white text-base font-medium hover:bg-red-700 transition-colors flex items-center gap-2"
+                  >
+                    <span className="material-symbols-outlined" style={{ fontSize: '18px', fontWeight: 300 }}>delete</span>
+                    Eliminar Seleccionados ({selectedProducts.size})
+                  </button>
+                )}
+              </div>
+            </div>
+            <div className="border border-black/10">
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-black/5 sticky top-0">
+                    <tr>
+                      <th className="px-6 py-4 text-left">
+                        <input
+                          type="checkbox"
+                          checked={selectedProducts.size === products.filter(p => p.category !== 'Cadenas').length && products.filter(p => p.category !== 'Cadenas').length > 0}
+                          onChange={handleSelectAll}
+                          className="size-5 text-black focus:ring-black cursor-pointer"
+                        />
+                      </th>
+                      <th className="px-6 py-4 text-left text-base font-semibold text-black">Imagen</th>
+                      <th className="px-6 py-4 text-left text-base font-semibold text-black">ID</th>
+                      <th className="px-6 py-4 text-left text-base font-semibold text-black">Nombre</th>
+                      <th className="px-6 py-4 text-left text-base font-semibold text-black">Categoría</th>
+                      <th className="px-6 py-4 text-left text-base font-semibold text-black">Stock</th>
+                      <th className="px-6 py-4 text-left text-base font-semibold text-black">Precio</th>
+                      <th className="px-6 py-4 text-left text-base font-semibold text-black">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {products.filter(p => p.category !== 'Cadenas').length === 0 ? (
+                      <tr>
+                        <td colSpan={8} className="px-6 py-12 text-center text-black/50 font-normal text-base">
+                          No hay productos disponibles
+                        </td>
+                      </tr>
+                    ) : (
+                      products.filter(p => p.category !== 'Cadenas').map((product) => (
+                        <tr 
+                          key={product.id} 
+                          className="border-t border-black/5 hover:bg-black/2 transition-colors"
+                        >
+                          <td className="px-6 py-4">
+                            <input
+                              type="checkbox"
+                              checked={selectedProducts.has(product.id)}
+                              onChange={() => handleToggleSelect(product.id)}
+                              className="size-5 text-black focus:ring-black cursor-pointer"
+                            />
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="w-24 h-24 overflow-hidden bg-gray-50 border border-black/10 hover:border-black/30 transition-colors relative flex items-center justify-center">
+                              {!product.image_url || product.image_url.trim() === '' ? (
+                                <span className="text-xs text-gray-400 font-normal">Sin imagen</span>
+                              ) : (
+                                <>
+                                  <img
+                                    src={product.image_url}
+                                    alt={product.image_alt || product.name}
+                                    className="w-full h-full object-cover"
+                                    onError={(e) => {
+                                      const target = e.target as HTMLImageElement;
+                                      target.style.display = 'none';
+                                      const parent = target.parentElement;
+                                      if (parent && !parent.querySelector('.no-image-text')) {
+                                        const placeholder = document.createElement('span');
+                                        placeholder.className = 'text-xs text-gray-400 font-normal no-image-text';
+                                        placeholder.textContent = 'Sin imagen';
+                                        parent.appendChild(placeholder);
+                                      }
+                                    }}
+                                  />
+                                  {product.is_featured && (
+                                    <div className="absolute top-2 right-2 bg-yellow-500 text-white p-1 rounded-full shadow-sm">
+                                      <span className="material-symbols-outlined" style={{ fontSize: '16px', fontWeight: 300 }}>star</span>
+                                    </div>
+                                  )}
+                                </>
+                              )}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 text-black/90 font-normal font-mono text-sm">{product.id}</td>
+                          <td className="px-6 py-4 text-black/90 font-normal text-base">{product.name}</td>
+                          <td className="px-6 py-4 text-black/70 font-normal text-base">{product.category}</td>
+                          <td className="px-6 py-4">
+                            <span className={`font-semibold text-base ${product.stock > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                              {product.stock}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 text-black/90 font-normal text-base">${product.price.toLocaleString('es-CL')} CLP</td>
+                          <td className="px-6 py-4">
+                            <button
+                              onClick={() => handleEditProduct(product, 'products')}
+                              className="px-4 py-2 bg-black text-white text-sm font-medium hover:bg-black/90 transition-colors mr-2"
+                            >
+                              Editar
+                            </button>
+                            <button
+                              onClick={() => handleDeleteProduct(product.id)}
+                              className="px-4 py-2 bg-red-600 text-white text-sm font-medium hover:bg-red-700 transition-colors"
+                            >
+                              Eliminar
+                            </button>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Pestaña de Cadenas */}
+        {activeTab === 'chains' && (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold text-black">Gestión de Cadenas</h2>
+              <button
+                onClick={() => {
+                  setEditingChain({ brand: '', name: '', price: 0, stock: 0, image_url: '', image_alt: '', description: '', is_active: true });
+                  setIsChainsModalOpen(true);
+                }}
+                className="px-6 py-3 bg-black text-white text-base font-medium hover:bg-black/90 transition-colors flex items-center gap-2"
+              >
+                <span className="material-symbols-outlined" style={{ fontSize: '20px', fontWeight: 300 }}>add</span>
+                Añadir Cadena
+              </button>
+            </div>
+            
+            <div className="border border-black/10">
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-black/5 sticky top-0">
+                    <tr>
+                      <th className="px-6 py-4 text-left text-base font-semibold text-black">Imagen</th>
+                      <th className="px-6 py-4 text-left text-base font-semibold text-black">Marca</th>
+                      <th className="px-6 py-4 text-left text-base font-semibold text-black">Precio</th>
+                      <th className="px-6 py-4 text-left text-base font-semibold text-black">Stock</th>
+                      <th className="px-6 py-4 text-left text-base font-semibold text-black">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {chains.length === 0 ? (
+                      <tr>
+                        <td colSpan={5} className="px-6 py-12 text-center text-black/50 font-normal text-base">
+                          No hay cadenas disponibles
+                        </td>
+                      </tr>
+                    ) : (
+                      chains.map((chain: any) => (
+                        <tr 
+                          key={chain.id} 
+                          className="border-t border-black/5 hover:bg-black/2 transition-colors"
+                        >
+                          <td className="px-6 py-4">
+                            <div className="w-24 h-24 overflow-hidden bg-gray-50 border border-black/10 hover:border-black/30 transition-colors relative flex items-center justify-center">
+                              {!chain.image_url || chain.image_url.trim() === '' ? (
+                                <span className="text-xs text-gray-400 font-normal">Sin imagen</span>
+                              ) : (
+                                <img
+                                  src={chain.image_url}
+                                  alt={chain.image_alt || chain.brand}
+                                  className="w-full h-full object-cover"
+                                  onError={(e) => {
+                                    const target = e.target as HTMLImageElement;
+                                    target.style.display = 'none';
+                                    const parent = target.parentElement;
+                                    if (parent && !parent.querySelector('.no-image-text')) {
+                                      const placeholder = document.createElement('span');
+                                      placeholder.className = 'text-xs text-gray-400 font-normal no-image-text';
+                                      placeholder.textContent = 'Sin imagen';
+                                      parent.appendChild(placeholder);
+                                    }
+                                  }}
+                                />
+                              )}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 text-black/90 font-semibold text-base">{chain.brand}</td>
+                          <td className="px-6 py-4 text-black/90 font-normal text-base">${chain.price.toLocaleString('es-CL')} CLP</td>
+                          <td className="px-6 py-4">
+                            <span className={`font-semibold text-base ${chain.stock > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                              {chain.stock}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4">
+                            <button
+                              onClick={() => {
+                                setEditingChain(chain);
+                                setIsChainsModalOpen(true);
+                              }}
+                              className="px-4 py-2 bg-black text-white text-sm font-medium hover:bg-black/90 transition-colors mr-2"
+                            >
+                              Editar
+                            </button>
+                            <button
+                              onClick={async () => {
+                                if (confirm(`¿Eliminar cadena ${chain.brand}?`)) {
+                                  try {
+                                    const response = await fetch('/api/chains/manage', {
+                                      method: 'DELETE',
+                                      headers: { 'Content-Type': 'application/json' },
+                                      body: JSON.stringify({ id: chain.id }),
+                                    });
+                                    if (response.ok) {
+                                      await loadChains();
+                                      setToastMessage('Cadena eliminada');
+                                      setShowToast(true);
+                                    }
+                                  } catch (error) {
+                                    setToastMessage('Error al eliminar cadena');
+                                    setShowToast(true);
+                                  }
+                                }
+                              }}
+                              className="px-4 py-2 bg-red-600 text-white text-sm font-medium hover:bg-red-700 transition-colors"
+                            >
+                              Eliminar
+                            </button>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Modal de Edición de Cadena */}
+        {isChainsModalOpen && editingChain && (
+          <div 
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+            onClick={() => {
+              setIsChainsModalOpen(false);
+              setEditingChain(null);
+            }}
+          >
+            <div 
+              className="w-full max-w-2xl max-h-[90vh] bg-white shadow-xl overflow-y-auto"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="sticky top-0 bg-white border-b border-black/10 px-6 py-4 flex items-center justify-between z-10">
+                <h3 className="text-xl font-semibold text-black">
+                  {editingChain.id ? 'Editar Cadena' : 'Nueva Cadena'}
+                </h3>
+                <button
+                  onClick={() => {
+                    setIsChainsModalOpen(false);
+                    setEditingChain(null);
+                  }}
+                  className="text-black/60 hover:text-black transition-colors"
+                  aria-label="Cerrar"
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: '28px', fontWeight: 300 }}>close</span>
+                </button>
+              </div>
+              
+              <div className="p-6 space-y-6">
+                <div>
+                  <label className="block text-sm font-semibold text-black mb-2">
+                    Marca <span className="text-red-600">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={editingChain.brand || ''}
+                    onChange={(e) => setEditingChain({ ...editingChain, brand: e.target.value, name: e.target.value })}
+                    placeholder="Ej: CARTIER, GUCCI, TRADICIONAL"
+                    className="w-full bg-white border border-black/20 px-4 py-2.5 text-black text-base font-normal focus:outline-none focus:border-black/40 focus:ring-1 focus:ring-black/10 transition-all"
+                  />
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-black mb-2">
+                      Precio (CLP)
+                    </label>
+                    <input
+                      type="number"
+                      value={editingChain.price || 0}
+                      onChange={(e) => setEditingChain({ ...editingChain, price: parseInt(e.target.value) || 0 })}
+                      min="0"
+                      className="w-full bg-white border border-black/20 px-4 py-2.5 text-black text-base font-normal focus:outline-none focus:border-black/40 focus:ring-1 focus:ring-black/10 transition-all"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-semibold text-black mb-2">
+                      Stock
+                    </label>
+                    <input
+                      type="number"
+                      value={editingChain.stock || 0}
+                      onChange={(e) => setEditingChain({ ...editingChain, stock: parseInt(e.target.value) || 0 })}
+                      min="0"
+                      className="w-full bg-white border border-black/20 px-4 py-2.5 text-black text-base font-normal focus:outline-none focus:border-black/40 focus:ring-1 focus:ring-black/10 transition-all"
+                    />
+                  </div>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-semibold text-black mb-2">
+                    URL de Imagen
+                  </label>
+                  <input
+                    type="url"
+                    value={editingChain.image_url || ''}
+                    onChange={(e) => setEditingChain({ ...editingChain, image_url: e.target.value })}
+                    placeholder="https://..."
+                    className="w-full bg-white border border-black/20 px-4 py-2.5 text-black text-base font-normal focus:outline-none focus:border-black/40 focus:ring-1 focus:ring-black/10 transition-all"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-semibold text-black mb-2">
+                    Descripción
+                  </label>
+                  <textarea
+                    value={editingChain.description || ''}
+                    onChange={(e) => setEditingChain({ ...editingChain, description: e.target.value })}
+                    rows={3}
+                    className="w-full bg-white border border-black/20 px-4 py-2.5 text-black text-base font-normal focus:outline-none focus:border-black/40 focus:ring-1 focus:ring-black/10 transition-all"
+                  />
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={editingChain.is_active !== false}
+                    onChange={(e) => setEditingChain({ ...editingChain, is_active: e.target.checked })}
+                    className="w-4 h-4 text-black focus:ring-black cursor-pointer"
+                  />
+                  <label className="text-sm font-normal text-black">Cadena activa</label>
+                </div>
+                
+                <div className="flex gap-3 pt-4 border-t border-black/10">
+                  <button
+                    onClick={async () => {
+                      if (!editingChain.brand) {
+                        setToastMessage('La marca es requerida');
+                        setShowToast(true);
+                        return;
+                      }
+                      
+                      try {
+                        // Usar la marca como nombre si no hay nombre
+                        const chainData = {
+                          ...editingChain,
+                          name: editingChain.brand || editingChain.name,
+                          thickness: null,
+                          length: null,
+                          // Convertir cadenas vacías a null o undefined
+                          image_url: editingChain.image_url?.trim() || null,
+                          image_alt: editingChain.image_alt?.trim() || null,
+                          description: editingChain.description?.trim() || null,
+                        };
+                        
+                        const response = await fetch('/api/chains/manage', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify(chainData),
+                        });
+                        
+                        if (response.ok) {
+                          await loadChains();
+                          setIsChainsModalOpen(false);
+                          setEditingChain(null);
+                          setToastMessage('Cadena guardada correctamente');
+                          setShowToast(true);
+                        } else {
+                          const errorData = await response.json().catch(() => ({ error: 'Error desconocido' }));
+                          throw new Error(errorData.error || 'Error al guardar');
+                        }
+                      } catch (error: any) {
+                        console.error('Error saving chain:', error);
+                        setToastMessage(error.message || 'Error al guardar cadena');
+                        setShowToast(true);
+                      }
+                    }}
+                    className="flex-1 px-6 py-3 bg-black text-white text-base font-medium hover:bg-black/90 transition-colors"
+                  >
+                    Guardar
+                  </button>
+                  <button
+                    onClick={() => {
+                      setIsChainsModalOpen(false);
+                      setEditingChain(null);
+                    }}
+                    className="px-6 py-3 bg-white border border-black/20 text-black text-base font-medium hover:border-black/40 transition-colors"
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Contenido antiguo de products (lista simple) - se puede eliminar o mantener como alternativa */}
+        {false && activeTab === 'products' && (
         <div className="w-full">
           {/* Lista de Productos */}
           <div className="w-full">
@@ -1112,142 +1563,6 @@ const AdminPanel = () => {
           </div>
         )}
 
-        {activeTab === 'stock' && (
-          <div className="space-y-6">
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h2 className="text-2xl font-bold text-black">Gestión de Stock</h2>
-                <p className="text-base text-black/60 mt-1">
-                  {products.filter(p => p.is_featured).length} de 8 productos destacados
-                </p>
-              </div>
-              <div className="flex gap-3">
-                {selectedProducts.size === 0 && (
-                  <button
-                    onClick={handleCreateProduct}
-                    className="px-6 py-3 bg-black text-white text-base font-medium hover:bg-black/90 transition-colors flex items-center gap-2"
-                  >
-                    <span className="material-symbols-outlined" style={{ fontSize: '20px', fontWeight: 300 }}>add</span>
-                    Añadir Producto
-                  </button>
-                )}
-                {selectedProducts.size > 0 && (
-                  <button
-                    onClick={handleDeleteSelected}
-                    className="px-6 py-3 bg-red-600 text-white text-base font-medium hover:bg-red-700 transition-colors flex items-center gap-2"
-                  >
-                    <span className="material-symbols-outlined" style={{ fontSize: '18px', fontWeight: 300 }}>delete</span>
-                    Eliminar Seleccionados ({selectedProducts.size})
-                  </button>
-                )}
-              </div>
-            </div>
-            <div className="border border-black/10">
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                      <thead className="bg-black/5 sticky top-0">
-                        <tr>
-                          <th className="px-6 py-4 text-left">
-                            <input
-                              type="checkbox"
-                              checked={selectedProducts.size === products.length && products.length > 0}
-                              onChange={handleSelectAll}
-                              className="size-5 text-black focus:ring-black cursor-pointer"
-                            />
-                          </th>
-                          <th className="px-6 py-4 text-left text-base font-semibold text-black">Imagen</th>
-                          <th className="px-6 py-4 text-left text-base font-semibold text-black">ID</th>
-                          <th className="px-6 py-4 text-left text-base font-semibold text-black">Nombre</th>
-                          <th className="px-6 py-4 text-left text-base font-semibold text-black">Categoría</th>
-                          <th className="px-6 py-4 text-left text-base font-semibold text-black">Stock</th>
-                          <th className="px-6 py-4 text-left text-base font-semibold text-black">Precio</th>
-                          <th className="px-6 py-4 text-left text-base font-semibold text-black">Acciones</th>
-                        </tr>
-                      </thead>
-                  <tbody>
-                        {products.length === 0 ? (
-                          <tr>
-                            <td colSpan={8} className="px-6 py-12 text-center text-black/50 font-normal text-base">
-                              No hay productos disponibles
-                            </td>
-                          </tr>
-                        ) : (
-                          products.map((product) => (
-                            <tr 
-                              key={product.id} 
-                              className="border-t border-black/5 hover:bg-black/2 transition-colors"
-                            >
-                              <td className="px-6 py-4">
-                                <input
-                                  type="checkbox"
-                                  checked={selectedProducts.has(product.id)}
-                                  onChange={() => handleToggleSelect(product.id)}
-                                  className="size-5 text-black focus:ring-black cursor-pointer"
-                                />
-                              </td>
-                              <td className="px-6 py-4">
-                                <div className="w-24 h-24 overflow-hidden bg-gray-50 border border-black/10 hover:border-black/30 transition-colors relative flex items-center justify-center">
-                                  {!product.image_url || product.image_url.trim() === '' ? (
-                                    <span className="text-xs text-gray-400 font-normal">Sin imagen</span>
-                                  ) : (
-                                    <>
-                                      <img
-                                        src={product.image_url}
-                                        alt={product.image_alt || product.name}
-                                        className="w-full h-full object-cover"
-                                        onError={(e) => {
-                                          const target = e.target as HTMLImageElement;
-                                          target.style.display = 'none';
-                                          const parent = target.parentElement;
-                                          if (parent && !parent.querySelector('.no-image-text')) {
-                                            const placeholder = document.createElement('span');
-                                            placeholder.className = 'text-xs text-gray-400 font-normal no-image-text';
-                                            placeholder.textContent = 'Sin imagen';
-                                            parent.appendChild(placeholder);
-                                          }
-                                        }}
-                                      />
-                                      {product.is_featured && (
-                                        <div className="absolute top-2 right-2 bg-yellow-500 text-white p-1 rounded-full shadow-sm">
-                                          <span className="material-symbols-outlined" style={{ fontSize: '16px', fontWeight: 300 }}>star</span>
-                                        </div>
-                                      )}
-                                    </>
-                                  )}
-                                </div>
-                              </td>
-                              <td className="px-6 py-4 text-black/90 font-normal font-mono text-sm">{product.id}</td>
-                              <td className="px-6 py-4 text-black/90 font-normal text-base">{product.name}</td>
-                              <td className="px-6 py-4 text-black/70 font-normal text-base">{product.category}</td>
-                              <td className="px-6 py-4">
-                                <span className={`font-semibold text-base ${product.stock > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                  {product.stock}
-                                </span>
-                              </td>
-                              <td className="px-6 py-4 text-black/90 font-normal text-base">${product.price.toLocaleString('es-CL')} CLP</td>
-                              <td className="px-6 py-4">
-                                <button
-                                  onClick={() => handleEditProduct(product, 'stock')}
-                                  className="px-4 py-2 bg-black text-white text-sm font-medium hover:bg-black/90 transition-colors mr-2"
-                                >
-                                  Editar
-                                </button>
-                                <button
-                                  onClick={() => handleDeleteProduct(product.id)}
-                                  className="px-4 py-2 bg-red-600 text-white text-sm font-medium hover:bg-red-700 transition-colors"
-                                >
-                                  Eliminar
-                                </button>
-                              </td>
-                            </tr>
-                          ))
-                        )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* Modal de Edición de Producto */}
         {isEditModalOpen && editingProduct && (
@@ -1259,7 +1574,7 @@ const AdminPanel = () => {
             }}
           >
             <div 
-              className="w-full max-w-4xl max-h-[90vh] bg-white shadow-xl overflow-y-auto"
+              className="w-full max-w-7xl max-h-[95vh] bg-white shadow-xl overflow-hidden flex flex-col"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="sticky top-0 bg-white border-b border-black/10 px-6 py-4 flex items-center justify-between z-10">
@@ -1276,134 +1591,485 @@ const AdminPanel = () => {
                 </button>
               </div>
               
-              <div className="p-6 space-y-6">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <div>
-                    <div className="w-full aspect-square overflow-hidden bg-gray-50 border border-black/5 relative mb-4">
-                      <img
-                        src={editingProduct.image_url}
-                        alt={editingProduct.image_alt || editingProduct.name}
-                        className="w-full h-full object-cover"
-                        onError={(e) => {
-                          const target = e.target as HTMLImageElement;
-                          target.src = 'https://via.placeholder.com/400?text=Imagen+no+disponible';
-                        }}
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-base font-semibold text-black mb-2">URL de la Imagen</label>
-                      <input
-                        type="url"
-                        value={editingProduct.image_url}
-                        onChange={(e) => setEditingProduct({ ...editingProduct, image_url: e.target.value })}
-                        placeholder="https://ejemplo.com/imagen.jpg"
-                        className="w-full bg-white border border-black/20 px-4 py-3 text-black text-base font-normal focus:outline-none focus:border-black/40"
-                      />
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-5">
-                    <div>
-                      <label className="block text-base font-semibold text-black mb-2">Nombre del Producto</label>
-                      <input
-                        type="text"
-                        value={editingProduct.name}
-                        onChange={(e) => setEditingProduct({ ...editingProduct, name: e.target.value })}
-                        className="w-full bg-white border border-black/20 px-4 py-3 text-black text-base font-normal focus:outline-none focus:border-black/40"
-                      />
-                    </div>
-                    
-                    <div>
-                      <label className="block text-base font-semibold text-black mb-2">Categoría</label>
-                      <select
-                        value={editingProduct.category}
-                        onChange={(e) => setEditingProduct({ ...editingProduct, category: e.target.value })}
-                        className="w-full bg-white border border-black/20 px-4 py-3 text-black text-base font-normal focus:outline-none focus:border-black/40"
-                      >
-                        {CATEGORIES.map((category) => (
-                          <option key={category} value={category}>{category}</option>
-                        ))}
-                      </select>
-                    </div>
-                    
-                    <div className="grid grid-cols-2 gap-4">
+              <div className="flex-1 overflow-y-auto">
+                <div className="p-6">
+                  {/* Layout 2x2: Foto | Detalles | Variaciones | Cálculos */}
+                  <div className="grid grid-cols-2 grid-rows-2 gap-6 h-full min-h-[700px]">
+                    {/* Cuadrante 1: Foto (arriba izquierda) */}
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-semibold text-black">Foto</h3>
+                      
+                      {/* Carousel de imágenes */}
+                      <div className="w-full aspect-square overflow-hidden bg-gray-50 border-2 border-black/10 rounded-lg relative group">
+                        {/* Imagen principal o carousel */}
+                        {(() => {
+                          const allImages = [
+                            { id: 'main', image_url: editingProduct.image_url, image_alt: editingProduct.image_alt || editingProduct.name },
+                            ...productImages
+                          ].filter(img => img.image_url && img.image_url.trim() !== '');
+                          
+                          if (allImages.length === 0) {
+                            return (
+                              <div className="w-full h-full flex items-center justify-center text-black/40">
+                                Sin imagen
+                              </div>
+                            );
+                          }
+                          
+                          const currentImage = allImages[currentImageIndex] || allImages[0];
+                          
+                          return (
+                            <>
+                              <img
+                                key={currentImage.id}
+                                src={currentImage.image_url}
+                                alt={currentImage.image_alt || editingProduct.name}
+                                className="w-full h-full object-cover transition-opacity duration-300"
+                                onError={(e) => {
+                                  const target = e.target as HTMLImageElement;
+                                  target.src = 'https://via.placeholder.com/400?text=Imagen+no+disponible';
+                                }}
+                              />
+                              
+                              {/* Navegación del carousel */}
+                              {allImages.length > 1 && (
+                                <>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setCurrentImageIndex((prev) => (prev - 1 + allImages.length) % allImages.length);
+                                    }}
+                                    className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/60 hover:bg-black/80 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                                    aria-label="Imagen anterior"
+                                  >
+                                    <span className="material-symbols-outlined" style={{ fontSize: '20px', fontWeight: 300 }}>
+                                      chevron_left
+                                    </span>
+                                  </button>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setCurrentImageIndex((prev) => (prev + 1) % allImages.length);
+                                    }}
+                                    className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/60 hover:bg-black/80 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                                    aria-label="Imagen siguiente"
+                                  >
+                                    <span className="material-symbols-outlined" style={{ fontSize: '20px', fontWeight: 300 }}>
+                                      chevron_right
+                                    </span>
+                                  </button>
+                                  
+                                  {/* Indicadores de posición */}
+                                  <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
+                                    {allImages.map((_, idx) => (
+                                      <button
+                                        key={idx}
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setCurrentImageIndex(idx);
+                                        }}
+                                        className={`w-2 h-2 rounded-full transition-all ${
+                                          idx === currentImageIndex ? 'bg-white' : 'bg-white/40'
+                                        }`}
+                                        aria-label={`Ir a imagen ${idx + 1}`}
+                                      />
+                                    ))}
+                                  </div>
+                                </>
+                              )}
+                            </>
+                          );
+                        })()}
+                      </div>
+                      
+                      {/* URL de imagen principal */}
                       <div>
-                        <label className="block text-base font-semibold text-black mb-2">Precio (CLP)</label>
+                        <label className="block text-sm font-semibold text-black mb-2">URL de la Imagen Principal</label>
                         <input
-                          type="number"
-                          value={editingProduct.price}
-                          onChange={(e) => setEditingProduct({ ...editingProduct, price: parseInt(e.target.value) || 0 })}
-                          min="0"
-                          className="w-full bg-white border border-black/20 px-4 py-3 text-black text-base font-normal focus:outline-none focus:border-black/40"
+                          type="url"
+                          value={editingProduct.image_url}
+                          onChange={(e) => setEditingProduct({ ...editingProduct, image_url: e.target.value })}
+                          placeholder="https://ejemplo.com/imagen.jpg"
+                          className="w-full bg-white border border-black/20 px-3 py-2 text-sm text-black font-normal focus:outline-none focus:border-black/40 rounded"
                         />
                       </div>
-                      <div>
-                        <label className="block text-base font-semibold text-black mb-2">Stock</label>
-                        <input
-                          type="number"
-                          value={editingProduct.stock}
-                          onChange={(e) => setEditingProduct({ ...editingProduct, stock: parseInt(e.target.value) || 0 })}
-                          min="0"
-                          className="w-full bg-white border border-black/20 px-4 py-3 text-black text-base font-normal focus:outline-none focus:border-black/40"
-                        />
-                      </div>
-                    </div>
-                    
-                    <div>
-                      <label className="block text-base font-semibold text-black mb-2">Descripción</label>
-                      <textarea
-                        value={editingProduct.description || ''}
-                        onChange={(e) => setEditingProduct({ ...editingProduct, description: e.target.value })}
-                        rows={4}
-                        className="w-full bg-white border border-black/20 px-4 py-3 text-black text-base font-normal focus:outline-none focus:border-black/40 resize-none"
-                      />
-                    </div>
-                    
-                    <div className="flex gap-6">
-                      <label className="flex items-center gap-2 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={editingProduct.is_new || false}
-                          onChange={(e) => setEditingProduct({ ...editingProduct, is_new: e.target.checked })}
-                          className="w-5 h-5 text-black focus:ring-black cursor-pointer"
-                        />
-                        <span className="text-base font-normal text-black">Producto Nuevo</span>
-                      </label>
-                      <label className="flex items-center gap-3 cursor-pointer group">
-                        <div className="relative">
-                          <input
-                            type="checkbox"
-                            checked={editingProduct.is_featured || false}
-                            onChange={(e) => {
-                              const newFeatured = e.target.checked;
-                              const featuredCount = products.filter(p => p.is_featured && p.id !== editingProduct.id).length;
-                              if (newFeatured && featuredCount >= 8) {
-                                setToastMessage('Máximo 8 productos destacados permitidos (2 filas)');
-                                setShowToast(true);
-                                return;
-                              }
-                              setEditingProduct({ ...editingProduct, is_featured: newFeatured });
-                            }}
-                            className="sr-only"
-                          />
-                          <span className={`material-symbols-outlined transition-all ${
-                            editingProduct.is_featured 
-                              ? 'text-yellow-500 scale-110' 
-                              : 'text-black/40 group-hover:text-black/60'
-                          }`} style={{ fontSize: '32px', fontWeight: 300 }}>
-                            star
-                          </span>
+                      
+                      {/* Sección desplegable para agregar más fotos */}
+                      {editingProduct.id && !editingProduct.id.startsWith('new-') && (
+                        <div className="border border-black/10 rounded-lg overflow-hidden">
+                          <button
+                            onClick={() => setIsImageSectionExpanded(!isImageSectionExpanded)}
+                            className="w-full px-3 py-2 bg-gray-50 hover:bg-gray-100 flex items-center justify-between text-sm font-semibold text-black transition-colors"
+                          >
+                            <span>Imágenes Adicionales ({productImages.length})</span>
+                            <span className={`material-symbols-outlined transition-transform ${isImageSectionExpanded ? 'rotate-180' : ''}`} style={{ fontSize: '20px', fontWeight: 300 }}>
+                              expand_more
+                            </span>
+                          </button>
+                          
+                          {isImageSectionExpanded && (
+                            <div className="p-3 space-y-3 bg-white">
+                              {/* Miniaturas de imágenes adicionales */}
+                              {productImages.length > 0 && (
+                                <div className="grid grid-cols-3 gap-2">
+                                  {productImages.map((img, idx) => (
+                                    <div key={img.id} className="relative group">
+                                      <img 
+                                        src={img.image_url} 
+                                        alt={img.image_alt} 
+                                        className="w-full aspect-square object-cover border border-black/10 rounded cursor-pointer"
+                                        onClick={() => setCurrentImageIndex(idx + 1)}
+                                      />
+                                      <button
+                                        onClick={() => handleDeleteImage(img.id)}
+                                        className="absolute top-1 right-1 bg-red-600 text-white p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+                                        aria-label="Eliminar imagen"
+                                      >
+                                        <span className="material-symbols-outlined" style={{ fontSize: '14px', fontWeight: 300 }}>delete</span>
+                                      </button>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                              
+                              {/* Formulario para agregar nueva imagen */}
+                              <div className="flex gap-2">
+                                <input
+                                  type="url"
+                                  value={newImageUrl}
+                                  onChange={(e) => setNewImageUrl(e.target.value)}
+                                  placeholder="URL de nueva imagen"
+                                  className="flex-1 bg-white border border-black/20 px-3 py-2 text-sm text-black font-normal focus:outline-none focus:border-black/40 rounded"
+                                />
+                                <button
+                                  onClick={handleAddImage}
+                                  className="px-4 py-2 bg-black text-white text-sm font-medium hover:bg-black/90 transition-colors flex items-center gap-2 rounded"
+                                >
+                                  <span className="material-symbols-outlined" style={{ fontSize: '18px', fontWeight: 300 }}>add</span>
+                                  Agregar
+                                </button>
+                              </div>
+                            </div>
+                          )}
                         </div>
-                        <span className="text-base font-normal text-black">Destacado</span>
-                      </label>
+                      )}
                     </div>
+                    
+                    {/* Cuadrante 2: Detalles (arriba derecha) */}
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-semibold text-black">Detalles</h3>
+                      <div className="space-y-4">
+                        <div>
+                          <label className="block text-sm font-semibold text-black mb-2">Nombre del Producto</label>
+                          <input
+                            type="text"
+                            value={editingProduct.name}
+                            onChange={(e) => setEditingProduct({ ...editingProduct, name: e.target.value })}
+                            className="w-full bg-white border border-black/20 px-3 py-2 text-sm text-black font-normal focus:outline-none focus:border-black/40 rounded"
+                          />
+                        </div>
+                        
+                        <div>
+                          <label className="block text-sm font-semibold text-black mb-2">Categoría</label>
+                          <select
+                            value={editingProduct.category}
+                            onChange={(e) => setEditingProduct({ ...editingProduct, category: e.target.value })}
+                            className="w-full bg-white border border-black/20 px-3 py-2 text-sm text-black font-normal focus:outline-none focus:border-black/40 rounded"
+                          >
+                            {CATEGORIES.map((category) => (
+                              <option key={category} value={category}>{category}</option>
+                            ))}
+                          </select>
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-sm font-semibold text-black mb-2">Precio (CLP)</label>
+                            <input
+                              type="number"
+                              value={editingProduct.price}
+                              onChange={(e) => setEditingProduct({ ...editingProduct, price: parseInt(e.target.value) || 0 })}
+                              min="0"
+                              className="w-full bg-white border border-black/20 px-3 py-2 text-sm text-black font-normal focus:outline-none focus:border-black/40 rounded"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-semibold text-black mb-2">Stock</label>
+                            <input
+                              type="number"
+                              value={editingProduct.stock}
+                              onChange={(e) => setEditingProduct({ ...editingProduct, stock: parseInt(e.target.value) || 0 })}
+                              min="0"
+                              className="w-full bg-white border border-black/20 px-3 py-2 text-sm text-black font-normal focus:outline-none focus:border-black/40 rounded"
+                            />
+                          </div>
+                        </div>
+                        
+                        <div>
+                          <label className="block text-sm font-semibold text-black mb-2">Descripción</label>
+                          <textarea
+                            value={editingProduct.description || ''}
+                            onChange={(e) => setEditingProduct({ ...editingProduct, description: e.target.value })}
+                            rows={4}
+                            className="w-full bg-white border border-black/20 px-3 py-2 text-sm text-black font-normal focus:outline-none focus:border-black/40 resize-none rounded"
+                          />
+                        </div>
+                        
+                        <div className="flex gap-4">
+                          <label className="flex items-center gap-2 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={editingProduct.is_new || false}
+                              onChange={(e) => setEditingProduct({ ...editingProduct, is_new: e.target.checked })}
+                              className="w-4 h-4 text-black focus:ring-black cursor-pointer"
+                            />
+                            <span className="text-sm font-normal text-black">Producto Nuevo</span>
+                          </label>
+                          <label className="flex items-center gap-2 cursor-pointer group">
+                            <input
+                              type="checkbox"
+                              checked={editingProduct.is_featured || false}
+                              onChange={(e) => {
+                                const newFeatured = e.target.checked;
+                                const featuredCount = products.filter(p => p.is_featured && p.id !== editingProduct.id).length;
+                                if (newFeatured && featuredCount >= 8) {
+                                  setToastMessage('Máximo 8 productos destacados permitidos (2 filas)');
+                                  setShowToast(true);
+                                  return;
+                                }
+                                setEditingProduct({ ...editingProduct, is_featured: newFeatured });
+                              }}
+                              className="sr-only"
+                            />
+                            <span className={`material-symbols-outlined transition-all ${
+                              editingProduct.is_featured 
+                                ? 'text-yellow-500 scale-110' 
+                                : 'text-black/40 group-hover:text-black/60'
+                            }`} style={{ fontSize: '24px', fontWeight: 300 }}>
+                              star
+                            </span>
+                            <span className="text-sm font-normal text-black">Destacado</span>
+                          </label>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Cuadrante 3: Variaciones/Nombres (abajo izquierda) - Solo para Colgantes */}
+                    {editingProduct.category === 'Colgantes' && editingProduct.id && !editingProduct.id.startsWith('new-') ? (
+                      <div className="space-y-4">
+                        <h3 className="text-lg font-semibold text-black">Variaciones</h3>
+                        <p className="text-sm text-black/60">
+                          Selecciona qué cadenas estarán disponibles para este colgante
+                        </p>
+                        <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2">
+                          {chains.filter((c: any) => c.is_active).map((chain: any) => {
+                            const isSelected = selectedPendantChains.has(chain.brand);
+                            return (
+                              <label
+                                key={chain.id}
+                                className={`flex items-center gap-3 p-3 border-2 transition-colors cursor-pointer rounded-lg ${
+                                  isSelected
+                                    ? 'border-black bg-black/5'
+                                    : 'border-black/10 hover:border-black/20 bg-white'
+                                }`}
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={isSelected}
+                                  onChange={async (e) => {
+                                    const newSelected = new Set(selectedPendantChains);
+                                    if (e.target.checked) {
+                                      newSelected.add(chain.brand);
+                                      // Calcular precio cuando se selecciona
+                                      const sumPrice = editingProduct.price + chain.price;
+                                      const { roundToProfessionalPrice } = await import('../utils/priceRounding');
+                                      const roundedPrice = roundToProfessionalPrice(sumPrice);
+                                      setCalculatedSumPrice(sumPrice);
+                                      setCalculatedDisplayPrice(roundedPrice);
+                                      setCustomDisplayPrice(roundedPrice);
+                                      setSelectedVariationForPrice(chain);
+                                    } else {
+                                      newSelected.delete(chain.brand);
+                                      if (selectedVariationForPrice?.brand === chain.brand) {
+                                        setSelectedVariationForPrice(null);
+                                        setCalculatedSumPrice(null);
+                                        setCalculatedDisplayPrice(null);
+                                        setCustomDisplayPrice(null);
+                                      }
+                                    }
+                                    setSelectedPendantChains(newSelected);
+                                  }}
+                                  className="w-5 h-5 text-black focus:ring-black cursor-pointer"
+                                />
+                                <div className="flex-1">
+                                  <span className="text-base font-semibold text-black block">{chain.brand}</span>
+                                  <span className="text-sm text-black/70">
+                                    ${chain.price.toLocaleString('es-CL')} CLP
+                                  </span>
+                                </div>
+                              </label>
+                            );
+                          })}
+                        </div>
+                        <button
+                          onClick={async () => {
+                            try {
+                              const response = await fetch(`/api/pendants/${editingProduct.id}/chains`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                  chainBrands: Array.from(selectedPendantChains),
+                                }),
+                              });
+                              if (response.ok) {
+                                // Si hay un precio de exhibición calculado, guardarlo en display_price
+                                if (customDisplayPrice && selectedVariationForPrice) {
+                                  try {
+                                    await fetch(`/api/products/${editingProduct.id}`, {
+                                      method: 'PUT',
+                                      headers: { 'Content-Type': 'application/json' },
+                                      body: JSON.stringify({
+                                        ...editingProduct,
+                                        display_price: customDisplayPrice,
+                                      }),
+                                    });
+                                  } catch (error) {
+                                    console.error('Error saving display price:', error);
+                                  }
+                                }
+                                setToastMessage('Cadenas y precio actualizados correctamente');
+                                setShowToast(true);
+                              } else {
+                                throw new Error('Error al actualizar');
+                              }
+                            } catch (error: any) {
+                              setToastMessage('Error al actualizar cadenas');
+                              setShowToast(true);
+                            }
+                          }}
+                          className="w-full px-4 py-2 bg-black text-white text-sm font-medium hover:bg-black/90 transition-colors rounded"
+                        >
+                          Guardar Cadenas y Precio
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        <h3 className="text-lg font-semibold text-black">Variaciones</h3>
+                        <div className="bg-gray-50 border-2 border-gray-200 rounded-lg p-6 h-full flex items-center justify-center">
+                          <p className="text-sm text-black/60 text-center">
+                            Las variaciones solo están disponibles para productos de categoría "Colgantes"
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Cuadrante 4: Cálculos (abajo derecha) - Solo para Colgantes */}
+                    {editingProduct.category === 'Colgantes' && editingProduct.id && !editingProduct.id.startsWith('new-') ? (
+                      <div className="space-y-4">
+                        <h3 className="text-lg font-semibold text-black">Cálculo</h3>
+                        {selectedVariationForPrice ? (
+                          <div className="bg-gradient-to-br from-blue-50 to-blue-100 border-2 border-blue-300 rounded-lg p-5 space-y-5 h-full flex flex-col">
+                            <div className="flex items-center gap-3">
+                              <span className="material-symbols-outlined text-blue-700" style={{ fontSize: '24px', fontWeight: 300 }}>
+                                calculate
+                              </span>
+                              <h4 className="text-lg font-bold text-black">Cálculo de Precio</h4>
+                            </div>
+                            
+                            <div className="bg-white rounded-lg p-4 space-y-3 border border-blue-200">
+                              <div className="flex justify-between items-center pb-2 border-b border-blue-200">
+                                <span className="text-sm font-medium text-black/80">Cadena {selectedVariationForPrice.brand}:</span>
+                                <span className="text-sm font-bold text-black">${selectedVariationForPrice.price.toLocaleString('es-CL')} CLP</span>
+                              </div>
+                              <div className="flex justify-between items-center pb-2 border-b border-blue-200">
+                                <span className="text-sm font-medium text-black/80">Dije:</span>
+                                <span className="text-sm font-bold text-black">${editingProduct.price.toLocaleString('es-CL')} CLP</span>
+                              </div>
+                              <div className="flex justify-between items-center pt-2">
+                                <span className="text-base font-bold text-black">Total (Suma):</span>
+                                <span className="text-lg font-bold text-blue-700">
+                                  ${calculatedSumPrice ? calculatedSumPrice.toLocaleString('es-CL') : '0'} CLP
+                                </span>
+                              </div>
+                            </div>
+
+                            <div className="bg-blue-200 rounded-lg p-3 border border-blue-300">
+                              <label className="block text-xs font-bold text-blue-900 mb-2">
+                                Precio Sugerido (Redondeado):
+                              </label>
+                              <div className="text-center py-2 bg-white rounded border-2 border-blue-400">
+                                <span className="text-xl font-bold text-blue-700">
+                                  ${calculatedDisplayPrice ? calculatedDisplayPrice.toLocaleString('es-CL') : '0'} CLP
+                                </span>
+                              </div>
+                            </div>
+
+                            <div className="space-y-2 flex-1">
+                              <label className="block text-xs font-bold text-black mb-1">
+                                Precio de Exhibición (Editable):
+                              </label>
+                              <input
+                                type="number"
+                                value={customDisplayPrice || calculatedDisplayPrice || 0}
+                                onChange={(e) => {
+                                  const value = parseInt(e.target.value) || 0;
+                                  setCustomDisplayPrice(value);
+                                }}
+                                className="w-full bg-white border-2 border-blue-300 px-3 py-2 text-base font-semibold text-black focus:outline-none focus:border-blue-500 rounded-lg"
+                                placeholder="Precio editable"
+                              />
+                            </div>
+
+                            <div className="bg-blue-600 rounded-lg p-3 border-2 border-blue-700 mt-auto">
+                              <div className="flex justify-between items-center">
+                                <span className="text-sm font-bold text-white">Precio Final:</span>
+                                <span className="text-xl font-bold text-white">
+                                  ${(customDisplayPrice || calculatedDisplayPrice || 0).toLocaleString('es-CL')} CLP
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="bg-gray-50 border-2 border-gray-200 rounded-lg p-6 h-full flex items-center justify-center">
+                            <p className="text-sm text-black/60 text-center">
+                              Selecciona una cadena para ver el cálculo de precio
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        <h3 className="text-lg font-semibold text-black">Cálculo</h3>
+                        <div className="bg-gray-50 border-2 border-gray-200 rounded-lg p-6 h-full flex items-center justify-center">
+                          <p className="text-sm text-black/60 text-center">
+                            Los cálculos solo están disponibles para productos de categoría "Colgantes"
+                          </p>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
-                
-                <div className="flex gap-4 pt-6 border-t border-black/10">
+              </div>
+              
+              {/* Footer con botones */}
+              <div className="sticky bottom-0 bg-white border-t border-black/10 px-6 py-4 flex gap-4">
                   <button
                     onClick={async () => {
                       await handleSaveProduct();
+                      // Guardar cadenas si es un colgante
+                      if (editingProduct.category === 'Colgantes' && editingProduct.id && !editingProduct.id.startsWith('new-')) {
+                        try {
+                          await fetch(`/api/pendants/${editingProduct.id}/chains`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                              chainBrands: Array.from(selectedPendantChains),
+                            }),
+                          });
+                        } catch (error) {
+                          console.error('Error saving chains:', error);
+                        }
+                      }
                       setIsEditModalOpen(false);
                     }}
                     className="flex-1 px-6 py-3 bg-black text-white text-base font-medium hover:bg-black/90 transition-colors"

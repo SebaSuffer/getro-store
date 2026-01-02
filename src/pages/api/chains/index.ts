@@ -1,7 +1,7 @@
 import type { APIRoute } from 'astro';
 import { getTursoClient } from '../../../utils/turso';
 
-// GET /api/chains - Obtener todas las cadenas con sus variaciones agrupadas por marca
+// GET /api/chains - Obtener todas las cadenas agrupadas por marca
 export const GET: APIRoute = async () => {
   try {
     const client = getTursoClient();
@@ -13,61 +13,41 @@ export const GET: APIRoute = async () => {
       );
     }
 
-    // Obtener todas las cadenas (productos de categoría "Cadenas")
+    // Obtener todas las cadenas activas de la tabla chains
     const chainsResult = await client.execute(`
-      SELECT * FROM products 
-      WHERE category = 'Cadenas'
-      ORDER BY name
+      SELECT * FROM chains
+      WHERE is_active = 1
+      ORDER BY brand
     `);
 
     const chains = chainsResult.rows.map((row: any) => ({
       id: row.id,
+      brand: row.brand,
       name: row.name,
-      description: row.description,
+      thickness: row.thickness,
+      length: row.length,
       price: row.price,
       stock: row.stock,
       image_url: row.image_url,
       image_alt: row.image_alt,
-    }));
-
-    // Obtener todas las variaciones de cadenas
-    const variationsResult = await client.execute(`
-      SELECT pv.*, p.name as product_name, p.image_url as product_image_url
-      FROM product_variations pv
-      INNER JOIN products p ON pv.product_id = p.id
-      WHERE p.category = 'Cadenas' AND pv.is_active = 1
-      ORDER BY pv.brand, pv.thickness, pv.length
-    `);
-
-    const variations = variationsResult.rows.map((row: any) => ({
-      id: row.id,
-      product_id: row.product_id,
-      product_name: row.product_name,
-      product_image_url: row.product_image_url,
-      chain_type: row.chain_type,
-      brand: row.brand,
-      thickness: row.thickness,
-      length: row.length,
-      price_modifier: row.price_modifier ?? 0,
-      stock: row.stock ?? 0,
+      description: row.description,
       is_active: Boolean(row.is_active),
     }));
 
-    // Agrupar variaciones por marca
-    const groupedByBrand: Record<string, typeof variations> = {};
+    // Agrupar por marca (ahora solo hay una cadena por marca)
+    const groupedByBrand: Record<string, typeof chains> = {};
     
-    variations.forEach((variation) => {
-      const brand = variation.brand || 'Sin marca';
+    chains.forEach((chain) => {
+      const brand = chain.brand || 'Sin marca';
       if (!groupedByBrand[brand]) {
         groupedByBrand[brand] = [];
       }
-      groupedByBrand[brand].push(variation);
+      groupedByBrand[brand].push(chain);
     });
 
     return new Response(
       JSON.stringify({
         chains,
-        variations,
         groupedByBrand,
       }),
       {

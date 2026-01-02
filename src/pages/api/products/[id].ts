@@ -80,7 +80,7 @@ export const PUT: APIRoute = async ({ params, request }) => {
     }
 
     const body = await request.json();
-    const { name, description, price, stock, image_url, image_alt, category, is_new, is_featured, chain_type } = body;
+    const { name, description, price, stock, image_url, image_alt, category, is_new, is_featured, chain_type, display_price } = body;
 
     const client = getTursoClient();
     
@@ -91,14 +91,33 @@ export const PUT: APIRoute = async ({ params, request }) => {
       );
     }
 
-    await client.execute({
-      sql: `UPDATE products 
-            SET name = ?, description = ?, price = ?, stock = ?, 
-                image_url = ?, image_alt = ?, category = ?, 
-                is_new = ?, is_featured = ?, updated_at = CURRENT_TIMESTAMP
-            WHERE id = ?`,
-      args: [name, description, price, stock, image_url, image_alt, category, is_new ? 1 : 0, is_featured ? 1 : 0, id],
+    // Verificar si existe la columna display_price
+    const tableInfo = await client.execute({
+      sql: "PRAGMA table_info(products)",
+      args: [],
     });
+    
+    const hasDisplayPrice = tableInfo.rows.some((row: any) => row.name === 'display_price');
+    
+    if (hasDisplayPrice) {
+      await client.execute({
+        sql: `UPDATE products 
+              SET name = ?, description = ?, price = ?, stock = ?, 
+                  image_url = ?, image_alt = ?, category = ?, 
+                  is_new = ?, is_featured = ?, display_price = ?, updated_at = CURRENT_TIMESTAMP
+              WHERE id = ?`,
+        args: [name, description, price, stock, image_url, image_alt, category, is_new ? 1 : 0, is_featured ? 1 : 0, display_price || null, id],
+      });
+    } else {
+      await client.execute({
+        sql: `UPDATE products 
+              SET name = ?, description = ?, price = ?, stock = ?, 
+                  image_url = ?, image_alt = ?, category = ?, 
+                  is_new = ?, is_featured = ?, updated_at = CURRENT_TIMESTAMP
+              WHERE id = ?`,
+        args: [name, description, price, stock, image_url, image_alt, category, is_new ? 1 : 0, is_featured ? 1 : 0, id],
+      });
+    }
 
     // Las variaciones ahora se gestionan manualmente desde el panel de administración
     // No se actualizan automáticamente al editar el producto

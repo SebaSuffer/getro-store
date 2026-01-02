@@ -61,18 +61,17 @@ const ProductCard = ({ product: initialProduct, hidePrice = false }: ProductCard
         const stock = await getProductStock(product.id);
         setCurrentStock(stock || product.stock);
         
-        // Si es un Colgante con variaciones, cargar la variación por defecto y calcular precio
-        if (product.has_variations && product.category === 'Colgantes' && !hidePrice) {
+        // Si es un Colgante, cargar la cadena por defecto y calcular precio
+        if (product.category === 'Colgantes' && !hidePrice) {
           try {
-            const variationsResponse = await fetch(`/api/products/${product.id}/variations`);
-            if (variationsResponse.ok) {
-              const variations = await variationsResponse.json();
-              const activeVariations = variations.filter((v: any) => v.is_active);
-              if (activeVariations.length > 0) {
-                // Buscar la variación por defecto (PLATA 925) o usar la primera
-                const defaultVar = activeVariations.find((v: any) => v.brand === 'PLATA 925' || v.id.includes('PLATA925-DEFAULT')) || activeVariations[0];
-                if (defaultVar) {
-                  const sumPrice = product.price + (defaultVar.price_modifier || 0);
+            const chainsResponse = await fetch(`/api/pendants/${product.id}/chains`);
+            if (chainsResponse.ok) {
+              const chains = await chainsResponse.json();
+              if (chains.length > 0) {
+                // Buscar la cadena por defecto (PLATA 925) o usar la primera
+                const defaultChain = chains.find((c: any) => c.brand === 'PLATA 925') || chains[0];
+                if (defaultChain) {
+                  const sumPrice = product.price + (defaultChain.price || 0);
                   const { roundToProfessionalPrice } = await import('../utils/priceRounding');
                   const finalPrice = roundToProfessionalPrice(sumPrice);
                   setDisplayPrice(finalPrice);
@@ -80,7 +79,7 @@ const ProductCard = ({ product: initialProduct, hidePrice = false }: ProductCard
               }
             }
           } catch (error) {
-            console.error('Error loading variations for price:', error);
+            console.error('Error loading chains for price:', error);
           }
         }
       } catch (error) {
@@ -103,6 +102,9 @@ const ProductCard = ({ product: initialProduct, hidePrice = false }: ProductCard
   }, [product.id]);
 
   const handleAddToCart = async () => {
+    // Prevenir agregar cadenas al carrito
+    if (product.category === 'Cadenas') return;
+    
     if (currentStock <= 0) return;
     
     setIsAdding(true);
@@ -203,19 +205,22 @@ const ProductCard = ({ product: initialProduct, hidePrice = false }: ProductCard
             >
               Ver Detalle
             </a>
-            <button
-              onClick={handleAddToCart}
-              disabled={isOutOfStock || isAdding}
-              className={`w-full h-12 flex items-center justify-center gap-2 text-xs font-normal uppercase tracking-[0.15em] transition-all ${
-                isOutOfStock
-                  ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                  : 'bg-black text-white hover:bg-black/90 active:bg-black'
-              }`}
-              aria-label={`Añadir ${product.name} al carrito`}
-              tabIndex={isOutOfStock ? -1 : 0}
-            >
-              {isOutOfStock ? 'Agotado' : isAdding ? 'Añadido' : 'Añadir al carrito'}
-            </button>
+            {/* Ocultar botón de carrito para cadenas */}
+            {product.category !== 'Cadenas' && (
+              <button
+                onClick={handleAddToCart}
+                disabled={isOutOfStock || isAdding}
+                className={`w-full h-12 flex items-center justify-center gap-2 text-xs font-normal uppercase tracking-[0.15em] transition-all ${
+                  isOutOfStock
+                    ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                    : 'bg-black text-white hover:bg-black/90 active:bg-black'
+                }`}
+                aria-label={`Añadir ${product.name} al carrito`}
+                tabIndex={isOutOfStock ? -1 : 0}
+              >
+                {isOutOfStock ? 'Agotado' : isAdding ? 'Añadido' : 'Añadir al carrito'}
+              </button>
+            )}
           </div>
         </div>
       </div>
