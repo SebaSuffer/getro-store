@@ -221,11 +221,44 @@ const AdminPanel = () => {
             const chainsResponse = await fetch(`/api/pendants/${product.id}/chains`);
             if (chainsResponse.ok) {
               const chains = await chainsResponse.json();
-              const selectedBrands = new Set<string>(chains.map((c: any) => c.brand as string));
-              setSelectedPendantChains(selectedBrands);
               
-              // Si hay cadenas seleccionadas, calcular precio automáticamente (priorizar PLATA 925)
-              if (chains.length > 0) {
+              // Si no hay cadenas, agregar PLATA 925 automáticamente
+              if (chains.length === 0) {
+                try {
+                  await fetch(`/api/pendants/${product.id}/chains`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ chainBrands: ['PLATA 925'] }),
+                  });
+                  // Recargar después de agregar
+                  const reloadResponse = await fetch(`/api/pendants/${product.id}/chains`);
+                  if (reloadResponse.ok) {
+                    const reloadedChains = await reloadResponse.json();
+                    const selectedBrands = new Set<string>(reloadedChains.map((c: any) => c.brand as string));
+                    setSelectedPendantChains(selectedBrands);
+                    
+                    if (reloadedChains.length > 0) {
+                      const plata925Chain = reloadedChains.find((c: any) => c.brand === 'PLATA 925') || reloadedChains[0];
+                      if (plata925Chain && product.price) {
+                        const sumPrice = product.price + (plata925Chain.price || 0);
+                        setCalculatedSumPrice(sumPrice);
+                        const { roundToProfessionalPrice } = await import('../utils/priceRounding');
+                        const roundedPrice = roundToProfessionalPrice(sumPrice);
+                        setCalculatedDisplayPrice(roundedPrice);
+                        setCustomDisplayPrice((product as any).display_price || roundedPrice);
+                        setSelectedVariationForPrice(plata925Chain);
+                      }
+                    }
+                  }
+                } catch (error) {
+                  console.error('Error adding default chain:', error);
+                }
+              } else {
+                // Ya hay cadenas, cargarlas normalmente
+                const selectedBrands = new Set<string>(chains.map((c: any) => c.brand as string));
+                setSelectedPendantChains(selectedBrands);
+                
+                // Si hay cadenas seleccionadas, calcular precio automáticamente (priorizar PLATA 925)
                 const plata925Chain = chains.find((c: any) => c.brand === 'PLATA 925') || chains[0];
                 if (plata925Chain && product.price) {
                   const sumPrice = product.price + (plata925Chain.price || 0);
@@ -233,7 +266,6 @@ const AdminPanel = () => {
                   const { roundToProfessionalPrice } = await import('../utils/priceRounding');
                   const roundedPrice = roundToProfessionalPrice(sumPrice);
                   setCalculatedDisplayPrice(roundedPrice);
-                  // Si el producto tiene display_price, usarlo; si no, usar el redondeado
                   setCustomDisplayPrice((product as any).display_price || roundedPrice);
                   setSelectedVariationForPrice(plata925Chain);
                 }
@@ -242,6 +274,9 @@ const AdminPanel = () => {
           } catch (error) {
             console.error('Error loading pendant chains:', error);
           }
+        } else {
+          // Limpiar selección si no es colgante
+          setSelectedPendantChains(new Set());
         }
       }
     } catch (error: any) {
@@ -1909,6 +1944,12 @@ const AdminPanel = () => {
                                   onChange={async (e) => {
                                     const newSelected = new Set(selectedPendantChains);
                                     if (e.target.checked) {
+                                      // Prevenir duplicados
+                                      if (newSelected.has(chain.brand)) {
+                                        setToastMessage(`La cadena ${chain.brand} ya está seleccionada`);
+                                        setShowToast(true);
+                                        return;
+                                      }
                                       newSelected.add(chain.brand);
                                       // Calcular precio cuando se selecciona
                                       const sumPrice = editingProduct.price + chain.price;
@@ -1919,12 +1960,33 @@ const AdminPanel = () => {
                                       setCustomDisplayPrice(roundedPrice);
                                       setSelectedVariationForPrice(chain);
                                     } else {
+                                      // No permitir deseleccionar si solo hay una cadena
+                                      if (selectedPendantChains.size <= 1) {
+                                        setToastMessage('Debe tener al menos una cadena seleccionada');
+                                        setShowToast(true);
+                                        return;
+                                      }
                                       newSelected.delete(chain.brand);
                                       if (selectedVariationForPrice?.brand === chain.brand) {
-                                        setSelectedVariationForPrice(null);
-                                        setCalculatedSumPrice(null);
-                                        setCalculatedDisplayPrice(null);
-                                        setCustomDisplayPrice(null);
+                                        // Seleccionar otra cadena si se deselecciona la actual
+                                        const remainingChains = Array.from(newSelected);
+                                        if (remainingChains.length > 0) {
+                                          const otherChain = chains.find((c: any) => c.brand === remainingChains[0]);
+                                          if (otherChain) {
+                                            const sumPrice = editingProduct.price + otherChain.price;
+                                            const { roundToProfessionalPrice } = await import('../utils/priceRounding');
+                                            const roundedPrice = roundToProfessionalPrice(sumPrice);
+                                            setCalculatedSumPrice(sumPrice);
+                                            setCalculatedDisplayPrice(roundedPrice);
+                                            setCustomDisplayPrice(roundedPrice);
+                                            setSelectedVariationForPrice(otherChain);
+                                          }
+                                        } else {
+                                          setSelectedVariationForPrice(null);
+                                          setCalculatedSumPrice(null);
+                                          setCalculatedDisplayPrice(null);
+                                          setCustomDisplayPrice(null);
+                                        }
                                       }
                                     }
                                     setSelectedPendantChains(newSelected as Set<string>);
@@ -1932,7 +1994,12 @@ const AdminPanel = () => {
                                   className="w-5 h-5 text-black focus:ring-black cursor-pointer"
                                 />
                                 <div className="flex-1">
-                                  <span className="text-base font-semibold text-black block">{chain.brand}</span>
+                                  <span className="text-base font-semibold text-black block">
+                                    {chain.brand}
+                                    {isSelected && (
+                                      <span className="ml-2 text-xs text-green-600 font-normal">(Seleccionada)</span>
+                                    )}
+                                  </span>
                                   <span className="text-sm text-black/70">
                                     ${chain.price.toLocaleString('es-CL')} CLP
                                   </span>
@@ -1941,8 +2008,21 @@ const AdminPanel = () => {
                             );
                           })}
                         </div>
+                        {selectedPendantChains.size > 0 && (
+                          <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded text-sm">
+                            <p className="font-semibold text-blue-900 mb-1">Variaciones actuales:</p>
+                            <p className="text-blue-700">
+                              {Array.from(selectedPendantChains).join(', ')} ({selectedPendantChains.size})
+                            </p>
+                          </div>
+                        )}
                         <button
                           onClick={async () => {
+                            if (selectedPendantChains.size === 0) {
+                              setToastMessage('Debe seleccionar al menos una cadena');
+                              setShowToast(true);
+                              return;
+                            }
                             try {
                               const response = await fetch(`/api/pendants/${editingProduct.id}/chains`, {
                                 method: 'POST',
