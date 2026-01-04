@@ -177,23 +177,33 @@ const AdminPanel = () => {
 
   const handleSaveCategory = async () => {
     if (!editingCategory) return;
+    if (!editingCategory.name && !editingCategory.id) {
+      setToastMessage('El nombre es requerido');
+      setShowToast(true);
+      return;
+    }
     if (!editingCategory.image_url || (!editingCategory.image_url.startsWith('http://') && !editingCategory.image_url.startsWith('https://'))) {
       setToastMessage('URL válida requerida (http:// o https://)');
       setShowToast(true);
       return;
     }
     try {
-      const success = await updateCategoryImage(editingCategory.id, editingCategory.image_url, editingCategory.image_alt);
-      if (success) {
+      const method = editingCategory.id ? 'PUT' : 'POST';
+      const response = await fetch('/api/categories', {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(editingCategory),
+      });
+      if (response.ok) {
         await loadCategories();
         setEditingCategory(null);
-        setToastMessage('Imagen actualizada');
+        setToastMessage(editingCategory.id ? 'Categoría actualizada' : 'Categoría creada');
         setShowToast(true);
       } else {
-        throw new Error('Error al actualizar');
+        throw new Error('Error al guardar');
       }
     } catch (error: any) {
-      setToastMessage('Error al actualizar');
+      setToastMessage('Error al guardar la categoría');
       setShowToast(true);
     }
   };
