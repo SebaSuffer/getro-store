@@ -211,6 +211,13 @@ const AdminPanel = () => {
     setIsCreating(false);
       setIsEditModalOpen(true);
       
+      // Inicializar customDisplayPrice con display_price si existe
+      if ((product as any).display_price) {
+        setCustomDisplayPrice((product as any).display_price);
+      } else {
+        setCustomDisplayPrice(null);
+      }
+      
       // Cargar imágenes del producto (no bloquear si falla)
       if (product.id && !product.id.startsWith('new-')) {
         loadProductImages(product.id).catch((err) => {
@@ -2054,7 +2061,9 @@ const AdminPanel = () => {
                                           const roundedPrice = roundToProfessionalPrice(sumPrice);
                                           setCalculatedSumPrice(sumPrice);
                                           setCalculatedDisplayPrice(roundedPrice);
-                                          setCustomDisplayPrice(roundedPrice);
+                                          // Usar display_price existente si existe, sino el precio redondeado calculado
+                                          const existingDisplayPrice = (editingProduct as any).display_price;
+                                          setCustomDisplayPrice(existingDisplayPrice || roundedPrice);
                                           setSelectedVariationForPrice(chain);
                                         }
                                       }}
