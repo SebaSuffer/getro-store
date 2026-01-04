@@ -2310,21 +2310,54 @@ const AdminPanel = () => {
             <h2 className="text-xl font-bold text-black">Gestión de Imágenes de Categorías</h2>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div>
-                <h3 className="text-lg font-semibold text-black mb-4">Categorías</h3>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-black">Categorías</h3>
+                  <button
+                    onClick={() => {
+                      setEditingCategory({ id: '', name: '', image_url: '', image_alt: '', display_order: 0, is_active: true });
+                    }}
+                    className="px-4 py-2 bg-black text-white text-sm font-medium hover:bg-black/90"
+                  >
+                    + Nueva
+                  </button>
+                </div>
                 <div className="space-y-3 max-h-[600px] overflow-y-auto">
                   {categories.length === 0 ? (
                     <p className="text-black/70">No hay categorías</p>
                   ) : (
                     categories.map((category) => (
-                      <div key={category.id} className="border border-black/10 p-4 flex items-center gap-4 hover:border-black/20 transition-colors cursor-pointer" onClick={() => handleEditCategory(category)}>
-                        <div className="flex-shrink-0 w-20 h-20 overflow-hidden bg-gray-50 border border-black/5">
+                      <div key={category.id} className="border border-black/10 p-4 flex items-center gap-4 hover:border-black/20 transition-colors">
+                        <div className="flex-shrink-0 w-20 h-20 overflow-hidden bg-gray-50 border border-black/5 cursor-pointer" onClick={() => handleEditCategory(category)}>
                           <img src={category.image_url} alt={category.image_alt} className="w-full h-full object-cover" />
                         </div>
-                        <div className="flex-1">
+                        <div className="flex-1 cursor-pointer" onClick={() => handleEditCategory(category)}>
                           <h4 className="text-base font-semibold text-black mb-1">{category.name}</h4>
                           <p className="text-xs text-black/60 truncate">{category.image_url}</p>
                         </div>
-                        <button onClick={(e) => { e.stopPropagation(); handleEditCategory(category); }} className="px-4 py-2 bg-black text-white text-sm font-medium hover:bg-black/90">Editar</button>
+                        <div className="flex gap-2">
+                          <button onClick={(e) => { e.stopPropagation(); handleEditCategory(category); }} className="px-3 py-1 bg-black text-white text-xs font-medium hover:bg-black/90">Editar</button>
+                          <button onClick={async (e) => { 
+                            e.stopPropagation(); 
+                            if (confirm(`¿Eliminar categoría "${category.name}"?`)) {
+                              try {
+                                const response = await fetch('/api/categories', {
+                                  method: 'DELETE',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({ id: category.id }),
+                                });
+                                if (response.ok) {
+                                  await loadCategories();
+                                  setToastMessage('Categoría eliminada');
+                                  setShowToast(true);
+                                  if (editingCategory?.id === category.id) setEditingCategory(null);
+                                }
+                              } catch (error) {
+                                setToastMessage('Error al eliminar');
+                                setShowToast(true);
+                              }
+                            }
+                          }} className="px-3 py-1 bg-red-600 text-white text-xs font-medium hover:bg-red-700">Eliminar</button>
+                        </div>
                       </div>
                     ))
                   )}
@@ -2333,12 +2366,19 @@ const AdminPanel = () => {
               <div>
                 {editingCategory ? (
                   <div className="border border-black/10 p-6">
-                    <h3 className="text-lg font-semibold text-black mb-6">Editar Imagen</h3>
+                    <h3 className="text-lg font-semibold text-black mb-6">{editingCategory.id ? 'Editar Categoría' : 'Nueva Categoría'}</h3>
                     <div className="mb-6">
                       <div className="w-full aspect-square overflow-hidden bg-gray-50 border border-black/5 mb-3">
                         <img src={editingCategory.image_url} alt={editingCategory.image_alt} className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).src = 'https://via.placeholder.com/400?text=Imagen+no+disponible'; }} />
                       </div>
-                      <p className="text-sm text-black/70 text-center mb-4">{editingCategory.name}</p>
+                      {editingCategory.id ? (
+                        <p className="text-sm text-black/70 text-center mb-4">{editingCategory.name}</p>
+                      ) : (
+                        <div className="mb-4">
+                          <label className="block text-sm font-semibold text-black mb-2">Nombre</label>
+                          <input type="text" value={editingCategory.name} onChange={(e) => setEditingCategory({ ...editingCategory, name: e.target.value })} placeholder="Ej: Pulseras" className="w-full bg-white border border-black/20 px-4 py-2 text-black text-base font-normal focus:outline-none focus:border-black/40" />
+                        </div>
+                      )}
                       <div>
                         <label className="block text-sm font-semibold text-black mb-2">URL de la Imagen</label>
                         <input type="url" value={editingCategory.image_url} onChange={(e) => setEditingCategory({ ...editingCategory, image_url: e.target.value })} placeholder="https://ejemplo.com/imagen.jpg" className="w-full bg-white border border-black/20 px-4 py-2 text-black text-base font-normal focus:outline-none focus:border-black/40" />
