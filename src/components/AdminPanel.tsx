@@ -906,14 +906,14 @@ const AdminPanel = () => {
                           className="border-t border-black/5 hover:bg-black/2 transition-colors"
                         >
                           <td className="px-6 py-4">
-                            <div className="w-24 h-24 overflow-hidden bg-gray-50 border border-black/10 hover:border-black/30 transition-colors relative flex items-center justify-center">
+                            <div className="w-48 h-48 overflow-hidden bg-gray-50 border border-black/10 hover:border-black/30 transition-colors relative flex items-center justify-center">
                               {!chain.image_url || chain.image_url.trim() === '' ? (
                                 <span className="text-xs text-gray-400 font-normal">Sin imagen</span>
                               ) : (
                                 <img
                                   src={chain.image_url}
                                   alt={chain.image_alt || chain.brand}
-                                  className="w-full h-full object-cover"
+                                  className="w-full h-full object-contain"
                                   onError={(e) => {
                                     const target = e.target as HTMLImageElement;
                                     target.style.display = 'none';
