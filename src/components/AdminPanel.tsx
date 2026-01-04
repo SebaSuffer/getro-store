@@ -27,6 +27,7 @@ const AdminPanel = () => {
   const [isChainsModalOpen, setIsChainsModalOpen] = useState(false);
   const [selectedPendantChains, setSelectedPendantChains] = useState<Set<string>>(new Set()); // Cadenas ya guardadas en BD
   const [temporarySelectedChain, setTemporarySelectedChain] = useState<string | null>(null); // Cadena seleccionada temporalmente para cálculo
+  const [editingVariation, setEditingVariation] = useState<string | null>(null); // Cadena que se está editando
   const [toastMessage, setToastMessage] = useState('');
   const [showToast, setShowToast] = useState(false);
   const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
@@ -1913,6 +1914,8 @@ const AdminPanel = () => {
                               {Array.from(selectedPendantChains).map((brand) => {
                                 const chain = chains.find((c: any) => c.brand === brand);
                                 if (!chain) return null;
+                                const isEditing = editingVariation === brand;
+                                
                                 return (
                                   <div
                                     key={chain.id}
@@ -1924,47 +1927,84 @@ const AdminPanel = () => {
                                         ${chain.price.toLocaleString('es-CL')} CLP
                                       </span>
                                     </div>
-                                    <button
-                                      onClick={async () => {
-                                        try {
-                                          // Eliminar esta cadena de las guardadas
-                                          const newSaved = new Set(selectedPendantChains);
-                                          newSaved.delete(brand);
-                                          
-                                          // Actualizar en BD
-                                          const response = await fetch(`/api/pendants/${editingProduct.id}/chains`, {
-                                            method: 'POST',
-                                            headers: { 'Content-Type': 'application/json' },
-                                            body: JSON.stringify({
-                                              chainBrands: Array.from(newSaved),
-                                            }),
-                                          });
-                                          
-                                          if (response.ok) {
-                                            setSelectedPendantChains(newSaved);
-                                            // Si era la cadena seleccionada para cálculo, limpiar
-                                            if (selectedVariationForPrice?.brand === brand) {
-                                              setSelectedVariationForPrice(null);
-                                              setCalculatedSumPrice(null);
-                                              setCalculatedDisplayPrice(null);
-                                              setCustomDisplayPrice(null);
-                                            }
-                                            setToastMessage('Cadena eliminada correctamente');
-                                            setShowToast(true);
-                                            // Recargar productos para actualizar contador
-                                            await loadProducts();
+                                    <div className="flex items-center gap-2">
+                                      <button
+                                        onClick={async () => {
+                                          if (isEditing) {
+                                            // Cancelar edición
+                                            setEditingVariation(null);
+                                            setTemporarySelectedChain(null);
+                                            setSelectedVariationForPrice(null);
+                                            setCalculatedSumPrice(null);
+                                            setCalculatedDisplayPrice(null);
+                                            setCustomDisplayPrice(null);
                                           } else {
-                                            throw new Error('Error al eliminar');
+                                            // Iniciar edición: seleccionar esta cadena para cálculo
+                                            setEditingVariation(brand);
+                                            setTemporarySelectedChain(brand);
+                                            
+                                            // Calcular precio
+                                            const sumPrice = editingProduct.price + chain.price;
+                                            const { roundToProfessionalPrice } = await import('../utils/priceRounding');
+                                            const roundedPrice = roundToProfessionalPrice(sumPrice);
+                                            setCalculatedSumPrice(sumPrice);
+                                            setCalculatedDisplayPrice(roundedPrice);
+                                            setCustomDisplayPrice((editingProduct as any).display_price || roundedPrice);
+                                            setSelectedVariationForPrice(chain);
                                           }
-                                        } catch (error) {
-                                          setToastMessage('Error al eliminar la cadena');
-                                          setShowToast(true);
-                                        }
-                                      }}
-                                      className="px-3 py-1 bg-red-600 text-white text-xs font-medium hover:bg-red-700 transition-colors rounded"
-                                    >
-                                      Eliminar
-                                    </button>
+                                        }}
+                                        className={`px-3 py-1 text-xs font-medium transition-colors rounded ${
+                                          isEditing
+                                            ? 'bg-blue-600 text-white hover:bg-blue-700'
+                                            : 'bg-black text-white hover:bg-black/90'
+                                        }`}
+                                      >
+                                        {isEditing ? 'Cancelar' : 'Editar'}
+                                      </button>
+                                      <button
+                                        onClick={async () => {
+                                          try {
+                                            // Eliminar esta cadena de las guardadas
+                                            const newSaved = new Set(selectedPendantChains);
+                                            newSaved.delete(brand);
+                                            
+                                            // Actualizar en BD
+                                            const response = await fetch(`/api/pendants/${editingProduct.id}/chains`, {
+                                              method: 'POST',
+                                              headers: { 'Content-Type': 'application/json' },
+                                              body: JSON.stringify({
+                                                chainBrands: Array.from(newSaved),
+                                              }),
+                                            });
+                                            
+                                            if (response.ok) {
+                                              setSelectedPendantChains(newSaved);
+                                              // Si era la cadena seleccionada para cálculo, limpiar
+                                              if (selectedVariationForPrice?.brand === brand || editingVariation === brand) {
+                                                setSelectedVariationForPrice(null);
+                                                setEditingVariation(null);
+                                                setTemporarySelectedChain(null);
+                                                setCalculatedSumPrice(null);
+                                                setCalculatedDisplayPrice(null);
+                                                setCustomDisplayPrice(null);
+                                              }
+                                              setToastMessage('Cadena eliminada correctamente');
+                                              setShowToast(true);
+                                              // Recargar productos para actualizar contador
+                                              await loadProducts();
+                                            } else {
+                                              throw new Error('Error al eliminar');
+                                            }
+                                          } catch (error) {
+                                            setToastMessage('Error al eliminar la cadena');
+                                            setShowToast(true);
+                                          }
+                                        }}
+                                        className="px-3 py-1 bg-red-600 text-white text-xs font-medium hover:bg-red-700 transition-colors rounded"
+                                      >
+                                        Eliminar
+                                      </button>
+                                    </div>
                                   </div>
                                 );
                               })}
@@ -1994,16 +2034,19 @@ const AdminPanel = () => {
                                       type="radio"
                                       name="chain-selection"
                                       checked={isSelected}
-                                      onChange={async () => {
-                                        // Cambiar selección temporal (puede deseleccionar si hace click de nuevo)
+                                      onClick={async (e) => {
+                                        // Permitir deseleccionar si ya está seleccionado
                                         if (isSelected) {
+                                          e.preventDefault();
                                           setTemporarySelectedChain(null);
                                           setSelectedVariationForPrice(null);
+                                          setEditingVariation(null);
                                           setCalculatedSumPrice(null);
                                           setCalculatedDisplayPrice(null);
                                           setCustomDisplayPrice(null);
                                         } else {
                                           setTemporarySelectedChain(chain.brand);
+                                          setEditingVariation(null); // Asegurar que no hay otra en edición
                                           
                                           // Calcular precio
                                           const sumPrice = editingProduct.price + chain.price;
@@ -2015,6 +2058,7 @@ const AdminPanel = () => {
                                           setSelectedVariationForPrice(chain);
                                         }
                                       }}
+                                      onChange={() => {}} // Manejar todo en onClick
                                       className="w-5 h-5 text-blue-600 focus:ring-blue-500 cursor-pointer"
                                     />
                                     <div className="flex-1">
@@ -2033,12 +2077,16 @@ const AdminPanel = () => {
                         
                         {temporarySelectedChain && selectedVariationForPrice && (
                           <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded text-sm">
-                            <p className="font-semibold text-blue-900 mb-1">Cadena a guardar:</p>
+                            <p className="font-semibold text-blue-900 mb-1">
+                              {editingVariation ? 'Variación en edición:' : 'Cadena a guardar:'}
+                            </p>
                             <p className="text-blue-700">
                               {selectedVariationForPrice.brand} - ${selectedVariationForPrice.price.toLocaleString('es-CL')} CLP
                             </p>
                             <p className="text-blue-600 mt-1 text-xs">
-                              Presiona "Guardar Cadenas y Precio" para guardar esta cadena
+                              {editingVariation 
+                                ? 'Presiona "Actualizar Variación y Precio" para guardar los cambios'
+                                : 'Presiona "Guardar Cadenas y Precio" para guardar esta cadena'}
                             </p>
                           </div>
                         )}
@@ -2051,9 +2099,12 @@ const AdminPanel = () => {
                               return;
                             }
                             try {
-                              // Agregar la cadena temporal a las guardadas
+                              // Si está editando una existente, solo actualizar precio
+                              // Si es nueva, agregarla a las guardadas
                               const newSaved = new Set(selectedPendantChains);
-                              newSaved.add(temporarySelectedChain);
+                              if (!newSaved.has(temporarySelectedChain)) {
+                                newSaved.add(temporarySelectedChain);
+                              }
                               
                               const response = await fetch(`/api/pendants/${editingProduct.id}/chains`, {
                                 method: 'POST',
@@ -2079,15 +2130,16 @@ const AdminPanel = () => {
                                   }
                                 }
                                 
-                                // Actualizar estado: la cadena temporal ahora está guardada
+                                // Actualizar estado
                                 setSelectedPendantChains(newSaved);
                                 setTemporarySelectedChain(null);
+                                setEditingVariation(null);
                                 setSelectedVariationForPrice(null);
                                 setCalculatedSumPrice(null);
                                 setCalculatedDisplayPrice(null);
                                 setCustomDisplayPrice(null);
                                 
-                                setToastMessage('Cadena guardada correctamente');
+                                setToastMessage(editingVariation ? 'Variación actualizada correctamente' : 'Cadena guardada correctamente');
                                 setShowToast(true);
                                 
                                 // Recargar productos para actualizar contador
@@ -2102,7 +2154,7 @@ const AdminPanel = () => {
                           }}
                           className="w-full px-4 py-2 bg-black text-white text-sm font-medium hover:bg-black/90 transition-colors rounded"
                         >
-                          Guardar Cadenas y Precio
+                          {editingVariation ? 'Actualizar Variación y Precio' : 'Guardar Cadenas y Precio'}
                         </button>
                       </div>
                     ) : (
@@ -2237,15 +2289,6 @@ const AdminPanel = () => {
                     className="flex-1 px-6 py-3 border border-black/20 text-black text-base font-medium hover:border-black/40 transition-colors"
                   >
                     Cancelar
-                  </button>
-                  <button
-                    onClick={() => {
-                      setIsEditModalOpen(false);
-                      handleEditProduct(editingProduct, 'products');
-                    }}
-                    className="px-6 py-3 border border-black/20 text-black text-base font-medium hover:border-black/40 transition-colors"
-                  >
-                    Editar Completo
                   </button>
                 </div>
               </div>
