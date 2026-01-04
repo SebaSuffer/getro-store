@@ -206,9 +206,9 @@ const AdminPanel = () => {
   const handleEditProduct = async (product: Product, fromTab: 'products' = 'products') => {
     try {
       console.log(`[ADMIN] ✏️ Editing product: ${product.id} - ${product.name} from ${fromTab}`);
-      setSelectedProduct(product);
-      setEditingProduct({ ...product });
-      setIsCreating(false);
+    setSelectedProduct(product);
+    setEditingProduct({ ...product });
+    setIsCreating(false);
       setIsEditModalOpen(true);
       
       // Cargar imágenes del producto (no bloquear si falla)
@@ -272,11 +272,11 @@ const AdminPanel = () => {
     try {
       console.log(`[ADMIN] 📸 Loading images for product ${productId}`);
       const response = await fetch(`/api/products/${productId}/images`);
-      if (response.ok) {
+        if (response.ok) {
         const images = await response.json();
         console.log(`[ADMIN] ✅ Loaded ${images?.length || 0} images for product ${productId}`);
         setProductImages(images || []);
-      } else {
+          } else {
         console.warn(`[ADMIN] ⚠️ Failed to load images for product ${productId}: ${response.status}`);
         setProductImages([]);
       }
@@ -314,7 +314,7 @@ const AdminPanel = () => {
         setNewImageAlt('');
         setToastMessage('Imagen agregada correctamente');
         setShowToast(true);
-      } else {
+        } else {
         const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
         console.error(`[ADMIN] ❌ Failed to add image: ${response.status} - ${errorData.error || 'Unknown error'}`);
         setToastMessage(`Error: ${errorData.error || 'No se pudo agregar la imagen'}`);
@@ -337,7 +337,7 @@ const AdminPanel = () => {
         await loadProductImages(editingProduct.id);
         setToastMessage('Imagen eliminada');
         setShowToast(true);
-      } else {
+    } else {
         throw new Error('Error al eliminar imagen');
       }
     } catch (error: any) {
@@ -607,10 +607,10 @@ const AdminPanel = () => {
           const updatedProduct = updatedProducts.find(p => p.id === savedProductId);
         if (updatedProduct) {
           setSelectedProduct(updatedProduct);
-          }
         }
-        setEditingProduct(null);
-        setIsCreating(false);
+      }
+      setEditingProduct(null);
+      setIsCreating(false);
       }
       
       setToastMessage(isCreating ? 'Producto creado correctamente' : 'Producto actualizado correctamente');
@@ -1524,8 +1524,8 @@ const AdminPanel = () => {
                       {/* Gestor de Variaciones */}
                       {editingProduct.id && !editingProduct.id.startsWith('new-') && (
                         <div className="space-y-4">
-                          <ChainVariationsManager
-                            productId={editingProduct.id}
+                        <ChainVariationsManager
+                          productId={editingProduct.id}
                             baseProductPrice={editingProduct.price}
                             onVariationsChange={(variations) => {
                               setChainVariations(variations);
@@ -2156,8 +2156,8 @@ const AdminPanel = () => {
                         >
                           {editingVariation ? 'Actualizar Variación y Precio' : 'Guardar Cadenas y Precio'}
                         </button>
-                      </div>
-                    ) : (
+              </div>
+            ) : (
                       <div className="space-y-4">
                         <h3 className="text-lg font-semibold text-black">Variaciones</h3>
                         <div className="bg-gray-50 border-2 border-gray-200 rounded-lg p-6 h-full flex items-center justify-center">
@@ -2165,8 +2165,8 @@ const AdminPanel = () => {
                             Las variaciones solo están disponibles para productos de categoría "Colgantes"
                           </p>
                         </div>
-                      </div>
-                    )}
+              </div>
+            )}
 
                     {/* Cuadrante 4: Cálculos (abajo derecha) - Solo para Colgantes */}
                     {editingProduct.category === 'Colgantes' && editingProduct.id && !editingProduct.id.startsWith('new-') ? (
@@ -2179,7 +2179,7 @@ const AdminPanel = () => {
                                 calculate
                               </span>
                               <h4 className="text-lg font-bold text-black">Cálculo de Precio</h4>
-                            </div>
+          </div>
                             
                             <div className="bg-white rounded-lg p-4 space-y-3 border border-blue-200">
                               <div className="flex justify-between items-center pb-2 border-b border-blue-200">
@@ -2220,7 +2220,7 @@ const AdminPanel = () => {
                                   const value = parseInt(e.target.value) || 0;
                                   setCustomDisplayPrice(value);
                                 }}
-                                className="w-full bg-white border-2 border-blue-300 px-3 py-2 text-base font-semibold text-black focus:outline-none focus:border-blue-500 rounded-lg"
+                                className="w-full bg-white border-2 border-blue-300 px-3 py-2 text-base font-semibold text-black focus:outline-none focus:border-blue-500 rounded-lg [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                 placeholder="Precio editable"
                               />
                             </div>
@@ -2352,7 +2352,7 @@ const AdminPanel = () => {
                 )}
               </div>
             </div>
-          </div>
+        </div>
         )}
 
         {activeTab === 'newsletter' && (
