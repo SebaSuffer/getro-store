@@ -3,7 +3,6 @@ const AUTH_SESSION_KEY = 'gotra_session_token';
 
 // Usuarios permitidos (hardcodeado por ahora, se puede migrar a BD)
 const ALLOWED_USERS: Record<string, string> = {
-  'seba': 'seba2323',
   'adminsgotra': '$Gotra23$',
 };
 
