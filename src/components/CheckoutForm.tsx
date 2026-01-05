@@ -143,42 +143,8 @@ const CheckoutForm = () => {
       
       // Procesar según método de pago
       if (formData.payment_method === 'mercadopago') {
-        // Intentar crear preferencia con monto específico usando la API
-        try {
-          const response = await fetch('/api/mercadopago/create-preference', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              items: cartItems.map(item => ({
-                product: {
-                  name: item.product.name,
-                  price: item.product.price + (item.variation?.price_modifier || 0),
-                },
-                quantity: item.quantity,
-              })),
-              orderId,
-              total_amount: total,
-              back_urls: {
-                success: `${window.location.origin}/orden-confirmada?id=${orderId}`,
-                failure: `${window.location.origin}/checkout?error=payment_failed`,
-                pending: `${window.location.origin}/checkout?status=pending`,
-              },
-            }),
-          });
-
-          if (response.ok) {
-            const data = await response.json();
-            // Si tenemos un init_point, usarlo; sino, usar el link directo con monto
-            if (data.init_point) {
-              window.location.href = data.init_point;
-              return;
-            }
-          }
-        } catch (error) {
-          console.error('Error creating Mercado Pago preference:', error);
-        }
-        
-        // Fallback: usar link directo con parámetro de monto (si el link lo soporta)
+        // Redirigir al link de Mercado Pago con el monto total como parámetro
+        // El parámetro 'amount' pre-llena el monto en el formulario de Mercado Pago
         const mercadoPagoUrl = `https://link.mercadopago.cl/lumiereettenebres?amount=${total}`;
         window.location.href = mercadoPagoUrl;
         return;
