@@ -16,6 +16,7 @@ const AdminPanel = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [visibilityFilter, setVisibilityFilter] = useState<'all' | 'active' | 'inactive'>('all');
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [subscribers, setSubscribers] = useState<any[]>([]);
@@ -88,7 +89,10 @@ const AdminPanel = () => {
 
   const loadProducts = async () => {
     try {
-      const allProducts = await getAllProducts();
+      // En el admin, cargar todos los productos (incluyendo inactivos)
+      const response = await fetch('/api/products?admin=true');
+      if (!response.ok) throw new Error('Error al cargar productos');
+      const allProducts = await response.json();
       setProducts(allProducts);
       setFilteredProducts(allProducts);
       
@@ -132,24 +136,32 @@ const AdminPanel = () => {
     }
   };
 
-  // Filtrar productos por búsqueda
+  // Filtrar productos por búsqueda y visibilidad
   useEffect(() => {
-    if (!searchQuery.trim()) {
-      setFilteredProducts(products);
-      return;
+    let filtered = products;
+
+    // Filtrar por visibilidad
+    if (visibilityFilter === 'active') {
+      filtered = filtered.filter(p => p.is_active !== false);
+    } else if (visibilityFilter === 'inactive') {
+      filtered = filtered.filter(p => p.is_active === false);
     }
 
-    const query = searchQuery.toLowerCase().trim();
-    const filtered = products.filter((product) => {
-      return (
-        product.name.toLowerCase().includes(query) ||
-        product.category.toLowerCase().includes(query) ||
-        (product.description && product.description.toLowerCase().includes(query)) ||
-        product.id.toLowerCase().includes(query)
-      );
-    });
+    // Filtrar por búsqueda
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase().trim();
+      filtered = filtered.filter((product) => {
+        return (
+          product.name.toLowerCase().includes(query) ||
+          product.category.toLowerCase().includes(query) ||
+          (product.description && product.description.toLowerCase().includes(query)) ||
+          product.id.toLowerCase().includes(query)
+        );
+      });
+    }
+
     setFilteredProducts(filtered);
-  }, [searchQuery, products]);
+  }, [searchQuery, products, visibilityFilter]);
 
   const loadSubscribers = async () => {
     try {
@@ -375,6 +387,7 @@ const AdminPanel = () => {
       image_alt: '',
       is_new: false,
       is_featured: false,
+      is_active: true,
     };
     setEditingProduct(newProduct);
     setSelectedProduct(null);
@@ -523,6 +536,7 @@ const AdminPanel = () => {
             image_alt: editingProduct.image_alt || editingProduct.name,
             is_new: editingProduct.is_new || false,
             is_featured: editingProduct.is_featured || false,
+            is_active: editingProduct.is_active !== false,
             chain_type: (editingProduct.category === 'Cadenas' || editingProduct.category === 'Colgantes') ? chainType : undefined,
           }),
         });
@@ -541,6 +555,7 @@ const AdminPanel = () => {
             image_alt: editingProduct.image_alt || editingProduct.name,
             is_new: editingProduct.is_new,
             is_featured: editingProduct.is_featured,
+            is_active: editingProduct.is_active !== false,
             chain_type: (editingProduct.category === 'Cadenas' || editingProduct.category === 'Colgantes') ? chainType : undefined,
           }),
         });
@@ -719,12 +734,62 @@ const AdminPanel = () => {
 
         {activeTab === 'products' && (
           <div className="space-y-6">
+            {/* Filtros y búsqueda */}
+            <div className="flex flex-col sm:flex-row gap-4 mb-6">
+              <div className="flex-1">
+                <input
+                  type="text"
+                  placeholder="Buscar productos..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full bg-white border border-black/20 px-4 py-2.5 text-black text-base font-normal focus:outline-none focus:border-black/40"
+                />
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setVisibilityFilter('all')}
+                  className={`px-4 py-2.5 text-sm font-medium transition-colors ${
+                    visibilityFilter === 'all'
+                      ? 'bg-black text-white'
+                      : 'bg-white border border-black/20 text-black hover:border-black/40'
+                  }`}
+                >
+                  Todos
+                </button>
+                <button
+                  onClick={() => setVisibilityFilter('active')}
+                  className={`px-4 py-2.5 text-sm font-medium transition-colors ${
+                    visibilityFilter === 'active'
+                      ? 'bg-black text-white'
+                      : 'bg-white border border-black/20 text-black hover:border-black/40'
+                  }`}
+                >
+                  Visibles
+                </button>
+                <button
+                  onClick={() => setVisibilityFilter('inactive')}
+                  className={`px-4 py-2.5 text-sm font-medium transition-colors ${
+                    visibilityFilter === 'inactive'
+                      ? 'bg-black text-white'
+                      : 'bg-white border border-black/20 text-black hover:border-black/40'
+                  }`}
+                >
+                  Ocultos
+                </button>
+              </div>
+            </div>
+
             {/* Tabla de productos (fusionada de Stock) */}
             <div className="flex items-center justify-between mb-6">
               <div>
                 <h2 className="text-2xl font-bold text-black">Gestión de Productos</h2>
                 <p className="text-base text-black/60 mt-1">
                   {products.filter(p => p.is_featured && p.category !== 'Cadenas').length} de 8 productos destacados
+                  {visibilityFilter !== 'all' && (
+                    <span className="ml-2">
+                      ({filteredProducts.filter(p => p.category !== 'Cadenas').length} {visibilityFilter === 'active' ? 'visibles' : 'ocultos'})
+                    </span>
+                  )}
                 </p>
               </div>
               <div className="flex gap-3">
@@ -772,14 +837,14 @@ const AdminPanel = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {products.filter(p => p.category !== 'Cadenas').length === 0 ? (
+                    {filteredProducts.filter(p => p.category !== 'Cadenas').length === 0 ? (
                       <tr>
                         <td colSpan={9} className="px-6 py-12 text-center text-black/50 font-normal text-base">
                           No hay productos disponibles
                         </td>
                       </tr>
                     ) : (
-                      products.filter(p => p.category !== 'Cadenas').map((product) => (
+                      filteredProducts.filter(p => p.category !== 'Cadenas').map((product) => (
                         <tr 
                           key={product.id} 
                           className="border-t border-black/5 hover:bg-black/2 transition-colors"

@@ -80,7 +80,7 @@ export const PUT: APIRoute = async ({ params, request }) => {
     }
 
     const body = await request.json();
-    const { name, description, price, stock, image_url, image_alt, category, is_new, is_featured, chain_type, display_price } = body;
+    const { name, description, price, stock, image_url, image_alt, category, is_new, is_featured, is_active, chain_type, display_price } = body;
 
     const client = getTursoClient();
     
@@ -99,7 +99,19 @@ export const PUT: APIRoute = async ({ params, request }) => {
     
     const hasDisplayPrice = tableInfo.rows.some((row: any) => row.name === 'display_price');
     
-    if (hasDisplayPrice) {
+    // Verificar si existe is_active
+    const hasIsActive = tableInfo.rows.some((row: any) => row.name === 'is_active');
+    
+    if (hasDisplayPrice && hasIsActive) {
+      await client.execute({
+        sql: `UPDATE products 
+              SET name = ?, description = ?, price = ?, stock = ?, 
+                  image_url = ?, image_alt = ?, category = ?, 
+                  is_new = ?, is_featured = ?, is_active = ?, display_price = ?, updated_at = CURRENT_TIMESTAMP
+              WHERE id = ?`,
+        args: [name, description, price, stock, image_url, image_alt, category, is_new ? 1 : 0, is_featured ? 1 : 0, is_active !== undefined ? (is_active ? 1 : 0) : 1, display_price || null, id],
+      });
+    } else if (hasDisplayPrice) {
       await client.execute({
         sql: `UPDATE products 
               SET name = ?, description = ?, price = ?, stock = ?, 
@@ -107,6 +119,15 @@ export const PUT: APIRoute = async ({ params, request }) => {
                   is_new = ?, is_featured = ?, display_price = ?, updated_at = CURRENT_TIMESTAMP
               WHERE id = ?`,
         args: [name, description, price, stock, image_url, image_alt, category, is_new ? 1 : 0, is_featured ? 1 : 0, display_price || null, id],
+      });
+    } else if (hasIsActive) {
+      await client.execute({
+        sql: `UPDATE products 
+              SET name = ?, description = ?, price = ?, stock = ?, 
+                  image_url = ?, image_alt = ?, category = ?, 
+                  is_new = ?, is_featured = ?, is_active = ?, updated_at = CURRENT_TIMESTAMP
+              WHERE id = ?`,
+        args: [name, description, price, stock, image_url, image_alt, category, is_new ? 1 : 0, is_featured ? 1 : 0, is_active !== undefined ? (is_active ? 1 : 0) : 1, id],
       });
     } else {
       await client.execute({

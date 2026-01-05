@@ -9,6 +9,7 @@ export interface Product {
   category: string;
   is_new: boolean;
   is_featured: boolean;
+  is_active?: boolean;
   has_variations?: boolean;
   variation_count?: number;
 }
@@ -47,7 +48,11 @@ export const getAllProducts = async (): Promise<Product[]> => {
         return [];
       }
 
-      const result = await client.execute('SELECT * FROM products ORDER BY created_at DESC');
+      // En la landing page, solo mostrar productos activos
+      // En el admin, mostrar todos (se filtra en el cliente)
+      const sql = 'SELECT * FROM products ORDER BY created_at DESC';
+      
+      const result = await client.execute(sql);
       
       const products = result.rows.map((row: any) => ({
         id: row.id,
@@ -60,6 +65,7 @@ export const getAllProducts = async (): Promise<Product[]> => {
         category: row.category,
         is_new: Boolean(row.is_new),
         is_featured: Boolean(row.is_featured),
+        is_active: row.is_active !== undefined ? Boolean(row.is_active) : true,
       }));
 
       // Actualizar cache

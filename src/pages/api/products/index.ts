@@ -35,11 +35,17 @@ export const GET: APIRoute = async ({ request }) => {
     console.log(`[API-PRODUCTS-${requestId}] ✅ Turso client connected (took ${clientTime}ms)`);
     console.log(`[API-PRODUCTS-${requestId}] 📝 Executing SQL query...`);
     
+    // Verificar si es una petición del admin (header o query param)
+    const url = new URL(request.url);
+    const isAdmin = url.searchParams.get('admin') === 'true' || request.headers.get('x-admin') === 'true';
+    
     const queryStartTime = Date.now();
+    const whereClause = isAdmin ? '' : 'WHERE (p.is_active = 1 OR p.is_active IS NULL)';
     const result = await client.execute(`
       SELECT p.*, COUNT(pv.id) AS variation_count
       FROM products p
       LEFT JOIN product_variations pv ON p.id = pv.product_id
+      ${whereClause}
       GROUP BY p.id
       ORDER BY p.created_at DESC
     `);
@@ -72,6 +78,7 @@ export const GET: APIRoute = async ({ request }) => {
       category: row.category,
       is_new: Boolean(row.is_new),
       is_featured: Boolean(row.is_featured),
+      is_active: row.is_active !== undefined ? Boolean(row.is_active) : true,
       has_variations: Boolean(row.variation_count),
       variation_count: row.variation_count,
       display_price: row.display_price || null,
@@ -136,8 +143,8 @@ export const POST: APIRoute = async ({ request }) => {
 
     // Insertar producto
     await client.execute({
-      sql: `INSERT INTO products (id, name, description, price, stock, category, image_url, image_alt, is_new, is_featured, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))`,
+      sql: `INSERT INTO products (id, name, description, price, stock, category, image_url, image_alt, is_new, is_featured, is_active, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))`,
       args: [
         id,
         name,
@@ -149,6 +156,7 @@ export const POST: APIRoute = async ({ request }) => {
         image_alt || name,
         is_new ? 1 : 0,
         is_featured ? 1 : 0,
+        (body.is_active !== undefined ? (body.is_active ? 1 : 0) : 1), // Por defecto activo
       ],
     });
 

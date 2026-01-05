@@ -1,7 +1,11 @@
 const AUTH_STORAGE_KEY = 'gotra_auth';
 const AUTH_SESSION_KEY = 'gotra_session_token';
-const AUTH_USER = 'seba';
-const AUTH_PASSWORD = 'seba2323';
+
+// Usuarios permitidos (hardcodeado por ahora, se puede migrar a BD)
+const ALLOWED_USERS: Record<string, string> = {
+  'seba': 'seba2323',
+  'adminsgotra': '$Gotra23$',
+};
 
 // Generar token de sesión único
 const generateSessionToken = (): string => {
@@ -16,7 +20,7 @@ export interface AuthUser {
 }
 
 export const login = (username: string, password: string): boolean => {
-  if (username === AUTH_USER && password === AUTH_PASSWORD) {
+  if (ALLOWED_USERS[username] && ALLOWED_USERS[username] === password) {
     const sessionToken = generateSessionToken();
     const authData = {
       username,
@@ -69,7 +73,7 @@ export const isAuthenticated = (): boolean => {
       }
     }
     
-    return auth.isAuthenticated === true && auth.username === AUTH_USER;
+    return auth.isAuthenticated === true && ALLOWED_USERS[auth.username] !== undefined;
   } catch {
     return false;
   }
