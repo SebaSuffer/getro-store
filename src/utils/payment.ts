@@ -1,26 +1,72 @@
 // Utilidades para pasarelas de pago
 
 export interface PaymentMethod {
-  id: 'mercadopago' | 'transbank' | 'transfer';
+  id: 'mercadopago' | 'transfer';
   name: string;
   icon?: string;
+  enabled?: boolean;
 }
 
+export interface BankTransferSettings {
+  bank_name: string;
+  account_type: string;
+  account_number: string;
+  rut: string;
+  account_holder: string;
+  email: string;
+  is_enabled: boolean;
+}
+
+// Cargar métodos de pago dinámicamente
+export const getPaymentMethods = async (): Promise<PaymentMethod[]> => {
+  const methods: PaymentMethod[] = [
+    {
+      id: 'mercadopago',
+      name: 'Mercado Pago',
+      icon: 'https://res.cloudinary.com/ddzoh72zv/image/upload/f_auto,q_auto/v1766458849/Mercado-Pago-Logo_kvhgin.png',
+      enabled: true,
+    },
+  ];
+
+  // Cargar estado de transferencia bancaria
+  try {
+    const response = await fetch('/api/bank-transfer-settings');
+    if (response.ok) {
+      const settings = await response.json();
+      methods.push({
+        id: 'transfer',
+        name: 'Transferencia Bancaria',
+        icon: 'https://res.cloudinary.com/ddzoh72zv/image/upload/f_auto,q_auto/v1766458838/transferencia-logo_fzj0gc.png',
+        enabled: settings.is_enabled === true,
+      });
+    } else {
+      // Si falla, agregar deshabilitado por defecto
+      methods.push({
+        id: 'transfer',
+        name: 'Transferencia Bancaria',
+        icon: 'https://res.cloudinary.com/ddzoh72zv/image/upload/f_auto,q_auto/v1766458838/transferencia-logo_fzj0gc.png',
+        enabled: false,
+      });
+    }
+  } catch (error) {
+    methods.push({
+      id: 'transfer',
+      name: 'Transferencia Bancaria',
+      icon: 'https://res.cloudinary.com/ddzoh72zv/image/upload/f_auto,q_auto/v1766458838/transferencia-logo_fzj0gc.png',
+      enabled: false,
+    });
+  }
+
+  return methods;
+};
+
+// Mantener para compatibilidad (solo Mercado Pago)
 export const PAYMENT_METHODS: PaymentMethod[] = [
   {
     id: 'mercadopago',
     name: 'Mercado Pago',
     icon: 'https://res.cloudinary.com/ddzoh72zv/image/upload/f_auto,q_auto/v1766458849/Mercado-Pago-Logo_kvhgin.png',
-  },
-  {
-    id: 'transbank',
-    name: 'Transbank (Webpay)',
-    icon: 'https://res.cloudinary.com/ddzoh72zv/image/upload/f_auto,q_auto/v1766458837/Transbank-1200px-logo_ljg48x.png',
-  },
-  {
-    id: 'transfer',
-    name: 'Transferencia Bancaria',
-    icon: 'https://res.cloudinary.com/ddzoh72zv/image/upload/f_auto,q_auto/v1766458838/transferencia-logo_fzj0gc.png',
+    enabled: true,
   },
 ];
 

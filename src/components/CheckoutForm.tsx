@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { getCart, getCartTotal, clearCart, processPurchase } from '../utils/cart';
-import { createMercadoPagoPreference, createTransbankTransaction, PAYMENT_METHODS } from '../utils/payment';
+import { createMercadoPagoPreference, getPaymentMethods, type PaymentMethod } from '../utils/payment';
 import type { CartItem } from '../data/products';
 
 interface FormData {
@@ -8,7 +8,16 @@ interface FormData {
   customer_email: string;
   customer_phone: string;
   customer_address: string;
-  payment_method: 'mercadopago' | 'transbank' | 'transfer';
+  payment_method: 'mercadopago' | 'transfer';
+}
+
+interface BankTransferData {
+  bank_name: string;
+  account_type: string;
+  account_number: string;
+  rut: string;
+  account_holder: string;
+  email: string;
 }
 
 const generateOrderId = (): string => {
@@ -36,6 +45,8 @@ const CheckoutForm = () => {
     payment_method: 'mercadopago',
   });
   const [errors, setErrors] = useState<Partial<Record<keyof FormData, string>>>({});
+  const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
+  const [bankTransferData, setBankTransferData] = useState<BankTransferData | null>(null);
 
   useEffect(() => {
     const cart = getCart();
@@ -46,6 +57,27 @@ const CheckoutForm = () => {
     
     setCartItems(cart);
     setTotal(getCartTotal());
+    
+    // Cargar métodos de pago
+    const loadPaymentMethods = async () => {
+      const methods = await getPaymentMethods();
+      setPaymentMethods(methods);
+    };
+    loadPaymentMethods();
+    
+    // Cargar datos de transferencia bancaria
+    const loadBankTransferData = async () => {
+      try {
+        const response = await fetch('/api/bank-transfer-settings');
+        if (response.ok) {
+          const data = await response.json();
+          setBankTransferData(data);
+        }
+      } catch (error) {
+        console.error('Error loading bank transfer data:', error);
+      }
+    };
+    loadBankTransferData();
   }, []);
 
   const validateForm = (): boolean => {
@@ -126,11 +158,6 @@ const CheckoutForm = () => {
 
         // Redirigir a Mercado Pago
         window.location.href = preferenceUrl;
-        return;
-      } else if (formData.payment_method === 'transbank') {
-        // Por ahora solo mostrar mensaje - funcionalidad pendiente
-        alert('Transbank estará disponible próximamente. Por favor, selecciona otro método de pago.');
-        setIsSubmitting(false);
         return;
       } else if (formData.payment_method === 'transfer') {
         // Transferencia bancaria - procesar compra y redirigir
@@ -256,24 +283,32 @@ const CheckoutForm = () => {
             <h2 className="text-base font-semibold text-black mb-6 font-sans">Método de Pago</h2>
             
             <div className="space-y-3">
-              {PAYMENT_METHODS.map((method) => (
+              {paymentMethods.map((method) => (
                 <label
                   key={method.id}
-                  className="flex items-center gap-4 p-4 border border-black/10 cursor-pointer hover:border-black/20 transition-colors"
+                  className={`flex items-center gap-4 p-4 border transition-colors ${
+                    method.enabled === false
+                      ? 'border-black/5 bg-gray-50 cursor-not-allowed opacity-60'
+                      : 'border-black/10 cursor-pointer hover:border-black/20'
+                  }`}
                 >
                   <input
                     type="radio"
                     name="payment_method"
                     value={method.id}
                     checked={formData.payment_method === method.id}
-                    onChange={(e) => handleInputChange('payment_method', e.target.value as any)}
-                    className="text-black"
+                    onChange={(e) => method.enabled !== false && handleInputChange('payment_method', e.target.value as any)}
+                    disabled={method.enabled === false}
+                    className="text-black disabled:cursor-not-allowed"
                   />
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 flex-1">
                     {method.icon && (
                       <img src={method.icon} alt={method.name} className="h-8 w-auto object-contain" />
                     )}
                     <span className="text-base font-normal text-black font-sans">{method.name}</span>
+                    {method.enabled === false && (
+                      <span className="text-xs text-black/50 font-normal ml-auto">Próximamente</span>
+                    )}
                   </div>
                 </label>
               ))}
@@ -281,36 +316,48 @@ const CheckoutForm = () => {
           </div>
 
           {/* Información de Transferencia Bancaria */}
-          {formData.payment_method === 'transfer' && (
+          {formData.payment_method === 'transfer' && bankTransferData && (
             <div className="border-2 border-black/20 bg-black/5 p-6">
               <h3 className="text-base font-semibold text-black mb-5 font-sans">Datos para Transferencia Bancaria</h3>
               
               {/* Datos Bancarios */}
               <div className="space-y-3 mb-6">
-                <div className="flex justify-between items-start">
-                  <span className="text-sm font-medium text-black/70 font-sans">Banco:</span>
-                  <span className="text-sm font-normal text-black font-sans text-right">Banco de Chile</span>
-                </div>
-                <div className="flex justify-between items-start">
-                  <span className="text-sm font-medium text-black/70 font-sans">Tipo de Cuenta:</span>
-                  <span className="text-sm font-normal text-black font-sans text-right">Cuenta Corriente</span>
-                </div>
-                <div className="flex justify-between items-start">
-                  <span className="text-sm font-medium text-black/70 font-sans">Número de Cuenta:</span>
-                  <span className="text-sm font-normal text-black font-sans text-right font-mono">1234567890</span>
-                </div>
-                <div className="flex justify-between items-start">
-                  <span className="text-sm font-medium text-black/70 font-sans">RUT:</span>
-                  <span className="text-sm font-normal text-black font-sans text-right font-mono">12.345.678-9</span>
-                </div>
-                <div className="flex justify-between items-start">
-                  <span className="text-sm font-medium text-black/70 font-sans">Titular:</span>
-                  <span className="text-sm font-normal text-black font-sans text-right">GOTRA Joyería</span>
-                </div>
-                <div className="flex justify-between items-start">
-                  <span className="text-sm font-medium text-black/70 font-sans">Email:</span>
-                  <span className="text-sm font-normal text-black font-sans text-right">contacto@gotrachile.com</span>
-                </div>
+                {bankTransferData.bank_name && (
+                  <div className="flex justify-between items-start">
+                    <span className="text-sm font-medium text-black/70 font-sans">Banco:</span>
+                    <span className="text-sm font-normal text-black font-sans text-right">{bankTransferData.bank_name}</span>
+                  </div>
+                )}
+                {bankTransferData.account_type && (
+                  <div className="flex justify-between items-start">
+                    <span className="text-sm font-medium text-black/70 font-sans">Tipo de Cuenta:</span>
+                    <span className="text-sm font-normal text-black font-sans text-right">{bankTransferData.account_type}</span>
+                  </div>
+                )}
+                {bankTransferData.account_number && (
+                  <div className="flex justify-between items-start">
+                    <span className="text-sm font-medium text-black/70 font-sans">Número de Cuenta:</span>
+                    <span className="text-sm font-normal text-black font-sans text-right font-mono">{bankTransferData.account_number}</span>
+                  </div>
+                )}
+                {bankTransferData.rut && (
+                  <div className="flex justify-between items-start">
+                    <span className="text-sm font-medium text-black/70 font-sans">RUT:</span>
+                    <span className="text-sm font-normal text-black font-sans text-right font-mono">{bankTransferData.rut}</span>
+                  </div>
+                )}
+                {bankTransferData.account_holder && (
+                  <div className="flex justify-between items-start">
+                    <span className="text-sm font-medium text-black/70 font-sans">Titular:</span>
+                    <span className="text-sm font-normal text-black font-sans text-right">{bankTransferData.account_holder}</span>
+                  </div>
+                )}
+                {bankTransferData.email && (
+                  <div className="flex justify-between items-start">
+                    <span className="text-sm font-medium text-black/70 font-sans">Email:</span>
+                    <span className="text-sm font-normal text-black font-sans text-right">{bankTransferData.email}</span>
+                  </div>
+                )}
               </div>
               
               {/* Instrucciones de Pago */}
@@ -319,7 +366,7 @@ const CheckoutForm = () => {
                 <ol className="space-y-2.5 text-sm text-black/80 font-normal font-sans list-decimal list-inside mb-4">
                   <li>Realiza la transferencia por el monto exacto de <strong className="text-black">${total.toLocaleString('es-CL')} CLP</strong> a la cuenta indicada arriba.</li>
                   <li>Una vez completada la transferencia, recibirás un número de pedido en la página de confirmación.</li>
-                  <li>Envía el comprobante de transferencia al email <strong className="text-black">contacto@gotrachile.com</strong> con el asunto: <strong className="text-black">"Comprobante de Pago - [Tu número de pedido]"</strong></li>
+                  <li>Envía el comprobante de transferencia al email <strong className="text-black">{bankTransferData.email || 'contacto@gotrachile.com'}</strong> con el asunto: <strong className="text-black">"Comprobante de Pago - [Tu número de pedido]"</strong></li>
                   <li>Incluye en el email tu nombre completo y el número de pedido que recibiste.</li>
                   <li>Una vez verificado el pago, procesaremos tu pedido y te enviaremos un email de confirmación con los detalles de envío.</li>
                 </ol>

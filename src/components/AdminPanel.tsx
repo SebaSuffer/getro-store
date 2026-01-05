@@ -22,7 +22,16 @@ const AdminPanel = () => {
   const [subscribers, setSubscribers] = useState<any[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
-  const [activeTab, setActiveTab] = useState<'products' | 'chains' | 'newsletter' | 'categories'>('products');
+  const [activeTab, setActiveTab] = useState<'products' | 'chains' | 'newsletter' | 'categories' | 'payments'>('products');
+  const [bankTransferSettings, setBankTransferSettings] = useState<any>({
+    bank_name: '',
+    account_type: '',
+    account_number: '',
+    rut: '',
+    account_holder: '',
+    email: '',
+    is_enabled: false,
+  });
   const [chains, setChains] = useState<any[]>([]);
   const [editingChain, setEditingChain] = useState<any>(null);
   const [isChainsModalOpen, setIsChainsModalOpen] = useState(false);
@@ -59,6 +68,7 @@ const AdminPanel = () => {
         loadSubscribers();
         loadCategories();
         loadChains();
+        loadBankTransferSettings();
       } else {
         window.location.href = '/login';
       }
@@ -180,6 +190,18 @@ const AdminPanel = () => {
     } catch (error) {
       console.error('Error loading categories:', error);
       setCategories([]);
+    }
+  };
+
+  const loadBankTransferSettings = async () => {
+    try {
+      const response = await fetch('/api/bank-transfer-settings');
+      if (response.ok) {
+        const data = await response.json();
+        setBankTransferSettings(data);
+      }
+    } catch (error) {
+      console.error('Error loading bank transfer settings:', error);
     }
   };
 
@@ -2386,6 +2408,114 @@ const AdminPanel = () => {
                 </div>
               </div>
             </div>
+        )}
+
+        {/* Tab de Pagos */}
+        {activeTab === 'payments' && (
+          <div className="space-y-6">
+            <h2 className="text-xl font-bold text-black">Configuración de Métodos de Pago</h2>
+            <div className="border border-black/10 bg-white p-6">
+              <h3 className="text-lg font-semibold text-black mb-6">Transferencia Bancaria</h3>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-semibold text-black mb-2">Banco</label>
+                  <input
+                    type="text"
+                    value={bankTransferSettings.bank_name || ''}
+                    onChange={(e) => setBankTransferSettings({ ...bankTransferSettings, bank_name: e.target.value })}
+                    placeholder="Ej: Banco de Chile"
+                    className="w-full bg-white border border-black/20 px-4 py-2.5 text-black text-base font-normal focus:outline-none focus:border-black/40"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-black mb-2">Tipo de Cuenta</label>
+                  <input
+                    type="text"
+                    value={bankTransferSettings.account_type || ''}
+                    onChange={(e) => setBankTransferSettings({ ...bankTransferSettings, account_type: e.target.value })}
+                    placeholder="Ej: Cuenta Corriente"
+                    className="w-full bg-white border border-black/20 px-4 py-2.5 text-black text-base font-normal focus:outline-none focus:border-black/40"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-black mb-2">Número de Cuenta</label>
+                  <input
+                    type="text"
+                    value={bankTransferSettings.account_number || ''}
+                    onChange={(e) => setBankTransferSettings({ ...bankTransferSettings, account_number: e.target.value })}
+                    placeholder="Ej: 1234567890"
+                    className="w-full bg-white border border-black/20 px-4 py-2.5 text-black text-base font-normal focus:outline-none focus:border-black/40"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-black mb-2">RUT</label>
+                  <input
+                    type="text"
+                    value={bankTransferSettings.rut || ''}
+                    onChange={(e) => setBankTransferSettings({ ...bankTransferSettings, rut: e.target.value })}
+                    placeholder="Ej: 12.345.678-9"
+                    className="w-full bg-white border border-black/20 px-4 py-2.5 text-black text-base font-normal focus:outline-none focus:border-black/40"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-black mb-2">Titular</label>
+                  <input
+                    type="text"
+                    value={bankTransferSettings.account_holder || ''}
+                    onChange={(e) => setBankTransferSettings({ ...bankTransferSettings, account_holder: e.target.value })}
+                    placeholder="Ej: GOTRA Joyería"
+                    className="w-full bg-white border border-black/20 px-4 py-2.5 text-black text-base font-normal focus:outline-none focus:border-black/40"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-black mb-2">Email para Comprobantes</label>
+                  <input
+                    type="email"
+                    value={bankTransferSettings.email || ''}
+                    onChange={(e) => setBankTransferSettings({ ...bankTransferSettings, email: e.target.value })}
+                    placeholder="Ej: contacto@gotrachile.com"
+                    className="w-full bg-white border border-black/20 px-4 py-2.5 text-black text-base font-normal focus:outline-none focus:border-black/40"
+                  />
+                </div>
+                <div className="flex items-center gap-3 pt-4 border-t border-black/10">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={bankTransferSettings.is_enabled || false}
+                      onChange={(e) => setBankTransferSettings({ ...bankTransferSettings, is_enabled: e.target.checked })}
+                      className="w-4 h-4 text-black focus:ring-black cursor-pointer"
+                    />
+                    <span className="text-sm font-normal text-black">Habilitar Transferencia Bancaria</span>
+                  </label>
+                </div>
+                <div className="flex gap-3 pt-4">
+                  <button
+                    onClick={async () => {
+                      try {
+                        const response = await fetch('/api/bank-transfer-settings', {
+                          method: 'PUT',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify(bankTransferSettings),
+                        });
+                        if (response.ok) {
+                          setToastMessage('Configuración guardada');
+                          setShowToast(true);
+                        } else {
+                          throw new Error('Error al guardar');
+                        }
+                      } catch (error) {
+                        setToastMessage('Error al guardar la configuración');
+                        setShowToast(true);
+                      }
+                    }}
+                    className="px-6 py-3 bg-black text-white text-base font-medium hover:bg-black/90 transition-colors"
+                  >
+                    Guardar
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
         )}
 
         {/* Tab de Categorías */}
