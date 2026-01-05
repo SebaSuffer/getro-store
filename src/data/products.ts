@@ -113,11 +113,13 @@ export const getAllProducts = async (): Promise<Product[]> => {
     }
     
     const parseStartTime = Date.now();
-    const products = await response.json();
+    const allProducts = await response.json();
+    // En el cliente (landing page), filtrar solo productos activos
+    const products = allProducts.filter((p: Product) => p.is_active !== false);
     const parseTime = Date.now() - parseStartTime;
     
     console.log(`[PRODUCTS-CLIENT] ⏱️ JSON parse completed in ${parseTime}ms`);
-    console.log(`[PRODUCTS-CLIENT] ✅ Loaded ${products.length} products from API`);
+    console.log(`[PRODUCTS-CLIENT] ✅ Loaded ${products.length} products from API (filtered from ${allProducts.length} total)`);
     
     if (products.length === 0) {
       console.warn('[PRODUCTS-CLIENT] ⚠️ WARNING: No products returned from API!');
