@@ -124,7 +124,7 @@ const CartView = () => {
                 </div>
                 
                 <p className="text-lg font-semibold text-black w-32 text-right font-sans">
-                  ${(item.product.price * item.quantity).toLocaleString('es-CL')} CLP
+                  ${((item.product.price + (item.variation?.price_modifier || 0)) * item.quantity).toLocaleString('es-CL')} CLP
                 </p>
                 
                 <button

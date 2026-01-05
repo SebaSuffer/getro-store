@@ -108,37 +108,56 @@ export const POST: APIRoute = async ({ request }) => {
           });
         }
       }
+      
+      // Usar UPDATE directo en lugar de INSERT ... ON CONFLICT para evitar problemas con foreign keys
+      await client.execute({
+        sql: `UPDATE chains SET 
+              brand = ?, 
+              name = ?, 
+              thickness = ?, 
+              length = ?, 
+              price = ?, 
+              stock = ?, 
+              image_url = ?, 
+              image_alt = ?, 
+              description = ?, 
+              is_active = ?, 
+              updated_at = datetime('now')
+              WHERE id = ?`,
+        args: [
+          brand.trim(),
+          chainName,
+          null, // thickness siempre null
+          null, // length siempre null
+          price || 0,
+          stock || 0,
+          cleanImageUrl,
+          cleanImageAlt,
+          cleanDescription,
+          is_active !== false ? 1 : 0,
+          chainId,
+        ],
+      });
+    } else {
+      // Para nuevas cadenas, usar INSERT
+      await client.execute({
+        sql: `INSERT INTO chains (id, brand, name, thickness, length, price, stock, image_url, image_alt, description, is_active, updated_at)
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))`,
+        args: [
+          chainId,
+          brand.trim(),
+          chainName,
+          null, // thickness siempre null
+          null, // length siempre null
+          price || 0,
+          stock || 0,
+          cleanImageUrl,
+          cleanImageAlt,
+          cleanDescription,
+          is_active !== false ? 1 : 0,
+        ],
+      });
     }
-
-    await client.execute({
-      sql: `INSERT INTO chains (id, brand, name, thickness, length, price, stock, image_url, image_alt, description, is_active, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
-            ON CONFLICT(id) DO UPDATE SET
-              brand = excluded.brand,
-              name = excluded.name,
-              thickness = excluded.thickness,
-              length = excluded.length,
-              price = excluded.price,
-              stock = excluded.stock,
-              image_url = excluded.image_url,
-              image_alt = excluded.image_alt,
-              description = excluded.description,
-              is_active = excluded.is_active,
-              updated_at = datetime('now')`,
-      args: [
-        chainId,
-        brand.trim(),
-        chainName,
-        null, // thickness siempre null
-        null, // length siempre null
-        price || 0,
-        stock || 0,
-        cleanImageUrl,
-        cleanImageAlt,
-        cleanDescription,
-        is_active !== false ? 1 : 0,
-      ],
-    });
 
     return new Response(
       JSON.stringify({ success: true, id: chainId }),
