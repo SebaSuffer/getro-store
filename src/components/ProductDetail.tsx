@@ -16,11 +16,12 @@ const ProductDetail = ({ product: initialProduct }: ProductDetailProps) => {
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
   const [product, setProduct] = useState(initialProduct);
   const [selectedVariation, setSelectedVariation] = useState<any>(null);
-  const [displayPrice, setDisplayPrice] = useState(initialProduct.price);
+  const [displayPrice, setDisplayPrice] = useState<number | null>(null); // null hasta calcular con cadena
   const [sumPrice, setSumPrice] = useState<number | null>(null);
   const [productImages, setProductImages] = useState<string[]>([initialProduct.image_url]);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [defaultChainBrand, setDefaultChainBrand] = useState<string | null>(null);
+  const [isCalculatingPrice, setIsCalculatingPrice] = useState(true);
 
   useEffect(() => {
     const checkCart = () => {
@@ -80,8 +81,7 @@ const ProductDetail = ({ product: initialProduct }: ProductDetailProps) => {
           console.error('Error loading images:', error);
         }
         
-        // Cargar cadenas disponibles para colgantes (nuevo sistema)
-        // Solo establecer defaultChainBrand, ChainVariationSelector manejará la selección automática
+        // Cargar cadenas disponibles para colgantes y calcular precio inicial
         if (currentProduct?.category === 'Colgantes') {
           try {
             const chainsResponse = await fetch(`/api/pendants/${product.id}/chains`);
@@ -92,12 +92,33 @@ const ProductDetail = ({ product: initialProduct }: ProductDetailProps) => {
                 const availableChains = chains.filter((c: any) => c.stock > 0);
                 const defaultChain = availableChains.find((c: any) => c.brand === 'PLATA 925') || availableChains[0] || chains[0];
                 setDefaultChainBrand(defaultChain?.brand || null);
+                
+                // Calcular precio inicial con la cadena por defecto
+                if (defaultChain) {
+                  const { roundToProfessionalPrice } = await import('../utils/priceRounding');
+                  const sumPriceValue = currentProduct.price + (defaultChain.price || 0);
+                  const finalPrice = roundToProfessionalPrice(sumPriceValue);
+                  setDisplayPrice(finalPrice);
+                  setSumPrice(sumPriceValue);
+                  setSelectedVariation(defaultChain);
+                  setCurrentStock(defaultChain.stock);
+                } else {
+                  setDisplayPrice(currentProduct.price);
+                }
+              } else {
+                setDisplayPrice(currentProduct.price);
               }
+            } else {
+              setDisplayPrice(currentProduct.price);
             }
           } catch (error) {
             console.error('Error loading chains:', error);
+            setDisplayPrice(currentProduct.price);
           }
+        } else {
+          setDisplayPrice(currentProduct.price);
         }
+        setIsCalculatingPrice(false);
         
         // Cargar productos relacionados
         const related = await getRelatedProducts(product.id, 4);
@@ -305,9 +326,13 @@ Limpieza: Para mantener el brillo, limpia periódicamente con un paño suave y s
 
               {product.category !== 'Cadenas' && (
                 <div className="mb-8">
-                  <p className="text-4xl font-bold text-black tracking-tight font-sans">
-                    ${displayPrice.toLocaleString('es-CL')} CLP
-                  </p>
+                  {isCalculatingPrice ? (
+                    <p className="text-4xl font-bold text-black tracking-tight font-sans">Cargando...</p>
+                  ) : (
+                    <p className="text-4xl font-bold text-black tracking-tight font-sans">
+                      ${(displayPrice || product.price).toLocaleString('es-CL')} CLP
+                    </p>
+                  )}
                 </div>
               )}
               {product.category === 'Cadenas' && (

@@ -109,7 +109,34 @@ const ProductCard = ({ product: initialProduct, hidePrice = false }: ProductCard
     
     setIsAdding(true);
     try {
-      const success = await addToCart(product, 1);
+      // Si es un colgante, cargar la cadena por defecto antes de agregar
+      let variation = undefined;
+      if (product.category === 'Colgantes') {
+        try {
+          const chainsResponse = await fetch(`/api/pendants/${product.id}/chains`);
+          if (chainsResponse.ok) {
+            const chains = await chainsResponse.json();
+            if (chains.length > 0) {
+              // Buscar la cadena por defecto (PLATA 925) o usar la primera disponible
+              const availableChains = chains.filter((c: any) => c.stock > 0);
+              const defaultChain = availableChains.find((c: any) => c.brand === 'PLATA 925') || availableChains[0] || chains[0];
+              if (defaultChain) {
+                variation = {
+                  id: defaultChain.id,
+                  brand: defaultChain.brand,
+                  thickness: defaultChain.thickness || '',
+                  length: defaultChain.length || '',
+                  price_modifier: defaultChain.price || 0,
+                };
+              }
+            }
+          }
+        } catch (error) {
+          console.error('Error loading chains for cart:', error);
+        }
+      }
+      
+      const success = await addToCart(product, 1, variation);
       
       if (!success) {
         alert('No hay suficiente stock disponible');

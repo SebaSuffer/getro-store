@@ -89,14 +89,19 @@ const CartView = () => {
               />
               
               <div className="flex-1">
-                <p className="text-xs uppercase tracking-wide text-black/50 mb-2 font-normal font-sans">{item.product.category}</p>
-                <h3 className="text-base font-semibold text-black mb-2 font-sans">{item.product.name}</h3>
+                <p className="text-sm uppercase tracking-wide text-black/60 mb-2 font-semibold font-sans">{item.product.category}</p>
+                <h3 className="text-xl font-bold text-black mb-3 font-sans">{item.product.name}</h3>
+                {item.variation?.brand && (
+                  <p className="text-base text-black/70 font-medium mb-2 font-sans">
+                    Cadena: {item.variation.brand}
+                  </p>
+                )}
                 {item.product.category !== 'Colgantes' && (
-                  <p className="text-base text-black/80 font-normal mb-2 font-sans">
+                  <p className="text-lg text-black/80 font-semibold mb-2 font-sans">
                     ${item.product.price.toLocaleString('es-CL')} CLP
                   </p>
                 )}
-                <p className="text-sm text-black/50 font-normal font-sans">
+                <p className="text-base text-black/60 font-medium font-sans">
                   Stock disponible: {item.product.stock}
                 </p>
               </div>
@@ -105,34 +110,39 @@ const CartView = () => {
                 <div className="flex items-center gap-3">
                   <button
                     onClick={() => handleQuantityChange(item.product.id, item.quantity - 1)}
-                    className="flex size-10 items-center justify-center border border-black/20 hover:border-black/40 transition-colors"
+                    className="flex size-12 items-center justify-center border-2 border-black/30 hover:border-black/60 hover:bg-black/5 transition-colors font-bold"
                     aria-label="Disminuir cantidad"
                   >
-                    <span className="material-symbols-outlined" style={{ fontSize: '18px', fontWeight: 300 }}>remove</span>
+                    <span className="material-symbols-outlined" style={{ fontSize: '20px', fontWeight: 400 }}>remove</span>
                   </button>
-                  <span className="w-12 text-center font-light text-black text-sm">
+                  <span className="w-16 text-center font-bold text-black text-lg">
                     {item.quantity}
                   </span>
                   <button
                     onClick={() => handleQuantityChange(item.product.id, item.quantity + 1)}
                     disabled={item.quantity >= item.product.stock}
-                    className="flex size-10 items-center justify-center border border-black/20 hover:border-black/40 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                    className="flex size-12 items-center justify-center border-2 border-black/30 hover:border-black/60 hover:bg-black/5 transition-colors disabled:opacity-30 disabled:cursor-not-allowed font-bold"
                     aria-label="Aumentar cantidad"
                   >
-                    <span className="material-symbols-outlined" style={{ fontSize: '18px', fontWeight: 300 }}>add</span>
+                    <span className="material-symbols-outlined" style={{ fontSize: '20px', fontWeight: 400 }}>add</span>
                   </button>
                 </div>
                 
-                <p className="text-lg font-semibold text-black w-32 text-right font-sans">
+                <p className="text-2xl font-bold text-black w-40 text-right font-sans">
                   ${((item.product.price + (item.variation?.price_modifier || 0)) * item.quantity).toLocaleString('es-CL')} CLP
                 </p>
                 
                 <button
-                  onClick={() => handleRemoveItem(item.product.id)}
-                  className="flex size-10 items-center justify-center text-black/40 hover:text-black/60 transition-colors"
+                  onClick={() => {
+                    if (confirm(`¿Eliminar "${item.product.name}" del carrito?`)) {
+                      handleRemoveItem(item.product.id);
+                    }
+                  }}
+                  className="flex size-12 items-center justify-center bg-red-600 text-white hover:bg-red-700 transition-colors font-bold rounded"
                   aria-label="Eliminar producto"
+                  title="Eliminar del carrito"
                 >
-                  <span className="material-symbols-outlined" style={{ fontSize: '20px', fontWeight: 300 }}>close</span>
+                  <span className="material-symbols-outlined" style={{ fontSize: '24px', fontWeight: 400 }}>delete</span>
                 </button>
               </div>
             </div>
