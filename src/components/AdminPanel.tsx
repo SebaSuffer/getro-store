@@ -1663,6 +1663,15 @@ const AdminPanel = () => {
                       />
                       <span className="text-sm font-normal text-black">Destacado</span>
                     </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={editingProduct.is_active !== false}
+                        onChange={(e) => setEditingProduct({ ...editingProduct, is_active: e.target.checked })}
+                        className="w-4 h-4 text-black focus:ring-black cursor-pointer"
+                      />
+                      <span className="text-sm font-normal text-black">Mostrar en Landing Page</span>
+                    </label>
                   </div>
                   <div className="flex gap-3">
                     <button
