@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { getCart, getCartTotal, clearCart, processPurchase } from '../utils/cart';
-import { createMercadoPagoPreference, getPaymentMethods, type PaymentMethod } from '../utils/payment';
+import { getPaymentMethods, type PaymentMethod } from '../utils/payment';
 import type { CartItem } from '../data/products';
 
 interface FormData {
@@ -143,21 +143,8 @@ const CheckoutForm = () => {
       
       // Procesar según método de pago
       if (formData.payment_method === 'mercadopago') {
-        // Crear preferencia de pago en Mercado Pago
-        const preferenceUrl = await createMercadoPagoPreference(
-          cartItems.map(item => ({
-            product: item,
-            quantity: item.quantity,
-          })),
-          orderId
-        );
-
-        if (!preferenceUrl) {
-          throw new Error('No se pudo crear la preferencia de pago. Por favor, intenta nuevamente.');
-        }
-
-        // Redirigir a Mercado Pago
-        window.location.href = preferenceUrl;
+        // Redirigir directamente al link de Mercado Pago
+        window.location.href = 'https://beta-link.mercadopago.cl/lumiereettenebres';
         return;
       } else if (formData.payment_method === 'transfer') {
         // Transferencia bancaria - procesar compra y redirigir

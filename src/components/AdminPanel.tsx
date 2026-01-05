@@ -752,6 +752,16 @@ const AdminPanel = () => {
           >
             Categorías
           </button>
+          <button
+            onClick={() => setActiveTab('payments')}
+            className={`px-6 py-3 text-sm font-medium transition-colors border-b-2 ${
+              activeTab === 'payments'
+                ? 'border-black text-black'
+                : 'border-transparent text-black/40 hover:text-black/60'
+            }`}
+          >
+            Pagos
+          </button>
         </div>
 
         {activeTab === 'products' && (
