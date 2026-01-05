@@ -8,6 +8,7 @@ interface FormData {
   customer_email: string;
   customer_phone: string;
   customer_address: string;
+  customer_rut: string;
   payment_method: 'mercadopago' | 'transfer';
 }
 
@@ -42,6 +43,7 @@ const CheckoutForm = () => {
     customer_email: '',
     customer_phone: '',
     customer_address: '',
+    customer_rut: '',
     payment_method: 'mercadopago',
   });
   const [errors, setErrors] = useState<Partial<Record<keyof FormData, string>>>({});
@@ -101,6 +103,10 @@ const CheckoutForm = () => {
       newErrors.customer_address = 'La dirección es requerida';
     }
     
+    if (!formData.customer_rut.trim()) {
+      newErrors.customer_rut = 'El RUT es requerido';
+    }
+    
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -123,11 +129,14 @@ const CheckoutForm = () => {
         customer_email: formData.customer_email,
         customer_phone: formData.customer_phone,
         customer_address: formData.customer_address,
+        customer_rut: formData.customer_rut,
         total_amount: total,
         payment_method: formData.payment_method,
         items: cartItems,
         created_at: new Date().toISOString(),
         status: 'pending',
+        payment_status: 'pending',
+        shipping_status: 'not_shipped',
       };
       
       // Guardar orden en Turso antes de procesar pago
@@ -143,10 +152,47 @@ const CheckoutForm = () => {
       
       // Procesar según método de pago
       if (formData.payment_method === 'mercadopago') {
-        // Redirigir al link de Mercado Pago con el monto total como parámetro
-        // El parámetro 'amount' pre-llena el monto en el formulario de Mercado Pago
-        const mercadoPagoUrl = `https://link.mercadopago.cl/lumiereettenebres?amount=${total}`;
-        window.location.href = mercadoPagoUrl;
+        // Crear preferencia de pago en Mercado Pago usando la API
+        const back_urls = {
+          success: `${window.location.origin}/orden-confirmada?status=approved&external_reference=${orderId}`,
+          failure: `${window.location.origin}/orden-confirmada?status=rejected&external_reference=${orderId}`,
+          pending: `${window.location.origin}/orden-confirmada?status=pending&external_reference=${orderId}`,
+        };
+
+        const preferenceResponse = await fetch('/api/mercadopago/create-preference', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            items: cartItems.map(item => ({
+              product: item.product,
+              quantity: item.quantity,
+              variation: item.variation,
+              total_amount: (item.product.price + (item.variation?.price_modifier || 0)) * item.quantity,
+            })),
+            orderId,
+            back_urls,
+            total_amount: total,
+          }),
+        });
+
+        if (!preferenceResponse.ok) {
+          throw new Error('Error al crear la preferencia de pago');
+        }
+
+        const preferenceData = await preferenceResponse.json();
+        
+        // Actualizar la orden con el preference_id
+        await fetch('/api/orders', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id: orderId,
+            mercado_pago_preference_id: preferenceData.preference_id,
+          }),
+        });
+
+        // Redirigir a Mercado Pago
+        window.location.href = preferenceData.init_point || preferenceData.sandbox_init_point;
         return;
       } else if (formData.payment_method === 'transfer') {
         // Transferencia bancaria - procesar compra y redirigir
@@ -263,6 +309,28 @@ const CheckoutForm = () => {
                 />
                 {errors.customer_address && (
                   <p className="mt-2 text-sm text-red-600 font-normal">{errors.customer_address}</p>
+                )}
+              </div>
+              
+              <div>
+                <label htmlFor="customer_rut" className="block text-sm font-medium text-black mb-1.5">
+                  RUT <span className="text-red-600">*</span>
+                </label>
+                <input
+                  type="text"
+                  id="customer_rut"
+                  value={formData.customer_rut}
+                  onChange={(e) => handleInputChange('customer_rut', e.target.value)}
+                  placeholder="12345678-9"
+                  className={`w-full border px-4 py-2.5 text-base font-normal ${
+                    errors.customer_rut
+                      ? 'border-red-500'
+                      : 'border-black/20'
+                  } bg-white text-black focus:outline-none focus:border-black/40 transition-colors font-sans`}
+                  required
+                />
+                {errors.customer_rut && (
+                  <p className="mt-2 text-sm text-red-600 font-normal">{errors.customer_rut}</p>
                 )}
               </div>
             </div>

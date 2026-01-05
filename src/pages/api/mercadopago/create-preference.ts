@@ -15,18 +15,31 @@ export const POST: APIRoute = async ({ request }) => {
     }
 
     // Formatear items para Mercado Pago
-    const preferenceItems = items.map((item: any) => ({
-      title: item.product.name || 'Producto',
-      quantity: item.quantity || 1,
-      unit_price: item.product?.price || item.total_amount || 0,
-      currency_id: 'CLP',
-    }));
-    
-    // Si hay un total_amount específico y solo hay un item, usar ese monto
-    const totalAmount = body.total_amount;
-    if (totalAmount && preferenceItems.length === 1) {
-      preferenceItems[0].unit_price = totalAmount;
-    }
+    const preferenceItems = items.map((item: any) => {
+      // Calcular precio unitario: precio base + modificador de variación (si existe)
+      const basePrice = item.product?.price || 0;
+      const variationModifier = item.variation?.price_modifier || 0;
+      const unitPrice = basePrice + variationModifier;
+      
+      // Construir título con información de variación si existe
+      let title = item.product?.name || 'Producto';
+      if (item.variation) {
+        const variationParts = [];
+        if (item.variation.brand) variationParts.push(item.variation.brand);
+        if (item.variation.thickness) variationParts.push(item.variation.thickness);
+        if (item.variation.length) variationParts.push(item.variation.length);
+        if (variationParts.length > 0) {
+          title += ` (${variationParts.join(', ')})`;
+        }
+      }
+      
+      return {
+        title,
+        quantity: item.quantity || 1,
+        unit_price: unitPrice,
+        currency_id: 'CLP',
+      };
+    });
 
     const preference = {
       items: preferenceItems,

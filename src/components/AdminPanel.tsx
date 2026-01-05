@@ -22,7 +22,9 @@ const AdminPanel = () => {
   const [subscribers, setSubscribers] = useState<any[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
-  const [activeTab, setActiveTab] = useState<'products' | 'chains' | 'newsletter' | 'categories' | 'payments'>('products');
+  const [activeTab, setActiveTab] = useState<'products' | 'chains' | 'newsletter' | 'categories' | 'payments' | 'orders'>('products');
+  const [orders, setOrders] = useState<any[]>([]);
+  const [selectedOrder, setSelectedOrder] = useState<any | null>(null);
   const [bankTransferSettings, setBankTransferSettings] = useState<any>({
     bank_name: '',
     account_type: '',
@@ -69,6 +71,7 @@ const AdminPanel = () => {
         loadCategories();
         loadChains();
         loadBankTransferSettings();
+        loadOrders();
       } else {
         window.location.href = '/login';
       }
@@ -96,6 +99,50 @@ const AdminPanel = () => {
       loadChains();
     }
   }, [activeTab]);
+
+  // Cargar órdenes cuando se cambia a la pestaña de órdenes
+  useEffect(() => {
+    if (activeTab === 'orders') {
+      loadOrders();
+    }
+  }, [activeTab]);
+
+  const loadOrders = async () => {
+    try {
+      const response = await fetch('/api/orders');
+      if (response.ok) {
+        const data = await response.json();
+        setOrders(data || []);
+      }
+    } catch (error) {
+      console.error('Error loading orders:', error);
+      setOrders([]);
+    }
+  };
+
+  const handleUpdateOrderStatus = async (orderId: string, field: 'payment_status' | 'shipping_status', value: string) => {
+    try {
+      const updateData: any = { id: orderId };
+      updateData[field] = value;
+      
+      const response = await fetch('/api/orders', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updateData),
+      });
+
+      if (response.ok) {
+        await loadOrders();
+        setToastMessage('Estado actualizado');
+        setShowToast(true);
+      } else {
+        throw new Error('Error al actualizar');
+      }
+    } catch (error) {
+      setToastMessage('Error al actualizar el estado');
+      setShowToast(true);
+    }
+  };
 
   const loadProducts = async () => {
     try {
@@ -761,6 +808,16 @@ const AdminPanel = () => {
             }`}
           >
             Pagos
+          </button>
+          <button
+            onClick={() => setActiveTab('orders')}
+            className={`px-6 py-3 text-sm font-medium transition-colors border-b-2 ${
+              activeTab === 'orders'
+                ? 'border-black text-black'
+                : 'border-transparent text-black/40 hover:text-black/60'
+            }`}
+          >
+            Órdenes
           </button>
         </div>
 
@@ -2626,6 +2683,225 @@ const AdminPanel = () => {
               </div>
             </div>
         </div>
+        )}
+
+        {/* Tab de Órdenes */}
+        {activeTab === 'orders' && (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-bold text-black">
+                Órdenes ({orders.length})
+              </h2>
+              <button
+                onClick={loadOrders}
+                className="px-4 py-2 bg-black text-white text-sm font-medium hover:bg-black/90 transition-colors"
+              >
+                Actualizar
+              </button>
+            </div>
+            
+            <div className="border border-black/10 bg-white">
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="bg-black/5 sticky top-0">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-black">ID Orden</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-black">Cliente</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-black">RUT</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-black">Detalle</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-black">Total</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-black">Estado Pago</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-black">Estado Envío</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-black">Fecha</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-black">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {orders.length === 0 ? (
+                      <tr>
+                        <td colSpan={9} className="px-4 py-8 text-center text-black/50 font-normal">
+                          No hay órdenes aún
+                        </td>
+                      </tr>
+                    ) : (
+                      orders.map((order) => (
+                        <tr key={order.id} className="border-t border-black/5 hover:bg-black/2 transition-colors">
+                          <td className="px-4 py-3 text-black font-medium font-mono text-xs">{order.id}</td>
+                          <td className="px-4 py-3">
+                            <div>
+                              <p className="text-black font-medium">{order.customer_name}</p>
+                              <p className="text-black/60 text-xs">{order.customer_email}</p>
+                              <p className="text-black/50 text-xs">{order.customer_phone}</p>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 text-black/70 font-mono text-xs">{order.customer_rut || '-'}</td>
+                          <td className="px-4 py-3">
+                            <div className="max-w-xs">
+                              {Array.isArray(order.items) && order.items.map((item: any, idx: number) => {
+                                const itemPrice = item.product.price + (item.variation?.price_modifier || 0);
+                                return (
+                                  <div key={idx} className="mb-2 last:mb-0">
+                                    <p className="text-black text-xs font-medium">{item.product.name}</p>
+                                    {item.variation && (
+                                      <p className="text-black/60 text-xs">
+                                        {[item.variation.brand, item.variation.thickness, item.variation.length].filter(Boolean).join(', ')}
+                                      </p>
+                                    )}
+                                    <p className="text-black/50 text-xs">Cant: {item.quantity} - ${itemPrice.toLocaleString('es-CL')} CLP</p>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 text-black font-semibold">${order.total_amount.toLocaleString('es-CL')} CLP</td>
+                          <td className="px-4 py-3">
+                            <select
+                              value={order.payment_status || 'pending'}
+                              onChange={(e) => handleUpdateOrderStatus(order.id, 'payment_status', e.target.value)}
+                              className={`text-xs px-2 py-1 border rounded ${
+                                order.payment_status === 'approved'
+                                  ? 'bg-green-50 border-green-200 text-green-800'
+                                  : order.payment_status === 'rejected'
+                                  ? 'bg-red-50 border-red-200 text-red-800'
+                                  : 'bg-yellow-50 border-yellow-200 text-yellow-800'
+                              }`}
+                            >
+                              <option value="pending">Pendiente</option>
+                              <option value="approved">Aprobado</option>
+                              <option value="rejected">Rechazado</option>
+                            </select>
+                          </td>
+                          <td className="px-4 py-3">
+                            <select
+                              value={order.shipping_status || 'not_shipped'}
+                              onChange={(e) => handleUpdateOrderStatus(order.id, 'shipping_status', e.target.value)}
+                              className="text-xs px-2 py-1 border border-black/20 rounded bg-white text-black"
+                            >
+                              <option value="not_shipped">No enviado</option>
+                              <option value="in_transit">En camino</option>
+                              <option value="delivered">Entregado</option>
+                            </select>
+                          </td>
+                          <td className="px-4 py-3 text-black/70 text-xs">
+                            {order.created_at ? new Date(order.created_at).toLocaleDateString('es-CL', {
+                              year: 'numeric',
+                              month: 'short',
+                              day: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            }) : '-'}
+                          </td>
+                          <td className="px-4 py-3">
+                            <button
+                              onClick={() => {
+                                if (selectedOrder?.id === order.id) {
+                                  setSelectedOrder(null);
+                                } else {
+                                  setSelectedOrder(order);
+                                }
+                              }}
+                              className="text-xs px-2 py-1 bg-black text-white hover:bg-black/90 transition-colors"
+                            >
+                              {selectedOrder?.id === order.id ? 'Ocultar' : 'Ver'}
+                            </button>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Panel de detalles de orden seleccionada */}
+            {selectedOrder && (
+              <div className="border border-black/10 bg-white p-6">
+                <h3 className="text-lg font-semibold text-black mb-4">Detalles de Orden #{selectedOrder.id}</h3>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                  <div>
+                    <h4 className="text-sm font-semibold text-black mb-3">Información del Cliente</h4>
+                    <div className="space-y-2 text-sm">
+                      <p><span className="font-medium text-black/70">Nombre:</span> <span className="text-black">{selectedOrder.customer_name}</span></p>
+                      <p><span className="font-medium text-black/70">Email:</span> <span className="text-black">{selectedOrder.customer_email}</span></p>
+                      <p><span className="font-medium text-black/70">Teléfono:</span> <span className="text-black">{selectedOrder.customer_phone || '-'}</span></p>
+                      <p><span className="font-medium text-black/70">RUT:</span> <span className="text-black font-mono">{selectedOrder.customer_rut || '-'}</span></p>
+                      <p><span className="font-medium text-black/70">Dirección:</span> <span className="text-black">{selectedOrder.customer_address}</span></p>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <h4 className="text-sm font-semibold text-black mb-3">Información de Pago</h4>
+                    <div className="space-y-2 text-sm">
+                      <p><span className="font-medium text-black/70">Método:</span> <span className="text-black capitalize">{selectedOrder.payment_method}</span></p>
+                      <p><span className="font-medium text-black/70">Estado Pago:</span> 
+                        <span className={`ml-2 px-2 py-1 rounded text-xs ${
+                          selectedOrder.payment_status === 'approved'
+                            ? 'bg-green-100 text-green-800'
+                            : selectedOrder.payment_status === 'rejected'
+                            ? 'bg-red-100 text-red-800'
+                            : 'bg-yellow-100 text-yellow-800'
+                        }`}>
+                          {selectedOrder.payment_status === 'approved' ? 'Aprobado' : 
+                           selectedOrder.payment_status === 'rejected' ? 'Rechazado' : 'Pendiente'}
+                        </span>
+                      </p>
+                      <p><span className="font-medium text-black/70">Estado Envío:</span> 
+                        <span className="ml-2 px-2 py-1 rounded text-xs bg-gray-100 text-gray-800">
+                          {selectedOrder.shipping_status === 'not_shipped' ? 'No enviado' :
+                           selectedOrder.shipping_status === 'in_transit' ? 'En camino' : 'Entregado'}
+                        </span>
+                      </p>
+                      {selectedOrder.mercado_pago_preference_id && (
+                        <p><span className="font-medium text-black/70">MP Preference ID:</span> <span className="text-black font-mono text-xs">{selectedOrder.mercado_pago_preference_id}</span></p>
+                      )}
+                      {selectedOrder.mercado_pago_payment_id && (
+                        <p><span className="font-medium text-black/70">MP Payment ID:</span> <span className="text-black font-mono text-xs">{selectedOrder.mercado_pago_payment_id}</span></p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <h4 className="text-sm font-semibold text-black mb-3">Items de la Orden</h4>
+                  <div className="border border-black/10">
+                    <table className="w-full text-sm">
+                      <thead className="bg-black/5">
+                        <tr>
+                          <th className="px-4 py-2 text-left text-xs font-semibold text-black">Producto</th>
+                          <th className="px-4 py-2 text-left text-xs font-semibold text-black">Variación</th>
+                          <th className="px-4 py-2 text-right text-xs font-semibold text-black">Cantidad</th>
+                          <th className="px-4 py-2 text-right text-xs font-semibold text-black">Precio Unit.</th>
+                          <th className="px-4 py-2 text-right text-xs font-semibold text-black">Total</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {Array.isArray(selectedOrder.items) && selectedOrder.items.map((item: any, idx: number) => {
+                          const itemPrice = item.product.price + (item.variation?.price_modifier || 0);
+                          const totalItemPrice = itemPrice * item.quantity;
+                          return (
+                            <tr key={idx} className="border-t border-black/5">
+                              <td className="px-4 py-2 text-black">{item.product.name}</td>
+                              <td className="px-4 py-2 text-black/70 text-xs">
+                                {item.variation ? [item.variation.brand, item.variation.thickness, item.variation.length].filter(Boolean).join(', ') : '-'}
+                              </td>
+                              <td className="px-4 py-2 text-right text-black">{item.quantity}</td>
+                              <td className="px-4 py-2 text-right text-black">${itemPrice.toLocaleString('es-CL')} CLP</td>
+                              <td className="px-4 py-2 text-right text-black font-semibold">${totalItemPrice.toLocaleString('es-CL')} CLP</td>
+                            </tr>
+                          );
+                        })}
+                        <tr className="border-t-2 border-black/20">
+                          <td colSpan={4} className="px-4 py-2 text-right text-sm font-semibold text-black">Total</td>
+                          <td className="px-4 py-2 text-right text-lg font-bold text-black">${selectedOrder.total_amount.toLocaleString('es-CL')} CLP</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
         )}
 
         {activeTab === 'newsletter' && (
