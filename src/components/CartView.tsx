@@ -91,9 +91,11 @@ const CartView = () => {
               <div className="flex-1">
                 <p className="text-xs uppercase tracking-wide text-black/50 mb-2 font-normal font-sans">{item.product.category}</p>
                 <h3 className="text-base font-semibold text-black mb-2 font-sans">{item.product.name}</h3>
-                <p className="text-base text-black/80 font-normal mb-2 font-sans">
-                  ${item.product.price.toLocaleString('es-CL')} CLP
-                </p>
+                {item.product.category !== 'Colgantes' && (
+                  <p className="text-base text-black/80 font-normal mb-2 font-sans">
+                    ${item.product.price.toLocaleString('es-CL')} CLP
+                  </p>
+                )}
                 <p className="text-sm text-black/50 font-normal font-sans">
                   Stock disponible: {item.product.stock}
                 </p>

@@ -92,15 +92,21 @@ export const POST: APIRoute = async ({ request }) => {
     const cleanImageAlt = (image_alt && image_alt.trim()) || null;
     const cleanDescription = (description && description.trim()) || null;
 
-    // Si es actualización, obtener el brand antiguo antes de actualizar
-    let oldBrand = null;
+    // Si es actualización, obtener el brand antiguo y actualizar referencias PRIMERO
     if (id) {
       const oldChain = await client.execute({
         sql: 'SELECT brand FROM chains WHERE id = ?',
         args: [id],
       });
       if (oldChain.rows.length > 0) {
-        oldBrand = oldChain.rows[0].brand;
+        const oldBrand = oldChain.rows[0].brand;
+        // Actualizar referencias ANTES de cambiar el brand en chains
+        if (oldBrand && oldBrand !== brand.trim()) {
+          await client.execute({
+            sql: `UPDATE pendant_chain_options SET chain_brand = ?, updated_at = datetime('now') WHERE chain_brand = ?`,
+            args: [brand.trim(), oldBrand],
+          });
+        }
       }
     }
 
@@ -133,14 +139,6 @@ export const POST: APIRoute = async ({ request }) => {
         is_active !== false ? 1 : 0,
       ],
     });
-
-    // Si cambió el brand, actualizar referencias en pendant_chain_options
-    if (oldBrand && oldBrand !== brand.trim()) {
-      await client.execute({
-        sql: `UPDATE pendant_chain_options SET chain_brand = ?, updated_at = datetime('now') WHERE chain_brand = ?`,
-        args: [brand.trim(), oldBrand],
-      });
-    }
 
     return new Response(
       JSON.stringify({ success: true, id: chainId }),
