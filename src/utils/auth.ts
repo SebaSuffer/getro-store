@@ -8,10 +8,10 @@ const ALLOWED_USERS: Record<string, string> = {
 };
 
 // Generar token de sesión único
-const generateSessionToken = (): string => {
+const generateSessionToken = (username: string): string => {
   const timestamp = Date.now();
   const random = Math.random().toString(36).substring(2, 15);
-  return btoa(`${timestamp}-${random}-${AUTH_USER}`).replace(/[^a-zA-Z0-9]/g, '');
+  return btoa(`${timestamp}-${random}-${username}`).replace(/[^a-zA-Z0-9]/g, '');
 };
 
 export interface AuthUser {
@@ -21,7 +21,7 @@ export interface AuthUser {
 
 export const login = (username: string, password: string): boolean => {
   if (ALLOWED_USERS[username] && ALLOWED_USERS[username] === password) {
-    const sessionToken = generateSessionToken();
+    const sessionToken = generateSessionToken(username);
     const authData = {
       username,
       isAuthenticated: true,
@@ -32,6 +32,12 @@ export const login = (username: string, password: string): boolean => {
     localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(authData));
     localStorage.setItem(AUTH_SESSION_KEY, sessionToken);
     return true;
+  } else {
+    // Manejar intentos fallidos
+    const currentAuthData = JSON.parse(localStorage.getItem(AUTH_STORAGE_KEY) || '{}');
+    currentAuthData.loginAttempts = (currentAuthData.loginAttempts || 0) + 1;
+    currentAuthData.lastFailedAttempt = Date.now();
+    localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(currentAuthData));
   }
   return false;
 };
