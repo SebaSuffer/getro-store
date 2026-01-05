@@ -16,11 +16,17 @@ export const POST: APIRoute = async ({ request }) => {
 
     // Formatear items para Mercado Pago
     const preferenceItems = items.map((item: any) => ({
-      title: item.product.name,
-      quantity: item.quantity,
-      unit_price: item.product.price,
+      title: item.product.name || 'Producto',
+      quantity: item.quantity || 1,
+      unit_price: item.product?.price || item.total_amount || 0,
       currency_id: 'CLP',
     }));
+    
+    // Si hay un total_amount específico y solo hay un item, usar ese monto
+    const totalAmount = body.total_amount;
+    if (totalAmount && preferenceItems.length === 1) {
+      preferenceItems[0].unit_price = totalAmount;
+    }
 
     const preference = {
       items: preferenceItems,
