@@ -25,6 +25,7 @@ const AdminPanel = () => {
   const [activeTab, setActiveTab] = useState<'products' | 'chains' | 'newsletter' | 'categories' | 'payments' | 'orders'>('products');
   const [orders, setOrders] = useState<any[]>([]);
   const [selectedOrder, setSelectedOrder] = useState<any | null>(null);
+  const [editingOrder, setEditingOrder] = useState<any | null>(null);
   const [bankTransferSettings, setBankTransferSettings] = useState<any>({
     bank_name: '',
     account_type: '',
@@ -109,6 +110,10 @@ const AdminPanel = () => {
 
   const loadOrders = async () => {
     try {
+      // Primero cancelar órdenes pendientes con más de 3 días
+      await fetch('/api/orders', { method: 'PUT' });
+      
+      // Luego cargar todas las órdenes
       const response = await fetch('/api/orders');
       if (response.ok) {
         const data = await response.json();
@@ -135,11 +140,88 @@ const AdminPanel = () => {
         await loadOrders();
         setToastMessage('Estado actualizado');
         setShowToast(true);
+        // Si se está editando esta orden, actualizar el estado local
+        if (editingOrder?.id === orderId) {
+          setEditingOrder({ ...editingOrder, [field]: value });
+        }
+        if (selectedOrder?.id === orderId) {
+          setSelectedOrder({ ...selectedOrder, [field]: value });
+        }
       } else {
         throw new Error('Error al actualizar');
       }
     } catch (error) {
       setToastMessage('Error al actualizar el estado');
+      setShowToast(true);
+    }
+  };
+
+  const handleEditOrder = (order: any) => {
+    setEditingOrder(order);
+    setSelectedOrder(null);
+  };
+
+  const handleSaveOrder = async () => {
+    if (!editingOrder) return;
+    
+    try {
+      const updateData: any = { id: editingOrder.id };
+      
+      if (editingOrder.customer_name) updateData.customer_name = editingOrder.customer_name;
+      if (editingOrder.customer_email) updateData.customer_email = editingOrder.customer_email;
+      if (editingOrder.customer_phone !== undefined) updateData.customer_phone = editingOrder.customer_phone;
+      if (editingOrder.customer_address) updateData.customer_address = editingOrder.customer_address;
+      if (editingOrder.customer_rut !== undefined) updateData.customer_rut = editingOrder.customer_rut;
+      if (editingOrder.total_amount) updateData.total_amount = editingOrder.total_amount;
+      if (editingOrder.payment_status) updateData.payment_status = editingOrder.payment_status;
+      if (editingOrder.shipping_status) updateData.shipping_status = editingOrder.shipping_status;
+      if (editingOrder.status) updateData.status = editingOrder.status;
+      
+      const response = await fetch('/api/orders', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updateData),
+      });
+
+      if (response.ok) {
+        await loadOrders();
+        setEditingOrder(null);
+        setToastMessage('Orden actualizada');
+        setShowToast(true);
+      } else {
+        throw new Error('Error al actualizar');
+      }
+    } catch (error) {
+      setToastMessage('Error al actualizar la orden');
+      setShowToast(true);
+    }
+  };
+
+  const handleDeleteOrder = async (orderId: string) => {
+    if (!confirm('¿Estás seguro de que deseas eliminar esta orden? Esta acción no se puede deshacer.')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/orders?id=${orderId}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        await loadOrders();
+        if (selectedOrder?.id === orderId) {
+          setSelectedOrder(null);
+        }
+        if (editingOrder?.id === orderId) {
+          setEditingOrder(null);
+        }
+        setToastMessage('Orden eliminada');
+        setShowToast(true);
+      } else {
+        throw new Error('Error al eliminar');
+      }
+    } catch (error) {
+      setToastMessage('Error al eliminar la orden');
       setShowToast(true);
     }
   };
@@ -2761,7 +2843,7 @@ const AdminPanel = () => {
                               className={`text-xs px-2 py-1 border rounded ${
                                 order.payment_status === 'approved'
                                   ? 'bg-green-50 border-green-200 text-green-800'
-                                  : order.payment_status === 'rejected'
+                                  : order.payment_status === 'rejected' || order.payment_status === 'cancelled'
                                   ? 'bg-red-50 border-red-200 text-red-800'
                                   : 'bg-yellow-50 border-yellow-200 text-yellow-800'
                               }`}
@@ -2769,6 +2851,7 @@ const AdminPanel = () => {
                               <option value="pending">Pendiente</option>
                               <option value="approved">Aprobado</option>
                               <option value="rejected">Rechazado</option>
+                              <option value="cancelled">Cancelada</option>
                             </select>
                           </td>
                           <td className="px-4 py-3">
@@ -2792,18 +2875,37 @@ const AdminPanel = () => {
                             }) : '-'}
                           </td>
                           <td className="px-4 py-3">
-                            <button
-                              onClick={() => {
-                                if (selectedOrder?.id === order.id) {
-                                  setSelectedOrder(null);
-                                } else {
-                                  setSelectedOrder(order);
-                                }
-                              }}
-                              className="text-xs px-2 py-1 bg-black text-white hover:bg-black/90 transition-colors"
-                            >
-                              {selectedOrder?.id === order.id ? 'Ocultar' : 'Ver'}
-                            </button>
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => {
+                                  if (selectedOrder?.id === order.id) {
+                                    setSelectedOrder(null);
+                                  } else {
+                                    setSelectedOrder(order);
+                                    setEditingOrder(null);
+                                  }
+                                }}
+                                className="text-xs px-2 py-1 bg-black text-white hover:bg-black/90 transition-colors"
+                              >
+                                {selectedOrder?.id === order.id ? 'Ocultar' : 'Ver'}
+                              </button>
+                              <button
+                                onClick={() => {
+                                  handleEditOrder(order);
+                                }}
+                                className="text-xs px-2 py-1 bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+                              >
+                                Editar
+                              </button>
+                              <button
+                                onClick={() => {
+                                  handleDeleteOrder(order.id);
+                                }}
+                                className="text-xs px-2 py-1 bg-red-600 text-white hover:bg-red-700 transition-colors"
+                              >
+                                Borrar
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       ))
@@ -2813,8 +2915,138 @@ const AdminPanel = () => {
               </div>
             </div>
 
+            {/* Panel de edición de orden */}
+            {editingOrder && (
+              <div className="border border-black/10 bg-white p-6">
+                <h3 className="text-lg font-semibold text-black mb-4">Editar Orden #{editingOrder.id}</h3>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                  <div>
+                    <h4 className="text-sm font-semibold text-black mb-3">Información del Cliente</h4>
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-black mb-1">Nombre</label>
+                        <input
+                          type="text"
+                          value={editingOrder.customer_name || ''}
+                          onChange={(e) => setEditingOrder({ ...editingOrder, customer_name: e.target.value })}
+                          className="w-full bg-white border border-black/20 px-4 py-2 text-black text-base font-normal focus:outline-none focus:border-black/40"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-black mb-1">Email</label>
+                        <input
+                          type="email"
+                          value={editingOrder.customer_email || ''}
+                          onChange={(e) => setEditingOrder({ ...editingOrder, customer_email: e.target.value })}
+                          className="w-full bg-white border border-black/20 px-4 py-2 text-black text-base font-normal focus:outline-none focus:border-black/40"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-black mb-1">Teléfono</label>
+                        <input
+                          type="tel"
+                          value={editingOrder.customer_phone || ''}
+                          onChange={(e) => setEditingOrder({ ...editingOrder, customer_phone: e.target.value })}
+                          className="w-full bg-white border border-black/20 px-4 py-2 text-black text-base font-normal focus:outline-none focus:border-black/40"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-black mb-1">RUT</label>
+                        <input
+                          type="text"
+                          value={editingOrder.customer_rut || ''}
+                          onChange={(e) => setEditingOrder({ ...editingOrder, customer_rut: e.target.value })}
+                          className="w-full bg-white border border-black/20 px-4 py-2 text-black text-base font-normal focus:outline-none focus:border-black/40"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-black mb-1">Dirección</label>
+                        <textarea
+                          value={editingOrder.customer_address || ''}
+                          onChange={(e) => setEditingOrder({ ...editingOrder, customer_address: e.target.value })}
+                          rows={3}
+                          className="w-full bg-white border border-black/20 px-4 py-2 text-black text-base font-normal focus:outline-none focus:border-black/40 resize-none"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <h4 className="text-sm font-semibold text-black mb-3">Información de Pago y Envío</h4>
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-black mb-1">Total</label>
+                        <input
+                          type="number"
+                          value={editingOrder.total_amount || 0}
+                          onChange={(e) => setEditingOrder({ ...editingOrder, total_amount: parseFloat(e.target.value) || 0 })}
+                          className="w-full bg-white border border-black/20 px-4 py-2 text-black text-base font-normal focus:outline-none focus:border-black/40"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-black mb-1">Estado de Pago</label>
+                        <select
+                          value={editingOrder.payment_status || 'pending'}
+                          onChange={(e) => setEditingOrder({ ...editingOrder, payment_status: e.target.value })}
+                          className="w-full bg-white border border-black/20 px-4 py-2 text-black text-base font-normal focus:outline-none focus:border-black/40"
+                        >
+                          <option value="pending">Pendiente</option>
+                          <option value="approved">Aprobado</option>
+                          <option value="rejected">Rechazado</option>
+                          <option value="cancelled">Cancelada</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-black mb-1">Estado de Envío</label>
+                        <select
+                          value={editingOrder.shipping_status || 'not_shipped'}
+                          onChange={(e) => setEditingOrder({ ...editingOrder, shipping_status: e.target.value })}
+                          className="w-full bg-white border border-black/20 px-4 py-2 text-black text-base font-normal focus:outline-none focus:border-black/40"
+                        >
+                          <option value="not_shipped">No enviado</option>
+                          <option value="in_transit">En camino</option>
+                          <option value="delivered">Entregado</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-black mb-1">Estado General</label>
+                        <select
+                          value={editingOrder.status || 'pending'}
+                          onChange={(e) => setEditingOrder({ ...editingOrder, status: e.target.value })}
+                          className="w-full bg-white border border-black/20 px-4 py-2 text-black text-base font-normal focus:outline-none focus:border-black/40"
+                        >
+                          <option value="pending">Pendiente</option>
+                          <option value="processing">Procesando</option>
+                          <option value="completed">Completada</option>
+                          <option value="cancelled">Cancelada</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex gap-3 pt-4 border-t border-black/10">
+                  <button
+                    onClick={handleSaveOrder}
+                    className="px-6 py-2 bg-black text-white text-base font-medium hover:bg-black/90 transition-colors"
+                  >
+                    Guardar Cambios
+                  </button>
+                  <button
+                    onClick={() => {
+                      setEditingOrder(null);
+                    }}
+                    className="px-6 py-2 border border-black/20 text-black text-base font-medium hover:border-black/40 transition-colors"
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              </div>
+            )}
+
             {/* Panel de detalles de orden seleccionada */}
-            {selectedOrder && (
+            {selectedOrder && !editingOrder && (
               <div className="border border-black/10 bg-white p-6">
                 <h3 className="text-lg font-semibold text-black mb-4">Detalles de Orden #{selectedOrder.id}</h3>
                 
@@ -2838,12 +3070,13 @@ const AdminPanel = () => {
                         <span className={`ml-2 px-2 py-1 rounded text-xs ${
                           selectedOrder.payment_status === 'approved'
                             ? 'bg-green-100 text-green-800'
-                            : selectedOrder.payment_status === 'rejected'
+                            : selectedOrder.payment_status === 'rejected' || selectedOrder.payment_status === 'cancelled'
                             ? 'bg-red-100 text-red-800'
                             : 'bg-yellow-100 text-yellow-800'
                         }`}>
                           {selectedOrder.payment_status === 'approved' ? 'Aprobado' : 
-                           selectedOrder.payment_status === 'rejected' ? 'Rechazado' : 'Pendiente'}
+                           selectedOrder.payment_status === 'rejected' ? 'Rechazado' :
+                           selectedOrder.payment_status === 'cancelled' ? 'Cancelada' : 'Pendiente'}
                         </span>
                       </p>
                       <p><span className="font-medium text-black/70">Estado Envío:</span> 

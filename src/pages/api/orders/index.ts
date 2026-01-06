@@ -80,6 +80,12 @@ export const PATCH: APIRoute = async ({ request }) => {
     const body = await request.json();
     const {
       id,
+      customer_name,
+      customer_email,
+      customer_phone,
+      customer_address,
+      customer_rut,
+      total_amount,
       payment_status,
       shipping_status,
       mercado_pago_preference_id,
@@ -107,6 +113,30 @@ export const PATCH: APIRoute = async ({ request }) => {
     const updates: string[] = [];
     const args: any[] = [];
 
+    if (customer_name !== undefined) {
+      updates.push('customer_name = ?');
+      args.push(customer_name);
+    }
+    if (customer_email !== undefined) {
+      updates.push('customer_email = ?');
+      args.push(customer_email);
+    }
+    if (customer_phone !== undefined) {
+      updates.push('customer_phone = ?');
+      args.push(customer_phone);
+    }
+    if (customer_address !== undefined) {
+      updates.push('customer_address = ?');
+      args.push(customer_address);
+    }
+    if (customer_rut !== undefined) {
+      updates.push('customer_rut = ?');
+      args.push(customer_rut);
+    }
+    if (total_amount !== undefined) {
+      updates.push('total_amount = ?');
+      args.push(total_amount);
+    }
     if (payment_status !== undefined) {
       updates.push('payment_status = ?');
       args.push(payment_status);
@@ -197,6 +227,91 @@ export const GET: APIRoute = async () => {
     console.error('Error fetching orders:', error);
     return new Response(
       JSON.stringify({ error: error.message || 'Error fetching orders' }),
+      { status: 500, headers: { 'Content-Type': 'application/json' } }
+    );
+  }
+};
+
+// DELETE /api/orders - Eliminar una orden
+export const DELETE: APIRoute = async ({ request }) => {
+  try {
+    const url = new URL(request.url);
+    const orderId = url.searchParams.get('id');
+
+    if (!orderId) {
+      return new Response(
+        JSON.stringify({ error: 'Order ID is required' }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const client = getTursoClient();
+    
+    if (!client) {
+      return new Response(
+        JSON.stringify({ error: 'Database not configured' }),
+        { status: 500, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    await client.execute({
+      sql: 'DELETE FROM orders WHERE id = ?',
+      args: [orderId],
+    });
+
+    return new Response(JSON.stringify({ success: true }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  } catch (error: any) {
+    console.error('Error deleting order:', error);
+    return new Response(
+      JSON.stringify({ error: error.message || 'Error deleting order' }),
+      { status: 500, headers: { 'Content-Type': 'application/json' } }
+    );
+  }
+};
+
+// Endpoint para cancelar órdenes pendientes automáticamente después de 3 días
+export const PUT: APIRoute = async () => {
+  try {
+    const client = getTursoClient();
+    
+    if (!client) {
+      return new Response(
+        JSON.stringify({ error: 'Database not configured' }),
+        { status: 500, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Calcular la fecha de hace 3 días
+    const threeDaysAgo = new Date();
+    threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
+    const threeDaysAgoISO = threeDaysAgo.toISOString();
+
+    // Actualizar órdenes pendientes que tienen más de 3 días
+    const result = await client.execute({
+      sql: `UPDATE orders 
+            SET payment_status = 'cancelled', 
+                status = 'cancelled',
+                updated_at = datetime('now')
+            WHERE payment_status = 'pending' 
+              AND status = 'pending'
+              AND created_at < ?`,
+      args: [threeDaysAgoISO],
+    });
+
+    return new Response(JSON.stringify({ 
+      success: true, 
+      cancelled: result.rowsAffected || 0 
+    }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  } catch (error: any) {
+    console.error('Error cancelling old orders:', error);
+    return new Response(
+      JSON.stringify({ error: error.message || 'Error cancelling old orders' }),
       { status: 500, headers: { 'Content-Type': 'application/json' } }
     );
   }
