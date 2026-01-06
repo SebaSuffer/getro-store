@@ -155,6 +155,9 @@ const CheckoutForm = () => {
         }),
       });
 
+      // Mostrar número de pedido al usuario antes de redirigir
+      alert(`Tu número de pedido es: ${orderId}\n\nGuarda este número para hacer seguimiento de tu compra.\n\nSerás redirigido a Mercado Pago para completar el pago.`);
+
       // Redirigir a Mercado Pago
       window.location.href = preferenceData.init_point || preferenceData.sandbox_init_point;
       

@@ -24,6 +24,8 @@ const AdminPanel = () => {
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [activeTab, setActiveTab] = useState<'products' | 'chains' | 'newsletter' | 'categories' | 'payments' | 'orders'>('products');
   const [orders, setOrders] = useState<any[]>([]);
+  const [filteredOrders, setFilteredOrders] = useState<any[]>([]);
+  const [orderSearchQuery, setOrderSearchQuery] = useState('');
   const [selectedOrder, setSelectedOrder] = useState<any | null>(null);
   const [editingOrder, setEditingOrder] = useState<any | null>(null);
   const [bankTransferSettings, setBankTransferSettings] = useState<any>({
@@ -118,12 +120,35 @@ const AdminPanel = () => {
       if (response.ok) {
         const data = await response.json();
         setOrders(data || []);
+        setFilteredOrders(data || []);
       }
     } catch (error) {
       console.error('Error loading orders:', error);
       setOrders([]);
+      setFilteredOrders([]);
     }
   };
+
+  // Filtrar órdenes por búsqueda
+  useEffect(() => {
+    if (!orderSearchQuery.trim()) {
+      setFilteredOrders(orders);
+      return;
+    }
+
+    const query = orderSearchQuery.toLowerCase().trim();
+    const filtered = orders.filter((order) => {
+      const idMatch = order.id?.toLowerCase().includes(query);
+      const nameMatch = order.customer_name?.toLowerCase().includes(query);
+      const emailMatch = order.customer_email?.toLowerCase().includes(query);
+      const phoneMatch = order.customer_phone?.toLowerCase().includes(query);
+      const rutMatch = order.customer_rut?.toLowerCase().includes(query);
+      
+      return idMatch || nameMatch || emailMatch || phoneMatch || rutMatch;
+    });
+    
+    setFilteredOrders(filtered);
+  }, [orderSearchQuery, orders]);
 
   const handleUpdateOrderStatus = async (orderId: string, field: 'payment_status' | 'shipping_status', value: string) => {
     try {
@@ -222,6 +247,41 @@ const AdminPanel = () => {
       }
     } catch (error) {
       setToastMessage('Error al eliminar la orden');
+      setShowToast(true);
+    }
+  };
+
+  const handleMarkAsCompleted = async (orderId: string) => {
+    if (!confirm('¿Marcar esta orden como concretada?')) {
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/orders', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: orderId,
+          status: 'completed',
+          payment_status: 'approved',
+        }),
+      });
+
+      if (response.ok) {
+        await loadOrders();
+        if (selectedOrder?.id === orderId) {
+          setSelectedOrder({ ...selectedOrder, status: 'completed', payment_status: 'approved' });
+        }
+        if (editingOrder?.id === orderId) {
+          setEditingOrder({ ...editingOrder, status: 'completed', payment_status: 'approved' });
+        }
+        setToastMessage('Orden marcada como concretada');
+        setShowToast(true);
+      } else {
+        throw new Error('Error al actualizar');
+      }
+    } catch (error) {
+      setToastMessage('Error al marcar como concretada');
       setShowToast(true);
     }
   };
@@ -2772,7 +2832,7 @@ const AdminPanel = () => {
           <div className="space-y-6">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-bold text-black">
-                Órdenes ({orders.length})
+                Órdenes ({filteredOrders.length}{orderSearchQuery ? ` de ${orders.length}` : ''})
               </h2>
               <button
                 onClick={loadOrders}
@@ -2780,6 +2840,17 @@ const AdminPanel = () => {
               >
                 Actualizar
               </button>
+            </div>
+
+            {/* Campo de búsqueda */}
+            <div className="mb-4">
+              <input
+                type="text"
+                value={orderSearchQuery}
+                onChange={(e) => setOrderSearchQuery(e.target.value)}
+                placeholder="Buscar por ID, nombre, email, teléfono o RUT..."
+                className="w-full bg-white border border-black/20 px-4 py-2.5 text-black text-base font-normal focus:outline-none focus:border-black/40 font-sans"
+              />
             </div>
             
             <div className="border border-black/10 bg-white">
@@ -2799,16 +2870,23 @@ const AdminPanel = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {orders.length === 0 ? (
+                    {filteredOrders.length === 0 ? (
                       <tr>
                         <td colSpan={9} className="px-4 py-8 text-center text-black/50 font-normal">
-                          No hay órdenes aún
+                          {orderSearchQuery ? 'No se encontraron órdenes' : 'No hay órdenes aún'}
                         </td>
                       </tr>
                     ) : (
-                      orders.map((order) => (
-                        <tr key={order.id} className="border-t border-black/5 hover:bg-black/2 transition-colors">
-                          <td className="px-4 py-3 text-black font-medium font-mono text-xs">{order.id}</td>
+                      filteredOrders.map((order) => (
+                        <tr key={order.id} className={`border-t border-black/5 hover:bg-black/2 transition-colors ${
+                          order.status === 'completed' ? 'bg-green-50/50' : ''
+                        }`}>
+                          <td className="px-4 py-3 text-black font-medium font-mono text-xs">
+                            {order.id}
+                            {order.status === 'completed' && (
+                              <span className="ml-2 px-2 py-0.5 bg-green-600 text-white text-xs font-semibold rounded">Concretada</span>
+                            )}
+                          </td>
                           <td className="px-4 py-3">
                             <div>
                               <p className="text-black font-medium">{order.customer_name}</p>
@@ -2875,36 +2953,49 @@ const AdminPanel = () => {
                             }) : '-'}
                           </td>
                           <td className="px-4 py-3">
-                            <div className="flex gap-2">
-                              <button
-                                onClick={() => {
-                                  if (selectedOrder?.id === order.id) {
-                                    setSelectedOrder(null);
-                                  } else {
-                                    setSelectedOrder(order);
-                                    setEditingOrder(null);
-                                  }
-                                }}
-                                className="text-xs px-2 py-1 bg-black text-white hover:bg-black/90 transition-colors"
-                              >
-                                {selectedOrder?.id === order.id ? 'Ocultar' : 'Ver'}
-                              </button>
-                              <button
-                                onClick={() => {
-                                  handleEditOrder(order);
-                                }}
-                                className="text-xs px-2 py-1 bg-blue-600 text-white hover:bg-blue-700 transition-colors"
-                              >
-                                Editar
-                              </button>
-                              <button
-                                onClick={() => {
-                                  handleDeleteOrder(order.id);
-                                }}
-                                className="text-xs px-2 py-1 bg-red-600 text-white hover:bg-red-700 transition-colors"
-                              >
-                                Borrar
-                              </button>
+                            <div className="flex flex-col gap-2">
+                              <div className="flex gap-2">
+                                <button
+                                  onClick={() => {
+                                    if (selectedOrder?.id === order.id) {
+                                      setSelectedOrder(null);
+                                    } else {
+                                      setSelectedOrder(order);
+                                      setEditingOrder(null);
+                                    }
+                                  }}
+                                  className="text-xs px-2 py-1 bg-black text-white hover:bg-black/90 transition-colors"
+                                >
+                                  {selectedOrder?.id === order.id ? 'Ocultar' : 'Ver'}
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    handleEditOrder(order);
+                                  }}
+                                  className="text-xs px-2 py-1 bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+                                >
+                                  Editar
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    handleDeleteOrder(order.id);
+                                  }}
+                                  className="text-xs px-2 py-1 bg-red-600 text-white hover:bg-red-700 transition-colors"
+                                >
+                                  Borrar
+                                </button>
+                              </div>
+                              {order.status !== 'completed' && (
+                                <button
+                                  onClick={() => {
+                                    handleMarkAsCompleted(order.id);
+                                  }}
+                                  className="text-xs px-2 py-1 bg-green-600 text-white hover:bg-green-700 transition-colors w-full"
+                                  title="Marcar como concretada (pago realizado por WhatsApp u otro medio)"
+                                >
+                                  Marcar Concretado
+                                </button>
+                              )}
                             </div>
                           </td>
                         </tr>
@@ -3018,7 +3109,7 @@ const AdminPanel = () => {
                         >
                           <option value="pending">Pendiente</option>
                           <option value="processing">Procesando</option>
-                          <option value="completed">Completada</option>
+                          <option value="completed">Concretada</option>
                           <option value="cancelled">Cancelada</option>
                         </select>
                       </div>
