@@ -286,6 +286,9 @@ const CheckoutForm = () => {
                   } bg-white text-black focus:outline-none focus:border-black/40 transition-colors font-sans`}
                   required
                 />
+                <p className="mt-1.5 text-xs text-black/50 font-normal font-sans">
+                  Formato: 8 dígitos seguidos de guion y dígito verificador (ej: 12345678-9)
+                </p>
                 {errors.customer_rut && (
                   <p className="mt-2 text-sm text-red-600 font-normal">{errors.customer_rut}</p>
                 )}
