@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
-import { getCart, getCartTotal, clearCart, processPurchase } from '../utils/cart';
-import { getPaymentMethods, type PaymentMethod } from '../utils/payment';
+import { getCart, getCartTotal } from '../utils/cart';
 import type { CartItem } from '../data/products';
 
 interface FormData {
@@ -9,17 +8,8 @@ interface FormData {
   customer_phone: string;
   customer_address: string;
   customer_rut: string;
-  payment_method: 'mercadopago' | 'transfer';
 }
 
-interface BankTransferData {
-  bank_name: string;
-  account_type: string;
-  account_number: string;
-  rut: string;
-  account_holder: string;
-  email: string;
-}
 
 const generateOrderId = (): string => {
   // Generar número de pedido empezando desde 1000 para que no parezca nuevo
@@ -44,11 +34,8 @@ const CheckoutForm = () => {
     customer_phone: '',
     customer_address: '',
     customer_rut: '',
-    payment_method: 'mercadopago',
   });
   const [errors, setErrors] = useState<Partial<Record<keyof FormData, string>>>({});
-  const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
-  const [bankTransferData, setBankTransferData] = useState<BankTransferData | null>(null);
 
   useEffect(() => {
     const cart = getCart();
@@ -59,27 +46,6 @@ const CheckoutForm = () => {
     
     setCartItems(cart);
     setTotal(getCartTotal());
-    
-    // Cargar métodos de pago
-    const loadPaymentMethods = async () => {
-      const methods = await getPaymentMethods();
-      setPaymentMethods(methods);
-    };
-    loadPaymentMethods();
-    
-    // Cargar datos de transferencia bancaria
-    const loadBankTransferData = async () => {
-      try {
-        const response = await fetch('/api/bank-transfer-settings');
-        if (response.ok) {
-          const data = await response.json();
-          setBankTransferData(data);
-        }
-      } catch (error) {
-        console.error('Error loading bank transfer data:', error);
-      }
-    };
-    loadBankTransferData();
   }, []);
 
   const validateForm = (): boolean => {
@@ -131,7 +97,7 @@ const CheckoutForm = () => {
         customer_address: formData.customer_address,
         customer_rut: formData.customer_rut,
         total_amount: total,
-        payment_method: formData.payment_method,
+        payment_method: 'mercadopago',
         items: cartItems,
         created_at: new Date().toISOString(),
         status: 'pending',
@@ -150,56 +116,47 @@ const CheckoutForm = () => {
         throw new Error('Error al guardar la orden');
       }
       
-      // Procesar según método de pago
-      if (formData.payment_method === 'mercadopago') {
-        // Crear preferencia de pago en Mercado Pago usando la API
-        const back_urls = {
-          success: `${window.location.origin}/orden-confirmada?status=approved&external_reference=${orderId}`,
-          failure: `${window.location.origin}/orden-confirmada?status=rejected&external_reference=${orderId}`,
-          pending: `${window.location.origin}/orden-confirmada?status=pending&external_reference=${orderId}`,
-        };
+      // Crear preferencia de pago en Mercado Pago usando la API
+      const back_urls = {
+        success: `${window.location.origin}/orden-confirmada?status=approved&external_reference=${orderId}`,
+        failure: `${window.location.origin}/orden-confirmada?status=rejected&external_reference=${orderId}`,
+        pending: `${window.location.origin}/orden-confirmada?status=pending&external_reference=${orderId}`,
+      };
 
-        const preferenceResponse = await fetch('/api/mercadopago/create-preference', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            items: cartItems.map(item => ({
-              product: item.product,
-              quantity: item.quantity,
-              variation: item.variation,
-              total_amount: (item.product.price + (item.variation?.price_modifier || 0)) * item.quantity,
-            })),
-            orderId,
-            back_urls,
-            total_amount: total,
-          }),
-        });
+      const preferenceResponse = await fetch('/api/mercadopago/create-preference', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          items: cartItems.map(item => ({
+            product: item.product,
+            quantity: item.quantity,
+            variation: item.variation,
+            total_amount: (item.product.price + (item.variation?.price_modifier || 0)) * item.quantity,
+          })),
+          orderId,
+          back_urls,
+          total_amount: total,
+        }),
+      });
 
-        if (!preferenceResponse.ok) {
-          throw new Error('Error al crear la preferencia de pago');
-        }
-
-        const preferenceData = await preferenceResponse.json();
-        
-        // Actualizar la orden con el preference_id
-        await fetch('/api/orders', {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            id: orderId,
-            mercado_pago_preference_id: preferenceData.preference_id,
-          }),
-        });
-
-        // Redirigir a Mercado Pago
-        window.location.href = preferenceData.init_point || preferenceData.sandbox_init_point;
-        return;
-      } else if (formData.payment_method === 'transfer') {
-        // Transferencia bancaria - procesar compra y redirigir
-        await processPurchase();
-        window.location.href = `/orden-confirmada?id=${orderId}&method=transfer`;
-        return;
+      if (!preferenceResponse.ok) {
+        throw new Error('Error al crear la preferencia de pago');
       }
+
+      const preferenceData = await preferenceResponse.json();
+      
+      // Actualizar la orden con el preference_id
+      await fetch('/api/orders', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: orderId,
+          mercado_pago_preference_id: preferenceData.preference_id,
+        }),
+      });
+
+      // Redirigir a Mercado Pago
+      window.location.href = preferenceData.init_point || preferenceData.sandbox_init_point;
       
     } catch (error: any) {
       console.error('Error al procesar la orden:', error);
@@ -336,107 +293,6 @@ const CheckoutForm = () => {
             </div>
           </div>
           
-          <div className="border border-black/10 bg-white p-6">
-            <h2 className="text-base font-semibold text-black mb-6 font-sans">Método de Pago</h2>
-            
-            <div className="space-y-3">
-              {paymentMethods.map((method) => (
-                <label
-                  key={method.id}
-                  className={`flex items-center gap-4 p-4 border transition-colors ${
-                    method.enabled === false
-                      ? 'border-black/5 bg-gray-50 cursor-not-allowed opacity-60'
-                      : 'border-black/10 cursor-pointer hover:border-black/20'
-                  }`}
-                >
-                  <input
-                    type="radio"
-                    name="payment_method"
-                    value={method.id}
-                    checked={formData.payment_method === method.id}
-                    onChange={(e) => method.enabled !== false && handleInputChange('payment_method', e.target.value as any)}
-                    disabled={method.enabled === false}
-                    className="text-black disabled:cursor-not-allowed"
-                  />
-                  <div className="flex items-center gap-3 flex-1">
-                    {method.icon && (
-                      <img src={method.icon} alt={method.name} className="h-8 w-auto object-contain" />
-                    )}
-                    <span className="text-base font-normal text-black font-sans">{method.name}</span>
-                    {method.enabled === false && (
-                      <span className="text-xs text-black/50 font-normal ml-auto">Próximamente</span>
-                    )}
-                  </div>
-                </label>
-              ))}
-            </div>
-          </div>
-
-          {/* Información de Transferencia Bancaria */}
-          {formData.payment_method === 'transfer' && bankTransferData && (
-            <div className="border-2 border-black/20 bg-black/5 p-6">
-              <h3 className="text-base font-semibold text-black mb-5 font-sans">Datos para Transferencia Bancaria</h3>
-              
-              {/* Datos Bancarios */}
-              <div className="space-y-3 mb-6">
-                {bankTransferData.bank_name && (
-                  <div className="flex justify-between items-start">
-                    <span className="text-sm font-medium text-black/70 font-sans">Banco:</span>
-                    <span className="text-sm font-normal text-black font-sans text-right">{bankTransferData.bank_name}</span>
-                  </div>
-                )}
-                {bankTransferData.account_type && (
-                  <div className="flex justify-between items-start">
-                    <span className="text-sm font-medium text-black/70 font-sans">Tipo de Cuenta:</span>
-                    <span className="text-sm font-normal text-black font-sans text-right">{bankTransferData.account_type}</span>
-                  </div>
-                )}
-                {bankTransferData.account_number && (
-                  <div className="flex justify-between items-start">
-                    <span className="text-sm font-medium text-black/70 font-sans">Número de Cuenta:</span>
-                    <span className="text-sm font-normal text-black font-sans text-right font-mono">{bankTransferData.account_number}</span>
-                  </div>
-                )}
-                {bankTransferData.rut && (
-                  <div className="flex justify-between items-start">
-                    <span className="text-sm font-medium text-black/70 font-sans">RUT:</span>
-                    <span className="text-sm font-normal text-black font-sans text-right font-mono">{bankTransferData.rut}</span>
-                  </div>
-                )}
-                {bankTransferData.account_holder && (
-                  <div className="flex justify-between items-start">
-                    <span className="text-sm font-medium text-black/70 font-sans">Titular:</span>
-                    <span className="text-sm font-normal text-black font-sans text-right">{bankTransferData.account_holder}</span>
-                  </div>
-                )}
-                {bankTransferData.email && (
-                  <div className="flex justify-between items-start">
-                    <span className="text-sm font-medium text-black/70 font-sans">Email:</span>
-                    <span className="text-sm font-normal text-black font-sans text-right">{bankTransferData.email}</span>
-                  </div>
-                )}
-              </div>
-              
-              {/* Instrucciones de Pago */}
-              <div className="border-t-2 border-black/20 pt-5">
-                <h4 className="text-sm font-semibold text-black mb-4 font-sans">Instrucciones de Pago:</h4>
-                <ol className="space-y-2.5 text-sm text-black/80 font-normal font-sans list-decimal list-inside mb-4">
-                  <li>Realiza la transferencia por el monto exacto de <strong className="text-black">${total.toLocaleString('es-CL')} CLP</strong> a la cuenta indicada arriba.</li>
-                  <li>Una vez completada la transferencia, recibirás un número de pedido en la página de confirmación.</li>
-                  <li>Envía el comprobante de transferencia al email <strong className="text-black">{bankTransferData.email || 'contacto@gotrachile.com'}</strong> con el asunto: <strong className="text-black">"Comprobante de Pago - [Tu número de pedido]"</strong></li>
-                  <li>Incluye en el email tu nombre completo y el número de pedido que recibiste.</li>
-                  <li>Una vez verificado el pago, procesaremos tu pedido y te enviaremos un email de confirmación con los detalles de envío.</li>
-                </ol>
-                <div className="p-4 bg-black/10 rounded border border-black/20">
-                  <p className="text-xs text-black/70 font-normal font-sans leading-relaxed">
-                    <strong className="text-black font-semibold">Importante:</strong> Tu pedido será procesado únicamente después de recibir y verificar el comprobante de transferencia. 
-                    El tiempo de procesamiento puede tardar entre 24-48 horas hábiles.
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
-          
           <button
             type="submit"
             disabled={isSubmitting}
@@ -464,7 +320,7 @@ const CheckoutForm = () => {
                 </div>
                 <div className="text-right">
                   <p className="text-lg font-semibold text-black font-sans">
-                    ${(item.product.price * item.quantity).toLocaleString('es-CL')} CLP
+                    ${((item.product.price + (item.variation?.price_modifier || 0)) * item.quantity).toLocaleString('es-CL')} CLP
                   </p>
                 </div>
               </div>
