@@ -603,8 +603,14 @@ const AdminPanel = () => {
     setEditingProduct(newProduct);
     setSelectedProduct(null);
     setIsCreating(true);
+    setIsEditModalOpen(true);
     setChainType('plata_925');
     setChainVariations([]);
+    setCustomDisplayPrice(null);
+    setCalculatedDisplayPrice(null);
+    setCalculatedSumPrice(null);
+    setProductImages([]);
+    setSelectedPendantChains(new Set());
   };
 
   const handleDeleteProduct = async (productId: string) => {
