@@ -189,7 +189,7 @@ Limpieza: Para mantener el brillo, limpia periódicamente con un paño suave y s
     const baseSpecs = {
       material: 'Plata Sólida 925',
       pureza: '925/1000',
-      garantia: '2 años',
+      garantia: '6 meses',
       cuidados: cuidadosText,
       envio: 'Envío gratis a todo Chile en compras sobre $50.000',
       packaging: 'Incluye estuche de regalo y certificado de autenticidad',

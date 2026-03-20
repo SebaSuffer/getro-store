@@ -267,7 +267,7 @@ Limpieza: Para mantener el brillo, limpia periódicamente con un paño suave y s
                       </div>
                       <div>
                         <h4 className="text-sm font-semibold text-black mb-2 font-sans">Garantía</h4>
-                        <p className="text-base font-normal text-black/80 font-sans">2 años</p>
+                        <p className="text-base font-normal text-black/80 font-sans">6 meses</p>
                       </div>
                     </div>
                   </div>
