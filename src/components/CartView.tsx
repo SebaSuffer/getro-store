@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { getCart, removeFromCart, updateCartItemQuantity, clearCart, getCartTotal } from '../utils/cart';
 import type { CartItem } from '../data/products';
+import { getDiscountedUnitPrice } from '../utils/pricing';
 
 const CartView = () => {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
@@ -129,7 +130,7 @@ const CartView = () => {
                 </div>
                 
                 <p className="text-2xl font-bold text-black w-40 text-right font-sans">
-                  ${((item.product.price + (item.variation?.price_modifier || 0)) * item.quantity).toLocaleString('es-CL')} CLP
+                  ${(getDiscountedUnitPrice(item.product.price, item.variation?.price_modifier || 0, item.product.discount_percent) * item.quantity).toLocaleString('es-CL')} CLP
                 </p>
                 
                 <button

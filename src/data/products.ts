@@ -9,6 +9,7 @@ export interface Product {
   category: string;
   is_new: boolean;
   is_featured: boolean;
+  discount_percent?: number;
   is_active?: boolean;
   has_variations?: boolean;
   variation_count?: number;
@@ -65,6 +66,7 @@ export const getAllProducts = async (): Promise<Product[]> => {
         category: row.category,
         is_new: Boolean(row.is_new),
         is_featured: Boolean(row.is_featured),
+        discount_percent: Number(row.discount_percent) || 0,
         is_active: row.is_active !== undefined ? Boolean(row.is_active) : true,
       }));
 
@@ -214,6 +216,7 @@ export const getProductById = async (id: string): Promise<Product | null> => {
         category: row.category,
         is_new: Boolean(row.is_new),
         is_featured: Boolean(row.is_featured),
+        discount_percent: Number(row.discount_percent) || 0,
       };
     } catch (error: any) {
       console.error('[SERVER] Error fetching product from Turso:', error);

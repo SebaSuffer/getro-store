@@ -1,6 +1,7 @@
 // Utilidad para enviar emails
 // Nota: Esta implementación usa un servicio de email genérico
 // Puedes usar servicios como Resend, SendGrid, Nodemailer, etc.
+import { getDiscountedUnitPrice } from './pricing';
 
 interface EmailOptions {
   to: string;
@@ -100,7 +101,11 @@ export const sendOrderConfirmationEmail = async (
   totalAmount: number
 ): Promise<boolean> => {
   const itemsHtml = orderItems.map((item: any) => {
-    const itemPrice = item.product.price + (item.variation?.price_modifier || 0);
+    const itemPrice = getDiscountedUnitPrice(
+      item.product.price,
+      item.variation?.price_modifier || 0,
+      item.product.discount_percent
+    );
     const totalItemPrice = itemPrice * item.quantity;
     const variationInfo = item.variation 
       ? `<p style="color: #666; font-size: 12px; margin-top: 4px;">${[item.variation.brand, item.variation.thickness, item.variation.length].filter(Boolean).join(', ')}</p>`

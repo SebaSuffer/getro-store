@@ -1,5 +1,6 @@
 import type { Product, CartItem } from '../data/products';
 import { hasStock, updateProductStock, getProductStock } from './stock';
+import { getDiscountedUnitPrice } from './pricing';
 
 const CART_STORAGE_KEY = 'gotra_cart';
 
@@ -109,7 +110,11 @@ export const getCartItemCount = (): number => {
 export const getCartTotal = (): number => {
   const cart = getCart();
   return cart.reduce((total, item) => {
-    const itemPrice = item.product.price + (item.variation?.price_modifier || 0);
+    const itemPrice = getDiscountedUnitPrice(
+      item.product.price,
+      item.variation?.price_modifier || 0,
+      item.product.discount_percent
+    );
     return total + (itemPrice * item.quantity);
   }, 0);
 };

@@ -1,5 +1,23 @@
 import type { APIRoute } from 'astro';
 import { getTursoClient } from '../../../utils/turso';
+import { normalizeDiscountPercent } from '../../../utils/pricing';
+
+let discountColumnReady = false;
+
+const ensureDiscountPercentColumn = async (client: any): Promise<void> => {
+  if (discountColumnReady) return;
+
+  const tableInfo = await client.execute({
+    sql: "PRAGMA table_info(products)",
+    args: [],
+  });
+
+  const hasDiscountPercent = tableInfo.rows.some((row: any) => row.name === 'discount_percent');
+  if (!hasDiscountPercent) {
+    await client.execute("ALTER TABLE products ADD COLUMN discount_percent INTEGER NOT NULL DEFAULT 0");
+  }
+  discountColumnReady = true;
+};
 
 // GET /api/products/[id] - Obtener un producto por ID
 export const GET: APIRoute = async ({ params }) => {
@@ -21,6 +39,8 @@ export const GET: APIRoute = async ({ params }) => {
         { status: 500, headers: { 'Content-Type': 'application/json' } }
       );
     }
+
+    await ensureDiscountPercentColumn(client);
 
     const result = await client.execute({
       sql: `SELECT p.*, COUNT(pv.id) AS variation_count
@@ -50,6 +70,7 @@ export const GET: APIRoute = async ({ params }) => {
       category: row.category,
       is_new: Boolean(row.is_new),
       is_featured: Boolean(row.is_featured),
+      discount_percent: normalizeDiscountPercent(row.discount_percent),
       has_variations: Boolean(row.variation_count),
       variation_count: row.variation_count,
     };
@@ -80,7 +101,7 @@ export const PUT: APIRoute = async ({ params, request }) => {
     }
 
     const body = await request.json();
-    const { name, description, price, stock, image_url, image_alt, category, is_new, is_featured, is_active, chain_type, display_price } = body;
+    const { name, description, price, stock, image_url, image_alt, category, is_new, is_featured, is_active, chain_type, display_price, discount_percent } = body;
 
     const client = getTursoClient();
     
@@ -90,6 +111,8 @@ export const PUT: APIRoute = async ({ params, request }) => {
         { status: 500, headers: { 'Content-Type': 'application/json' } }
       );
     }
+
+    await ensureDiscountPercentColumn(client);
 
     // Verificar si existe la columna display_price
     const tableInfo = await client.execute({
@@ -101,33 +124,44 @@ export const PUT: APIRoute = async ({ params, request }) => {
     
     // Verificar si existe is_active
     const hasIsActive = tableInfo.rows.some((row: any) => row.name === 'is_active');
+    const hasDiscountPercent = tableInfo.rows.some((row: any) => row.name === 'discount_percent');
+    const safeDiscountPercent = normalizeDiscountPercent(discount_percent);
     
-    if (hasDisplayPrice && hasIsActive) {
+    if (hasDisplayPrice && hasIsActive && hasDiscountPercent) {
       await client.execute({
         sql: `UPDATE products 
               SET name = ?, description = ?, price = ?, stock = ?, 
                   image_url = ?, image_alt = ?, category = ?, 
-                  is_new = ?, is_featured = ?, is_active = ?, display_price = ?, updated_at = CURRENT_TIMESTAMP
+                  is_new = ?, is_featured = ?, is_active = ?, display_price = ?, discount_percent = ?, updated_at = CURRENT_TIMESTAMP
               WHERE id = ?`,
-        args: [name, description, price, stock, image_url, image_alt, category, is_new ? 1 : 0, is_featured ? 1 : 0, is_active !== undefined ? (is_active ? 1 : 0) : 1, display_price || null, id],
+        args: [name, description, price, stock, image_url, image_alt, category, is_new ? 1 : 0, is_featured ? 1 : 0, is_active !== undefined ? (is_active ? 1 : 0) : 1, display_price || null, safeDiscountPercent, id],
       });
-    } else if (hasDisplayPrice) {
+    } else if (hasDisplayPrice && hasDiscountPercent) {
       await client.execute({
         sql: `UPDATE products 
               SET name = ?, description = ?, price = ?, stock = ?, 
                   image_url = ?, image_alt = ?, category = ?, 
-                  is_new = ?, is_featured = ?, display_price = ?, updated_at = CURRENT_TIMESTAMP
+                  is_new = ?, is_featured = ?, display_price = ?, discount_percent = ?, updated_at = CURRENT_TIMESTAMP
               WHERE id = ?`,
-        args: [name, description, price, stock, image_url, image_alt, category, is_new ? 1 : 0, is_featured ? 1 : 0, display_price || null, id],
+        args: [name, description, price, stock, image_url, image_alt, category, is_new ? 1 : 0, is_featured ? 1 : 0, display_price || null, safeDiscountPercent, id],
       });
-    } else if (hasIsActive) {
+    } else if (hasIsActive && hasDiscountPercent) {
       await client.execute({
         sql: `UPDATE products 
               SET name = ?, description = ?, price = ?, stock = ?, 
                   image_url = ?, image_alt = ?, category = ?, 
-                  is_new = ?, is_featured = ?, is_active = ?, updated_at = CURRENT_TIMESTAMP
+                  is_new = ?, is_featured = ?, is_active = ?, discount_percent = ?, updated_at = CURRENT_TIMESTAMP
               WHERE id = ?`,
-        args: [name, description, price, stock, image_url, image_alt, category, is_new ? 1 : 0, is_featured ? 1 : 0, is_active !== undefined ? (is_active ? 1 : 0) : 1, id],
+        args: [name, description, price, stock, image_url, image_alt, category, is_new ? 1 : 0, is_featured ? 1 : 0, is_active !== undefined ? (is_active ? 1 : 0) : 1, safeDiscountPercent, id],
+      });
+    } else if (hasDiscountPercent) {
+      await client.execute({
+        sql: `UPDATE products 
+              SET name = ?, description = ?, price = ?, stock = ?, 
+                  image_url = ?, image_alt = ?, category = ?, 
+                  is_new = ?, is_featured = ?, discount_percent = ?, updated_at = CURRENT_TIMESTAMP
+              WHERE id = ?`,
+        args: [name, description, price, stock, image_url, image_alt, category, is_new ? 1 : 0, is_featured ? 1 : 0, safeDiscountPercent, id],
       });
     } else {
       await client.execute({

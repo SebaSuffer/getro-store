@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { getCart, getCartTotal } from '../utils/cart';
 import type { CartItem } from '../data/products';
+import { getDiscountedUnitPrice } from '../utils/pricing';
 
 interface FormData {
   customer_name: string;
@@ -131,7 +132,11 @@ const CheckoutForm = () => {
             product: item.product,
             quantity: item.quantity,
             variation: item.variation,
-            total_amount: (item.product.price + (item.variation?.price_modifier || 0)) * item.quantity,
+            total_amount: getDiscountedUnitPrice(
+              item.product.price,
+              item.variation?.price_modifier || 0,
+              item.product.discount_percent
+            ) * item.quantity,
           })),
           orderId,
           back_urls,
@@ -326,7 +331,7 @@ const CheckoutForm = () => {
                 </div>
                 <div className="text-right">
                   <p className="text-lg font-semibold text-black font-sans">
-                    ${((item.product.price + (item.variation?.price_modifier || 0)) * item.quantity).toLocaleString('es-CL')} CLP
+                    ${(getDiscountedUnitPrice(item.product.price, item.variation?.price_modifier || 0, item.product.discount_percent) * item.quantity).toLocaleString('es-CL')} CLP
                   </p>
                 </div>
               </div>

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { addToCart, getCart } from '../utils/cart';
 import type { Product } from '../data/products';
+import { getDiscountedPrice, normalizeDiscountPercent } from '../utils/pricing';
 
 interface ProductCardProps {
   product: Product;
@@ -157,6 +158,8 @@ const ProductCard = ({ product: initialProduct, hidePrice = false }: ProductCard
   };
 
   const isOutOfStock = currentStock <= 0;
+  const discountPercent = normalizeDiscountPercent(product.discount_percent);
+  const discountedDisplayPrice = getDiscountedPrice(displayPrice, discountPercent);
 
   return (
     <div className="group relative flex flex-col overflow-hidden bg-white">
@@ -189,6 +192,11 @@ const ProductCard = ({ product: initialProduct, hidePrice = false }: ProductCard
             New
           </div>
         )}
+        {discountPercent > 0 && (
+          <div className="absolute right-4 top-4 bg-red-600 text-white px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.1em]">
+            Oferta -{discountPercent}%
+          </div>
+        )}
         {isOutOfStock && (
           <div className="absolute inset-0 bg-black/70 flex items-center justify-center">
             <span className="text-white font-normal uppercase tracking-[0.2em] text-sm">Agotado</span>
@@ -219,9 +227,20 @@ const ProductCard = ({ product: initialProduct, hidePrice = false }: ProductCard
           
           {!hidePrice && product.category !== 'Cadenas' && (
             <div className="mb-6">
-              <p className="text-lg font-normal text-black tracking-wide">
-                ${displayPrice.toLocaleString('es-CL')} CLP
-              </p>
+              {discountPercent > 0 ? (
+                <div className="space-y-1">
+                  <p className="text-sm text-black/50 line-through tracking-wide">
+                    ${displayPrice.toLocaleString('es-CL')} CLP
+                  </p>
+                  <p className="text-xl font-semibold text-black tracking-wide">
+                    ${discountedDisplayPrice.toLocaleString('es-CL')} CLP
+                  </p>
+                </div>
+              ) : (
+                <p className="text-lg font-normal text-black tracking-wide">
+                  ${displayPrice.toLocaleString('es-CL')} CLP
+                </p>
+              )}
             </div>
           )}
           

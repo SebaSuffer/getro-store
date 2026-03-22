@@ -6,6 +6,7 @@ import { getAllCategories, updateCategoryImage, type Category } from '../utils/c
 import type { Product } from '../data/products';
 import Toast from './Toast';
 import ChainVariationsManager from './ChainVariationsManager';
+import { getDiscountedPrice, getDiscountedUnitPrice, normalizeDiscountPercent } from '../utils/pricing';
 
 // Categorías disponibles
 const CATEGORIES = ['Colgantes', 'Cadenas', 'Pulseras', 'Anillos', 'Esclavas', 'Aros'];
@@ -297,23 +298,25 @@ const AdminPanel = () => {
       
       // Cargar número de variaciones para cada colgante
       const variationsCount: Record<string, number> = {};
-      for (const product of allProducts) {
-        if (product.category === 'Colgantes') {
-          try {
-            const response = await fetch(`/api/pendants/${product.id}/chains`);
-            if (response.ok) {
-              const chains = await response.json();
-              variationsCount[product.id] = chains.length || 1; // Default 1 si no hay cadenas
-            } else {
-              variationsCount[product.id] = 1; // Default 1
-            }
-          } catch (error) {
-            variationsCount[product.id] = 1; // Default 1 en caso de error
+      await Promise.all(
+        allProducts.map(async (product: Product) => {
+          if (product.category !== 'Colgantes') {
+            variationsCount[product.id] = 0;
+            return;
           }
-        } else {
-          variationsCount[product.id] = 0; // No aplica para otros productos
-        }
-      }
+          try {
+            const chainsResponse = await fetch(`/api/pendants/${product.id}/chains`);
+            if (chainsResponse.ok) {
+              const productChains = await chainsResponse.json();
+              variationsCount[product.id] = productChains.length || 1;
+              return;
+            }
+            variationsCount[product.id] = 1;
+          } catch {
+            variationsCount[product.id] = 1;
+          }
+        })
+      );
       setProductVariationsCount(variationsCount);
     } catch (error) {
       console.error('Error loading products:', error);
@@ -598,6 +601,7 @@ const AdminPanel = () => {
       image_alt: '',
       is_new: false,
       is_featured: false,
+      discount_percent: 0,
       is_active: true,
     };
     setEditingProduct(newProduct);
@@ -736,6 +740,7 @@ const AdminPanel = () => {
     }
 
     try {
+      const safeDiscountPercent = normalizeDiscountPercent((editingProduct as any).discount_percent);
       let response;
       
       if (isCreating) {
@@ -753,6 +758,7 @@ const AdminPanel = () => {
             image_alt: editingProduct.image_alt || editingProduct.name,
             is_new: editingProduct.is_new || false,
             is_featured: editingProduct.is_featured || false,
+            discount_percent: safeDiscountPercent,
             is_active: editingProduct.is_active !== false,
             chain_type: (editingProduct.category === 'Cadenas' || editingProduct.category === 'Colgantes') ? chainType : undefined,
           }),
@@ -772,6 +778,7 @@ const AdminPanel = () => {
             image_alt: editingProduct.image_alt || editingProduct.name,
             is_new: editingProduct.is_new,
             is_featured: editingProduct.is_featured,
+            discount_percent: safeDiscountPercent,
             is_active: editingProduct.is_active !== false,
             chain_type: (editingProduct.category === 'Cadenas' || editingProduct.category === 'Colgantes') ? chainType : undefined,
           }),
@@ -1133,7 +1140,23 @@ const AdminPanel = () => {
                               {product.stock}
                             </span>
                           </td>
-                          <td className="px-6 py-4 text-black/90 font-normal text-base">${product.price.toLocaleString('es-CL')} CLP</td>
+                          <td className="px-6 py-4 text-black/90 font-normal text-base">
+                            <div className="flex flex-col gap-0.5">
+                              {normalizeDiscountPercent((product as any).discount_percent) > 0 ? (
+                                <>
+                                  <span className="text-black/50 line-through text-sm">${product.price.toLocaleString('es-CL')} CLP</span>
+                                  <span className="font-semibold text-black">
+                                    ${getDiscountedPrice(product.price, (product as any).discount_percent).toLocaleString('es-CL')} CLP (descuento)
+                                  </span>
+                                  <span className="inline-flex w-fit px-2 py-0.5 bg-red-600 text-white text-xs font-semibold rounded mt-0.5">
+                                    -{normalizeDiscountPercent((product as any).discount_percent)}%
+                                  </span>
+                                </>
+                              ) : (
+                                <span>${product.price.toLocaleString('es-CL')} CLP</span>
+                              )}
+                            </div>
+                          </td>
                           <td className="px-6 py-4 text-black/90 font-normal text-base">
                             {product.category === 'Colgantes' ? (
                               <span className="font-semibold">{productVariationsCount[product.id] ?? 1}</span>
@@ -1765,6 +1788,21 @@ const AdminPanel = () => {
                   </div>
                   <div>
                     <label className="block text-sm font-semibold text-black mb-2">
+                      Descuento (%)
+                    </label>
+                    <input
+                      type="number"
+                      value={(editingProduct as any).discount_percent || 0}
+                      onChange={(e) => setEditingProduct({ ...editingProduct, discount_percent: normalizeDiscountPercent(e.target.value) } as Product)}
+                      placeholder="0"
+                      min="0"
+                      max="100"
+                      className="w-full bg-white border border-black/20 px-4 py-2.5 text-black text-base font-normal focus:outline-none focus:border-black/40 focus:ring-1 focus:ring-black/10 transition-all"
+                    />
+                    <p className="text-xs text-black/60 mt-1">Ejemplo: 33 aplica un 33% de descuento.</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-black mb-2">
                       Stock
                     </label>
                     <input
@@ -2179,6 +2217,17 @@ const AdminPanel = () => {
                             />
                           </div>
                         </div>
+                        <div>
+                          <label className="block text-sm font-semibold text-black mb-2">Descuento (%)</label>
+                          <input
+                            type="number"
+                            value={(editingProduct as any).discount_percent || 0}
+                            onChange={(e) => setEditingProduct({ ...editingProduct, discount_percent: normalizeDiscountPercent(e.target.value) } as Product)}
+                            min="0"
+                            max="100"
+                            className="w-full bg-white border border-black/20 px-3 py-2 text-sm text-black font-normal focus:outline-none focus:border-black/40 rounded"
+                          />
+                        </div>
                         
                         <div>
                           <label className="block text-sm font-semibold text-black mb-2">Descripción</label>
@@ -2253,6 +2302,7 @@ const AdminPanel = () => {
                                       <span className="text-base font-semibold text-black block">{chain.brand}</span>
                                       <span className="text-sm text-black/70">
                                         ${chain.price.toLocaleString('es-CL')} CLP
+                                        {normalizeDiscountPercent((editingProduct as any)?.discount_percent) > 0 ? ' (descuento)' : ''}
                                       </span>
                                     </div>
                                     <div className="flex items-center gap-2">
@@ -2397,6 +2447,7 @@ const AdminPanel = () => {
                                       </span>
                                       <span className="text-sm text-black/70">
                                         ${chain.price.toLocaleString('es-CL')} CLP
+                                        {normalizeDiscountPercent((editingProduct as any)?.discount_percent) > 0 ? ' (descuento)' : ''}
                                       </span>
                                     </div>
                                   </label>
@@ -2412,6 +2463,7 @@ const AdminPanel = () => {
                             </p>
                             <p className="text-blue-700">
                               {selectedVariationForPrice.brand} - ${selectedVariationForPrice.price.toLocaleString('es-CL')} CLP
+                              {normalizeDiscountPercent((editingProduct as any)?.discount_percent) > 0 ? ' (descuento)' : ''}
                             </p>
                             <p className="text-blue-600 mt-1 text-xs">
                               {editingVariation 
@@ -2904,7 +2956,11 @@ const AdminPanel = () => {
                           <td className="px-4 py-3">
                             <div className="max-w-xs">
                               {Array.isArray(order.items) && order.items.map((item: any, idx: number) => {
-                                const itemPrice = item.product.price + (item.variation?.price_modifier || 0);
+                                const itemPrice = getDiscountedUnitPrice(
+                                  item.product.price,
+                                  item.variation?.price_modifier || 0,
+                                  item.product.discount_percent
+                                );
                                 return (
                                   <div key={idx} className="mb-2 last:mb-0">
                                     <p className="text-black text-xs font-medium">{item.product.name}</p>
@@ -3207,7 +3263,11 @@ const AdminPanel = () => {
                       </thead>
                       <tbody>
                         {Array.isArray(selectedOrder.items) && selectedOrder.items.map((item: any, idx: number) => {
-                          const itemPrice = item.product.price + (item.variation?.price_modifier || 0);
+                          const itemPrice = getDiscountedUnitPrice(
+                            item.product.price,
+                            item.variation?.price_modifier || 0,
+                            item.product.discount_percent
+                          );
                           const totalItemPrice = itemPrice * item.quantity;
                           return (
                             <tr key={idx} className="border-t border-black/5">

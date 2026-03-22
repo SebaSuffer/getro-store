@@ -1,4 +1,5 @@
 import type { APIRoute } from 'astro';
+import { getDiscountedUnitPrice } from '../../../utils/pricing';
 
 export const POST: APIRoute = async ({ request }) => {
   try {
@@ -19,7 +20,7 @@ export const POST: APIRoute = async ({ request }) => {
       // Calcular precio unitario: precio base + modificador de variación (si existe)
       const basePrice = item.product?.price || 0;
       const variationModifier = item.variation?.price_modifier || 0;
-      const unitPrice = basePrice + variationModifier;
+      const unitPrice = getDiscountedUnitPrice(basePrice, variationModifier, item.product?.discount_percent);
       
       // Construir título con información de variación si existe
       let title = item.product?.name || 'Producto';

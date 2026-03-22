@@ -1,5 +1,23 @@
 import type { APIRoute } from 'astro';
 import { getTursoClient } from '../../../utils/turso';
+import { normalizeDiscountPercent } from '../../../utils/pricing';
+
+let discountColumnReady = false;
+
+const ensureDiscountPercentColumn = async (client: any): Promise<void> => {
+  if (discountColumnReady) return;
+
+  const tableInfo = await client.execute({
+    sql: "PRAGMA table_info(products)",
+    args: [],
+  });
+
+  const hasDiscountPercent = tableInfo.rows.some((row: any) => row.name === 'discount_percent');
+  if (!hasDiscountPercent) {
+    await client.execute("ALTER TABLE products ADD COLUMN discount_percent INTEGER NOT NULL DEFAULT 0");
+  }
+  discountColumnReady = true;
+};
 
 // GET /api/products - Obtener todos los productos
 export const GET: APIRoute = async ({ request }) => {
@@ -31,6 +49,9 @@ export const GET: APIRoute = async ({ request }) => {
         { status: 500, headers: { 'Content-Type': 'application/json' } }
       );
     }
+
+    // Asegura compatibilidad con bases antiguas sin columna de descuento
+    await ensureDiscountPercentColumn(client);
 
     console.log(`[API-PRODUCTS-${requestId}] ✅ Turso client connected (took ${clientTime}ms)`);
     console.log(`[API-PRODUCTS-${requestId}] 📝 Executing SQL query...`);
@@ -82,6 +103,7 @@ export const GET: APIRoute = async ({ request }) => {
       has_variations: Boolean(row.variation_count),
       variation_count: row.variation_count,
       display_price: row.display_price || null,
+      discount_percent: normalizeDiscountPercent(row.discount_percent),
     }));
     const mapTime = Date.now() - mapStartTime;
     
@@ -120,7 +142,7 @@ export const GET: APIRoute = async ({ request }) => {
 export const POST: APIRoute = async ({ request }) => {
   try {
     const body = await request.json();
-    const { name, description, price, stock, category, image_url, image_alt, is_new, is_featured, chain_type } = body;
+    const { name, description, price, stock, category, image_url, image_alt, is_new, is_featured, chain_type, discount_percent } = body;
 
     // Validaciones
     if (!name || !category || !price || price <= 0) {
@@ -141,10 +163,11 @@ export const POST: APIRoute = async ({ request }) => {
     // Generar ID único
     const id = 'prod-' + Date.now().toString(36) + '-' + Math.random().toString(36).substr(2, 9);
 
-    // Insertar producto
+    await ensureDiscountPercentColumn(client);
+    const safeDiscountPercent = normalizeDiscountPercent(discount_percent);
     await client.execute({
-      sql: `INSERT INTO products (id, name, description, price, stock, category, image_url, image_alt, is_new, is_featured, is_active, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))`,
+      sql: `INSERT INTO products (id, name, description, price, stock, category, image_url, image_alt, is_new, is_featured, is_active, discount_percent, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))`,
       args: [
         id,
         name,
@@ -156,7 +179,8 @@ export const POST: APIRoute = async ({ request }) => {
         image_alt || name,
         is_new ? 1 : 0,
         is_featured ? 1 : 0,
-        (body.is_active !== undefined ? (body.is_active ? 1 : 0) : 1), // Por defecto activo
+        (body.is_active !== undefined ? (body.is_active ? 1 : 0) : 1),
+        safeDiscountPercent,
       ],
     });
 
