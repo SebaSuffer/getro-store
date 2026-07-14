@@ -102,9 +102,6 @@ const CartView = () => {
                     ${item.product.price.toLocaleString('es-CL')} CLP
                   </p>
                 )}
-                <p className="text-base text-black/60 font-medium font-sans">
-                  Stock disponible: {item.product.stock}
-                </p>
               </div>
               
               <div className="flex items-center gap-6">

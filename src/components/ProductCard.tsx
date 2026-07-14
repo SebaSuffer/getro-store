@@ -214,16 +214,11 @@ const ProductCard = ({ product: initialProduct, hidePrice = false }: ProductCard
         </div>
         
         <div className="mt-auto">
-          <div className="mb-4">
-            {isOutOfStock ? (
-              <span className="text-sm text-red-600/80 font-medium">Sin stock</span>
-            ) : (
-              <span className="text-sm text-black/70 font-medium">Stock disponible: {currentStock} unidades</span>
-            )}
-            {product.has_variations && (
-              <p className="text-xs text-green-600 font-normal mt-1">Variaciones disponibles</p>
-            )}
-          </div>
+          {product.has_variations && (
+            <div className="mb-4">
+              <p className="text-xs text-green-600 font-normal">Variaciones disponibles</p>
+            </div>
+          )}
           
           {!hidePrice && product.category !== 'Cadenas' && (
             <div className="mb-6">

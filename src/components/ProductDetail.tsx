@@ -313,21 +313,6 @@ Limpieza: Para mantener el brillo, limpia periódicamente con un paño suave y s
                 {product.name}
               </h1>
               
-              <div className="mb-6">
-                {isOutOfStock ? (
-                  <span className="text-base text-red-600 font-medium font-sans">Sin stock</span>
-                ) : (
-                  <span className="text-base text-black/70 font-medium font-sans">
-                    Stock disponible: {currentStock}
-                    {selectedVariation && selectedVariation.brand && (
-                      <span className="text-sm text-black/50 ml-2">
-                        ({selectedVariation.brand})
-                      </span>
-                    )}
-                  </span>
-                )}
-              </div>
-
               {product.category !== 'Cadenas' && (
                 <div className="mb-8">
                   {isCalculatingPrice ? (

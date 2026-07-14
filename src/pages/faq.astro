@@ -2,6 +2,9 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
+import { getContactSettings } from '../utils/contact';
+
+const contact = await getContactSettings();
 ---
 
 <BaseLayout title="Preguntas Frecuentes - GOTRA">
@@ -61,8 +64,8 @@ import Footer from '../components/Footer.astro';
                 ¿Cómo puedo contactarlos?
               </h2>
               <p class="text-black/70 font-light leading-relaxed">
-                Puedes contactarnos a través de WhatsApp al +56 9 3069 3754, por correo 
-                electrónico a contacto.gotrachile@gmail.com, o a través de nuestras redes sociales.
+                Puedes contactarnos a través de WhatsApp al {contact.phone}, por correo 
+                electrónico a {contact.email}, o a través de nuestras redes sociales.
               </p>
             </div>
             

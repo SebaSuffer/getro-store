@@ -23,7 +23,7 @@ const AdminPanel = () => {
   const [subscribers, setSubscribers] = useState<any[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
-  const [activeTab, setActiveTab] = useState<'products' | 'chains' | 'newsletter' | 'categories' | 'payments' | 'orders'>('products');
+  const [activeTab, setActiveTab] = useState<'products' | 'chains' | 'newsletter' | 'categories' | 'payments' | 'orders' | 'contact'>('products');
   const [orders, setOrders] = useState<any[]>([]);
   const [filteredOrders, setFilteredOrders] = useState<any[]>([]);
   const [orderSearchQuery, setOrderSearchQuery] = useState('');
@@ -38,6 +38,11 @@ const AdminPanel = () => {
     email: '',
     is_enabled: false,
   });
+  const [contactSettings, setContactSettings] = useState({
+    email: '',
+    phone: '',
+  });
+  const [isSavingContact, setIsSavingContact] = useState(false);
   const [chains, setChains] = useState<any[]>([]);
   const [editingChain, setEditingChain] = useState<any>(null);
   const [isChainsModalOpen, setIsChainsModalOpen] = useState(false);
@@ -75,6 +80,7 @@ const AdminPanel = () => {
         loadCategories();
         loadChains();
         loadBankTransferSettings();
+        loadContactSettings();
         loadOrders();
       } else {
         window.location.href = '/login';
@@ -108,6 +114,12 @@ const AdminPanel = () => {
   useEffect(() => {
     if (activeTab === 'orders') {
       loadOrders();
+    }
+  }, [activeTab]);
+
+  useEffect(() => {
+    if (activeTab === 'contact') {
+      loadContactSettings();
     }
   }, [activeTab]);
 
@@ -394,6 +406,55 @@ const AdminPanel = () => {
       }
     } catch (error) {
       console.error('Error loading bank transfer settings:', error);
+    }
+  };
+
+  const loadContactSettings = async () => {
+    try {
+      const response = await fetch('/api/contact-settings');
+      if (response.ok) {
+        const data = await response.json();
+        setContactSettings({
+          email: data.email || '',
+          phone: data.phone || '',
+        });
+      }
+    } catch (error) {
+      console.error('Error loading contact settings:', error);
+    }
+  };
+
+  const handleSaveContactSettings = async () => {
+    const email = contactSettings.email.trim();
+    const phone = contactSettings.phone.trim();
+
+    if (!email || !phone) {
+      setToastMessage('Email y teléfono son requeridos');
+      setShowToast(true);
+      return;
+    }
+
+    setIsSavingContact(true);
+    try {
+      const response = await fetch('/api/contact-settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, phone }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.error || 'Error al guardar');
+      }
+
+      setContactSettings({ email, phone });
+      setToastMessage('Datos de contacto guardados');
+      setShowToast(true);
+    } catch (error: any) {
+      setToastMessage(error.message || 'Error al guardar los datos de contacto');
+      setShowToast(true);
+    } finally {
+      setIsSavingContact(false);
     }
   };
 
@@ -963,6 +1024,16 @@ const AdminPanel = () => {
             }`}
           >
             Pagos
+          </button>
+          <button
+            onClick={() => setActiveTab('contact')}
+            className={`px-6 py-3 text-sm font-medium transition-colors border-b-2 ${
+              activeTab === 'contact'
+                ? 'border-black text-black'
+                : 'border-transparent text-black/40 hover:text-black/60'
+            }`}
+          >
+            Contacto
           </button>
           <button
             onClick={() => setActiveTab('orders')}
@@ -2675,6 +2746,62 @@ const AdminPanel = () => {
                 </div>
               </div>
             </div>
+        )}
+
+        {/* Tab de Contacto */}
+        {activeTab === 'contact' && (
+          <div className="space-y-6">
+            <h2 className="text-xl font-bold text-black">Datos de Contacto</h2>
+            <p className="text-sm text-black/60 font-normal">
+              Estos datos se muestran en el footer, la página de contacto, el botón de WhatsApp y el FAQ.
+            </p>
+            <div className="border border-black/10 bg-white p-6 max-w-xl">
+              <div className="space-y-4">
+                <div>
+                  <label htmlFor="contact-email" className="block text-sm font-semibold text-black mb-2">
+                    Correo electrónico
+                  </label>
+                  <input
+                    id="contact-email"
+                    type="email"
+                    value={contactSettings.email}
+                    onChange={(e) => setContactSettings({ ...contactSettings, email: e.target.value })}
+                    placeholder="Ej: contacto@gotrachile.com"
+                    className="w-full bg-white border border-black/20 px-4 py-2.5 text-black text-base font-normal focus:outline-none focus:border-black/40"
+                    aria-label="Correo electrónico de contacto"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="contact-phone" className="block text-sm font-semibold text-black mb-2">
+                    Teléfono / WhatsApp
+                  </label>
+                  <input
+                    id="contact-phone"
+                    type="tel"
+                    value={contactSettings.phone}
+                    onChange={(e) => setContactSettings({ ...contactSettings, phone: e.target.value })}
+                    placeholder="Ej: +56 9 3069 3754"
+                    className="w-full bg-white border border-black/20 px-4 py-2.5 text-black text-base font-normal focus:outline-none focus:border-black/40"
+                    aria-label="Teléfono o WhatsApp de contacto"
+                  />
+                  <p className="mt-2 text-xs text-black/50">
+                    Usa el formato con código de país. El enlace de WhatsApp se genera automáticamente a partir de este número.
+                  </p>
+                </div>
+                <div className="flex gap-3 pt-4">
+                  <button
+                    type="button"
+                    onClick={handleSaveContactSettings}
+                    disabled={isSavingContact}
+                    className="px-6 py-3 bg-black text-white text-base font-medium hover:bg-black/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    aria-label="Guardar datos de contacto"
+                  >
+                    {isSavingContact ? 'Guardando...' : 'Guardar'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
         )}
 
         {/* Tab de Pagos */}

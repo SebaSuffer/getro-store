@@ -128,12 +128,12 @@ const ChainVariationSelector = ({ productId, basePrice, defaultChainBrand, onVar
                 }`}
                 aria-label={hasOnlyOneChain 
                   ? `${chain.brand} - Incluida` 
-                  : `Seleccionar ${chain.brand} - ${isOutOfStock ? 'Sin stock' : 'Stock disponible'}`}
+                  : `Seleccionar ${chain.brand}${isOutOfStock ? ' - No disponible' : ''}`}
                 title={hasOnlyOneChain ? 'Esta cadena está incluida con el colgante' : undefined}
               >
                 {chain.brand}
                 {isOutOfStock && (
-                  <span className="ml-2 text-xs opacity-70">Sin stock</span>
+                  <span className="ml-2 text-xs opacity-70">No disponible</span>
                 )}
               </button>
             );
@@ -147,9 +147,6 @@ const ChainVariationSelector = ({ productId, basePrice, defaultChainBrand, onVar
             <div>
               <p className="text-sm font-semibold text-black mb-1">
                 {hasOnlyOneChain ? 'Cadena incluida' : 'Cadena seleccionada'}: {selectedChain.brand}
-              </p>
-              <p className="text-xs text-black/60">
-                Stock disponible: {selectedChain.stock} unidades
               </p>
             </div>
           </div>
