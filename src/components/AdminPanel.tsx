@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { isAuthenticated, logout, getCurrentUser } from '../utils/auth';
+import { isAuthenticated, logout, getCurrentUser, changePassword } from '../utils/auth';
 import { getAllProducts } from '../data/products';
 import { getSubscribers, exportSubscribers } from '../utils/newsletter';
 import { getAllCategories, updateCategoryImage, type Category } from '../utils/categories';
@@ -43,6 +43,12 @@ const AdminPanel = () => {
     phone: '',
   });
   const [isSavingContact, setIsSavingContact] = useState(false);
+  const [passwordForm, setPasswordForm] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: '',
+  });
+  const [isSavingPassword, setIsSavingPassword] = useState(false);
   const [chains, setChains] = useState<any[]>([]);
   const [editingChain, setEditingChain] = useState<any>(null);
   const [isChainsModalOpen, setIsChainsModalOpen] = useState(false);
@@ -455,6 +461,57 @@ const AdminPanel = () => {
       setShowToast(true);
     } finally {
       setIsSavingContact(false);
+    }
+  };
+
+  const handleChangePassword = async () => {
+    const { currentPassword, newPassword, confirmPassword } = passwordForm;
+
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      setToastMessage('Completa todos los campos de contraseña');
+      setShowToast(true);
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      setToastMessage('La confirmación no coincide con la nueva contraseña');
+      setShowToast(true);
+      return;
+    }
+
+    if (newPassword.length < 8) {
+      setToastMessage('La nueva contraseña debe tener al menos 8 caracteres');
+      setShowToast(true);
+      return;
+    }
+
+    setIsSavingPassword(true);
+    try {
+      const result = await changePassword(currentPassword, newPassword, confirmPassword);
+
+      if (!result.success) {
+        setToastMessage(result.error || 'No se pudo cambiar la contraseña');
+        setShowToast(true);
+        return;
+      }
+
+      setPasswordForm({
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: '',
+      });
+      setToastMessage('Contraseña actualizada. Volviendo a iniciar sesión...');
+      setShowToast(true);
+
+      setTimeout(() => {
+        logout();
+        window.location.href = '/login';
+      }, 1200);
+    } catch (error: any) {
+      setToastMessage(error.message || 'Error al cambiar la contraseña');
+      setShowToast(true);
+    } finally {
+      setIsSavingPassword(false);
     }
   };
 
@@ -2750,54 +2807,128 @@ const AdminPanel = () => {
 
         {/* Tab de Contacto */}
         {activeTab === 'contact' && (
-          <div className="space-y-6">
-            <h2 className="text-xl font-bold text-black">Datos de Contacto</h2>
-            <p className="text-sm text-black/60 font-normal">
-              Estos datos se muestran en el footer, la página de contacto, el botón de WhatsApp y el FAQ.
-            </p>
-            <div className="border border-black/10 bg-white p-6 max-w-xl">
-              <div className="space-y-4">
-                <div>
-                  <label htmlFor="contact-email" className="block text-sm font-semibold text-black mb-2">
-                    Correo electrónico
-                  </label>
-                  <input
-                    id="contact-email"
-                    type="email"
-                    value={contactSettings.email}
-                    onChange={(e) => setContactSettings({ ...contactSettings, email: e.target.value })}
-                    placeholder="Ej: contacto@gotrachile.com"
-                    className="w-full bg-white border border-black/20 px-4 py-2.5 text-black text-base font-normal focus:outline-none focus:border-black/40"
-                    aria-label="Correo electrónico de contacto"
-                  />
+          <div className="space-y-8">
+            <div className="space-y-6">
+              <h2 className="text-xl font-bold text-black">Datos de Contacto</h2>
+              <p className="text-sm text-black/60 font-normal">
+                Estos datos se muestran en el footer, la página de contacto, el botón de WhatsApp y el FAQ.
+              </p>
+              <div className="border border-black/10 bg-white p-6 max-w-xl">
+                <div className="space-y-4">
+                  <div>
+                    <label htmlFor="contact-email" className="block text-sm font-semibold text-black mb-2">
+                      Correo electrónico
+                    </label>
+                    <input
+                      id="contact-email"
+                      type="email"
+                      value={contactSettings.email}
+                      onChange={(e) => setContactSettings({ ...contactSettings, email: e.target.value })}
+                      placeholder="Ej: contacto@gotrachile.com"
+                      className="w-full bg-white border border-black/20 px-4 py-2.5 text-black text-base font-normal focus:outline-none focus:border-black/40"
+                      aria-label="Correo electrónico de contacto"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="contact-phone" className="block text-sm font-semibold text-black mb-2">
+                      Teléfono / WhatsApp
+                    </label>
+                    <input
+                      id="contact-phone"
+                      type="tel"
+                      value={contactSettings.phone}
+                      onChange={(e) => setContactSettings({ ...contactSettings, phone: e.target.value })}
+                      placeholder="Ej: +56 9 3069 3754"
+                      className="w-full bg-white border border-black/20 px-4 py-2.5 text-black text-base font-normal focus:outline-none focus:border-black/40"
+                      aria-label="Teléfono o WhatsApp de contacto"
+                    />
+                    <p className="mt-2 text-xs text-black/50">
+                      Usa el formato con código de país. El enlace de WhatsApp se genera automáticamente a partir de este número.
+                    </p>
+                  </div>
+                  <div className="flex gap-3 pt-4">
+                    <button
+                      type="button"
+                      onClick={handleSaveContactSettings}
+                      disabled={isSavingContact}
+                      className="px-6 py-3 bg-black text-white text-base font-medium hover:bg-black/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      aria-label="Guardar datos de contacto"
+                    >
+                      {isSavingContact ? 'Guardando...' : 'Guardar'}
+                    </button>
+                  </div>
                 </div>
-                <div>
-                  <label htmlFor="contact-phone" className="block text-sm font-semibold text-black mb-2">
-                    Teléfono / WhatsApp
-                  </label>
-                  <input
-                    id="contact-phone"
-                    type="tel"
-                    value={contactSettings.phone}
-                    onChange={(e) => setContactSettings({ ...contactSettings, phone: e.target.value })}
-                    placeholder="Ej: +56 9 3069 3754"
-                    className="w-full bg-white border border-black/20 px-4 py-2.5 text-black text-base font-normal focus:outline-none focus:border-black/40"
-                    aria-label="Teléfono o WhatsApp de contacto"
-                  />
-                  <p className="mt-2 text-xs text-black/50">
-                    Usa el formato con código de país. El enlace de WhatsApp se genera automáticamente a partir de este número.
-                  </p>
-                </div>
-                <div className="flex gap-3 pt-4">
-                  <button
-                    type="button"
-                    onClick={handleSaveContactSettings}
-                    disabled={isSavingContact}
-                    className="px-6 py-3 bg-black text-white text-base font-medium hover:bg-black/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    aria-label="Guardar datos de contacto"
-                  >
-                    {isSavingContact ? 'Guardando...' : 'Guardar'}
-                  </button>
+              </div>
+            </div>
+
+            <div className="space-y-6">
+              <h2 className="text-xl font-bold text-black">Cambiar contraseña</h2>
+              <p className="text-sm text-black/60 font-normal">
+                Cuenta: <span className="text-black font-medium">{user?.username || 'admin'}</span>.
+                Tras guardar, se cerrará la sesión para que ingreses con la nueva clave.
+              </p>
+              <div className="border border-black/10 bg-white p-6 max-w-xl">
+                <div className="space-y-4">
+                  <div>
+                    <label htmlFor="current-password" className="block text-sm font-semibold text-black mb-2">
+                      Contraseña actual
+                    </label>
+                    <input
+                      id="current-password"
+                      type="password"
+                      value={passwordForm.currentPassword}
+                      onChange={(e) =>
+                        setPasswordForm({ ...passwordForm, currentPassword: e.target.value })
+                      }
+                      autoComplete="current-password"
+                      className="w-full bg-white border border-black/20 px-4 py-2.5 text-black text-base font-normal focus:outline-none focus:border-black/40"
+                      aria-label="Contraseña actual"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="new-password" className="block text-sm font-semibold text-black mb-2">
+                      Nueva contraseña
+                    </label>
+                    <input
+                      id="new-password"
+                      type="password"
+                      value={passwordForm.newPassword}
+                      onChange={(e) =>
+                        setPasswordForm({ ...passwordForm, newPassword: e.target.value })
+                      }
+                      autoComplete="new-password"
+                      className="w-full bg-white border border-black/20 px-4 py-2.5 text-black text-base font-normal focus:outline-none focus:border-black/40"
+                      aria-label="Nueva contraseña"
+                    />
+                    <p className="mt-2 text-xs text-black/50">Mínimo 8 caracteres.</p>
+                  </div>
+                  <div>
+                    <label htmlFor="confirm-password" className="block text-sm font-semibold text-black mb-2">
+                      Confirmar nueva contraseña
+                    </label>
+                    <input
+                      id="confirm-password"
+                      type="password"
+                      value={passwordForm.confirmPassword}
+                      onChange={(e) =>
+                        setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })
+                      }
+                      autoComplete="new-password"
+                      className="w-full bg-white border border-black/20 px-4 py-2.5 text-black text-base font-normal focus:outline-none focus:border-black/40"
+                      aria-label="Confirmar nueva contraseña"
+                    />
+                  </div>
+                  <div className="flex gap-3 pt-4">
+                    <button
+                      type="button"
+                      onClick={handleChangePassword}
+                      disabled={isSavingPassword}
+                      className="px-6 py-3 bg-black text-white text-base font-medium hover:bg-black/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      aria-label="Guardar nueva contraseña"
+                    >
+                      {isSavingPassword ? 'Guardando...' : 'Actualizar contraseña'}
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>

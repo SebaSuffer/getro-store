@@ -8,23 +8,28 @@ const LoginForm = () => {
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    // Si ya está autenticado, redirigir
     if (isAuthenticated()) {
       window.location.href = '/admin';
     }
   }, []);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setIsLoading(true);
 
-    const success = login(username, password);
-    
-    if (success) {
-      window.location.href = '/admin';
-    } else {
+    try {
+      const success = await login(username, password);
+
+      if (success) {
+        window.location.href = '/admin';
+        return;
+      }
+
       setError('Usuario o contraseña incorrectos');
+    } catch {
+      setError('Error al iniciar sesión. Intenta nuevamente.');
+    } finally {
       setIsLoading(false);
     }
   };
@@ -43,6 +48,7 @@ const LoginForm = () => {
           className="w-full bg-white border border-black/20 px-4 py-3 text-black text-sm font-light focus:outline-none focus:border-black/40 transition-colors"
           required
           autoComplete="username"
+          aria-label="Usuario"
         />
       </div>
 
@@ -58,11 +64,12 @@ const LoginForm = () => {
           className="w-full bg-white border border-black/20 px-4 py-3 text-black text-sm font-light focus:outline-none focus:border-black/40 transition-colors"
           required
           autoComplete="current-password"
+          aria-label="Contraseña"
         />
       </div>
 
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 text-sm font-light">
+        <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 text-sm font-light" role="alert">
           {error}
         </div>
       )}
@@ -71,6 +78,7 @@ const LoginForm = () => {
         type="submit"
         disabled={isLoading}
         className="w-full h-12 bg-black text-white text-xs font-light uppercase tracking-[0.2em] hover:bg-black/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        aria-label="Iniciar sesión"
       >
         {isLoading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
       </button>
@@ -79,4 +87,3 @@ const LoginForm = () => {
 };
 
 export default LoginForm;
-
