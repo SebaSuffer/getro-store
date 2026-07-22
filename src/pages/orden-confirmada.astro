@@ -2,6 +2,7 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
+import ClearCartOnSuccess from '../components/ClearCartOnSuccess';
 import { getTursoClient } from '../utils/turso';
 import { getDiscountedUnitPrice } from '../utils/pricing';
 
@@ -45,9 +46,13 @@ if (orderId) {
     console.error('Error fetching order:', error);
   }
 }
+
+const isPaymentCompleted =
+  order?.payment_status === 'approved' || paymentStatus === 'approved';
 ---
 
 <BaseLayout title="Orden Confirmada - GOTRA">
+  <ClearCartOnSuccess client:load shouldClear={isPaymentCompleted} />
   <div class="relative flex h-auto min-h-screen w-full flex-col">
     <Header />
     
